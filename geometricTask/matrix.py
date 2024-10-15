@@ -110,7 +110,6 @@ def newE_fi_n(fi_sphere):
 
 
 def newE_l_n(phi_sphere, theta_sphere):
-
     res = 2 * np.cos(theta_sphere)[np.newaxis, :, np.newaxis] * newE_r_n(phi_sphere, theta_sphere)
     res += np.sin(theta_sphere)[np.newaxis, :, np.newaxis] * newE_theta_n(phi_sphere, theta_sphere)
     res /= ((3 * np.cos(theta_sphere)[np.newaxis, :, np.newaxis] ** 2 + 1) ** (1 / 2))
@@ -118,12 +117,7 @@ def newE_l_n(phi_sphere, theta_sphere):
 
 
 def newE_n_n(phi_sphere, theta_sphere):
-    #print(newE_l(phi_sphere, theta_sphere).shape)
-    # print(newE_fi(phi_sphere).shape)
-
     res = -2 * np.cos(theta_sphere)[np.newaxis, :, np.newaxis] * newE_theta_n(phi_sphere, theta_sphere)
     res += np.sin(theta_sphere)[np.newaxis, :, np.newaxis] * newE_r_n(phi_sphere, theta_sphere)
     res /= ((3 * np.cos(theta_sphere)[np.newaxis, :, np.newaxis] ** 2 + 1) ** (1 / 2))
     return res
-
-    # return np.cross(newE_l_n(phi_sphere, theta_sphere), newE_fi_n(phi_sphere))

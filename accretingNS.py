@@ -116,24 +116,12 @@ class Surface:
         self.array_normal = self.create_array_normal(self.phi_range, self.theta_range, self.surface_type)
 
     def create_array_normal(self, phi_range, theta_range, surface_type):
-        # array_normal = []  # матрица нормалей
+        # array_normal - матрица нормалей
         coefficient = -1
         if surface_type == surface_surf_types['outer']:  # True - внешняя поверхность, False - внутренняя
             coefficient = 1
-
         array_normal = coefficient * matrix.newE_n_n(phi_range, theta_range)
-        # print(array_normal)
-        #
-        # array_normal = np.zeros((config.N_phi_accretion, config.N_theta_accretion), dtype=object)
-        # for i in range(config.N_phi_accretion):
-        #     for j in range(config.N_theta_accretion):
-        #         # array_normal.append(coefficient * matrix.newE_n(phi_range[i], theta_range[j]))
-        #         array_normal[i, j] = coefficient * matrix.newE_n(phi_range[i], theta_range[j])
-        # print(array_normal)
         return array_normal
-
-    def create_ds_for_integral(self):
-        pass
 
 
 class MagnetLine:
