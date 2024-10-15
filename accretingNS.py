@@ -117,6 +117,7 @@ class Surface:
 
     def create_array_normal(self, phi_range, theta_range, surface_type):
         # array_normal - матрица нормалей
+        # тензор размером phi x theta x 3 (x,y,z)
         coefficient = -1
         if surface_type == surface_surf_types['outer']:  # True - внешняя поверхность, False - внутренняя
             coefficient = 1

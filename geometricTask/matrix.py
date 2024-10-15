@@ -86,14 +86,18 @@ def newE_n(fi_sphere, theta_sphere):
 # ============================================
 # numpy way:
 def newE_r_n(phi_sphere, theta_sphere):
+    # res = тензор размером phi x theta x 3 (x,y,z)
+    # x,y,z = тензор размером  phi x theta
     x = np.sin(theta_sphere)[np.newaxis, :] * np.cos(phi_sphere)[:, np.newaxis]
     y = np.sin(theta_sphere)[np.newaxis, :] * np.sin(phi_sphere)[:, np.newaxis]
     z = np.cos(theta_sphere)[np.newaxis, :] * np.ones_like(phi_sphere)[:, np.newaxis]
-    res = np.hstack((x, y, z)).reshape((phi_sphere.shape[0], theta_sphere.shape[0], 3), order='F')
+    res = np.hstack((x, y, z)).reshape((phi_sphere.shape[0], theta_sphere.shape[0], 3), order='F')  # phi x theta x 3
     return res
 
 
 def newE_theta_n(phi_sphere, theta_sphere):
+    # res = тензор размером phi x theta x 3 (x,y,z)
+    # x,y,z = тензор размером  phi x theta
     x = np.cos(theta_sphere)[np.newaxis, :] * np.cos(phi_sphere)[:, np.newaxis]
     y = np.cos(theta_sphere)[np.newaxis, :] * np.sin(phi_sphere)[:, np.newaxis]
     z = -np.sin(theta_sphere) * np.ones_like(phi_sphere)[:, np.newaxis]
@@ -102,6 +106,8 @@ def newE_theta_n(phi_sphere, theta_sphere):
 
 
 def newE_fi_n(fi_sphere):
+    # res = тензор размером phi x 3 (x,y,z)
+    # x,y,z = тензор размером  phi
     x = np.cos(fi_sphere)
     y = -np.sin(fi_sphere)
     z = np.zeros(fi_sphere.shape[0])
@@ -110,6 +116,8 @@ def newE_fi_n(fi_sphere):
 
 
 def newE_l_n(phi_sphere, theta_sphere):
+    # тензор размером phi x theta x 3 (x,y,z)
+    # вместо np.cross(newE_l(fi_sphere, theta_sphere), newE_fi(fi_sphere)) беру формулу для n (есть в дипломе)
     res = 2 * np.cos(theta_sphere)[np.newaxis, :, np.newaxis] * newE_r_n(phi_sphere, theta_sphere)
     res += np.sin(theta_sphere)[np.newaxis, :, np.newaxis] * newE_theta_n(phi_sphere, theta_sphere)
     res /= ((3 * np.cos(theta_sphere)[np.newaxis, :, np.newaxis] ** 2 + 1) ** (1 / 2))
@@ -117,6 +125,7 @@ def newE_l_n(phi_sphere, theta_sphere):
 
 
 def newE_n_n(phi_sphere, theta_sphere):
+    # тензор размером phi x theta x 3 (x,y,z)
     res = -2 * np.cos(theta_sphere)[np.newaxis, :, np.newaxis] * newE_theta_n(phi_sphere, theta_sphere)
     res += np.sin(theta_sphere)[np.newaxis, :, np.newaxis] * newE_r_n(phi_sphere, theta_sphere)
     res /= ((3 * np.cos(theta_sphere)[np.newaxis, :, np.newaxis] ** 2 + 1) ** (1 / 2))
