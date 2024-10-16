@@ -11,13 +11,13 @@ if approx_type:
 def get_delta_distance_at_surface_NS(R_e):
     # R=R_e * sin_theta ** 2
     theta = get_theta_accretion_begin(R_e)
-    #print(theta)
+    # print(theta)
     return get_delta_distance(theta, R_e)
 
 
 def get_A_normal_at_surface_NS(R_e, a_portion):
     theta = get_theta_accretion_begin(R_e)
-    #print(theta)
+    # print(theta)
     # a - в азимутальном направлении поток занимает фиксированную долю a полного круга 2πR sinθ
     return get_A_normal(theta, R_e, a_portion)
 
@@ -41,6 +41,11 @@ def get_A_normal(theta, R_e, a_portion):
 # из усл силовой линии МП : r = R_e sin**2
 def get_theta_accretion_begin(R_e):
     return np.arcsin((config.R_ns / R_e) ** (1 / 2))
+
+
+def get_free_fall_velocity(theta, R_e):
+    r = R_e * np.sin(theta) ** 2
+    return (2 * config.G * config.M_ns / r) ** (1 / 2)
 
 
 def get_e_obs(i_angle, phi_angle):
