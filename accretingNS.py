@@ -20,8 +20,8 @@ class AccretingPulsarConfiguration:
         self.a_portion = a_portion
         self.phi_0 = phi_0
 
-        M_accretion_rate = mc2 * config.L_edd / config.c ** 2
-        self.R_alfven = (mu ** 2 / (2 * M_accretion_rate * (2 * config.G * config.M_ns) ** (1 / 2))) ** (2 / 7)
+        self.M_accretion_rate = mc2 * config.L_edd / config.c ** 2
+        self.R_alfven = (mu ** 2 / (2 * self.M_accretion_rate * (2 * config.G * config.M_ns) ** (1 / 2))) ** (2 / 7)
         self.R_e = config.ksi_param * self.R_alfven
 
         self.top_column = AccretionColumn(self.R_e, mu, mc2, self.a_portion, self.phi_0,
@@ -99,21 +99,23 @@ class Surface:
             # из усл силовой линии МП : r = R_e sin**2; end: ksi_shock = R_e sin**2
             self.theta_accretion_end = np.arcsin((config.R_ns * ksi_shock / self.surf_R_e) ** (1 / 2))
 
-        phi_delta = 0
         # для нижней сместить углы
         if column_type == column_surf_types['bot']:
             self.theta_accretion_begin = np.pi - self.theta_accretion_begin
             self.theta_accretion_end = np.pi - self.theta_accretion_end
-            phi_delta = np.pi
+        self.theta_range = np.linspace(self.theta_accretion_begin, self.theta_accretion_end, config.N_theta_accretion)
 
         phi_0_rad = np.deg2rad(phi_0)
-        self.theta_range = np.linspace(self.theta_accretion_begin, self.theta_accretion_end, config.N_theta_accretion)
+        phi_delta = 0
+        if column_type == column_surf_types['bot']:
+            # для нижней сместить углы
+            phi_delta = np.pi
         # phi_0 - центр колонки!!!!!!!!!!!!
         self.phi_range = np.linspace(-np.pi * a_portion, np.pi * a_portion, config.N_phi_accretion)
         self.phi_range = self.phi_range + phi_0_rad + phi_delta
         if config.FLAG_PHI_0_OLD:
             # - в терминах старого phi
-            self.phi_range = np.linspace(0, 2 * np.pi * a_portion) + phi_0_rad + phi_delta
+            self.phi_range = np.linspace(0, 2 * np.pi * a_portion, config.N_phi_accretion) + phi_0_rad + phi_delta
 
         self.array_normal = self.create_array_normal(self.phi_range, self.theta_range, self.surface_type)
 
