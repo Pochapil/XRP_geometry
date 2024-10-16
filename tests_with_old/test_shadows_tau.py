@@ -215,6 +215,84 @@ print(z1_new[z1_new > 0].shape)
 #     print(new_cos_psi_range)
 
 
+''' 
+                                                        функция 
+def get_vals(surface, phi_index, theta_index, direction_vector,
+             top_column_phi_range, bot_column_phi_range, top_column_theta_range, bot_column_theta_range,
+             betta_mu, M_accretion_rate, a_portion):
+    origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
+    r = surface.surf_R_e / config.R_ns * np.sin(origin_theta) ** 2
+
+    direction_x, direction_y, direction_z = vec_to_coord(direction_vector)
+    origin_x, origin_y, origin_z = get_cartesian_from_spherical(r, origin_theta, origin_phi)
+
+    solutions = get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_vector)
+
+    # мб добавить условие на минимум t.real -- and solution.real > 1e-2
+    for solution in solutions:
+        if solution.real > 0 and solution.imag == 0:
+            direction_t = solution.real * r
+            intersect_point = np.array([origin_x, origin_y, origin_z]) + direction_t * np.array(
+                [direction_x, direction_y, direction_z])
+
+            intersect_phi, intersect_theta = vec_to_angles(intersect_point)
+            if intersect_phi < 0:
+                intersect_phi += 2 * np.pi
+
+            intersect_r = (intersect_point[0] ** 2 + intersect_point[1] ** 2 + intersect_point[2] ** 2) ** (1 / 2)
+
+            # if not (abs(R_e / config.R_ns * np.sin(intersect_theta) ** 2 - intersect_r) < 0.001):
+            #     print(abs(R_e / config.R_ns * np.sin(intersect_theta) ** 2 - intersect_r))
+
+            # curr = abs(R_e / config.R_ns * np.sin(intersect_theta) ** 2 - intersect_r)
+            # новые линии магнитосферы
+            # theta_end = np.pi / 2 - betta_mu * np.cos(intersect_phi) - ОШИБКА !!
+            theta_end = np.pi / 2 - np.arctan(np.tan(np.deg2rad(betta_mu)) * np.cos(intersect_phi))
+
+            # для верхней колонки:
+            top_column_intersect_phi_correct = (top_column_phi_range[0] <= intersect_phi <= top_column_phi_range[
+                -1]) or (0 <= intersect_phi <= top_column_phi_range[-1] - 2 * np.pi)
+            top_column_intersect_theta_correct = intersect_theta < theta_end
+
+            # для нижней колонки:
+            bot_column_intersect_phi_correct = (bot_column_phi_range[0] <= intersect_phi <= bot_column_phi_range[
+                -1]) or (0 <= intersect_phi <= bot_column_phi_range[-1] - 2 * np.pi)
+            bot_column_intersect_theta_correct = intersect_theta > theta_end
+
+            # проверяем на пересечение с колонками
+            # intersect_r_correct = intersect_r > ksi_shock
+            # if not intersect_r_correct and (top_column_intersect_phi_correct or bot_column_intersect_phi_correct):
+            #     return 0
+
+            if (intersect_theta < top_column_theta_range[-1] and top_column_intersect_phi_correct) or (
+                    intersect_theta > bot_column_theta_range[-1] and bot_column_intersect_phi_correct):
+                return 0
+
+            intersection_condition = (top_column_intersect_phi_correct and top_column_intersect_theta_correct) or (
+                    bot_column_intersect_phi_correct and bot_column_intersect_theta_correct)
+
+            # if not (top_column_intersect_phi_correct and top_column_intersect_theta_correct) and (
+            #         bot_column_intersect_phi_correct and bot_column_intersect_theta_correct):
+            #     print('пересекли bot в точке')
+            #     print(intersect_phi / config.grad_to_rad, intersect_theta / config.grad_to_rad)
+            #     print(f'theta_end={theta_end / config.grad_to_rad}')
+
+            if config.tau_flag:
+                if intersection_condition:
+                    tau = get_tau_for_opacity(intersect_theta, surface.surf_R_e, M_accretion_rate, a_portion)
+                    if tau > config.tau_cutoff:
+                        return np.exp(-1 * tau)
+                    else:
+                        return 1
+
+            elif config.opacity_above_shock > 0:
+                if intersection_condition:
+                    return 1 - config.opacity_above_shock
+
+            else:
+                return 1
+    return 1
+    '''
 
 '''
 эта версия дает много 0!!
