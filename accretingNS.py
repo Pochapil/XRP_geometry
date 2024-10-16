@@ -7,6 +7,7 @@ import config
 import BS_approach as get_T_eff
 import geometricTask.matrix as matrix
 
+# surfs - polar = outer; equatorial = inner
 column_surf_types = {'bot': 'bot', 'top': 'top'}
 surface_surf_types = {'outer': 'outer', 'inner': 'inner'}
 
