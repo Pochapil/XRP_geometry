@@ -1,15 +1,17 @@
 import numpy as np
+import scipy.integrate
+from scipy import interpolate
 
 import config
 
 
-def create_ds_for_integral(surf):
+def create_ds_for_integral(surface):
     # это dl phi * dl theta но без d theta d phi !!! S с волной ~S в моем дипломе
     # для интеграла по simpson
     # dS единичная площадка при интегрировании
     # ds = tilda_s dtheta dphi
-    dl = surf.surf_R_e * ((3 * np.cos(surf.theta_range) ** 2 + 1) ** (1 / 2)) * np.sin(surf.theta_range)
-    dphi = surf.surf_R_e * (np.sin(surf.theta_range) ** 3)
+    dl = surface.surf_R_e * ((3 * np.cos(surface.theta_range) ** 2 + 1) ** (1 / 2)) * np.sin(surface.theta_range)
+    dphi = surface.surf_R_e * (np.sin(surface.theta_range) ** 3)
     tilda_s = dl * dphi
     return tilda_s
 
@@ -21,8 +23,11 @@ def create_ds_for_integral(surf):
 
 # для разных матриц можем посчитать L и посмотреть какой вклад будет.
 
-def calc_L():
-    ...
+def calc_L(surface, T_eff, cos_tensor):
+    tilda_s = create_ds_for_integral(surface)
+    L = np.abs(4 * config.sigm_Stf_Bolc * scipy.integrate.simps(
+        scipy.integrate.simps(T_eff ** 4 * cos_tensor * tilda_s, surface.theta_range), surface.phi_range))
+    return L
 
 
 # save

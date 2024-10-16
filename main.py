@@ -1,10 +1,13 @@
 import numpy as np
+import time
 
 import accretingNS
 import config
 from geometricTask import matrix
 import pathService
 import shadows
+import integralsService
+import plot_package.plot_scripts
 
 mu = 0.1e31
 beta_mu = 40
@@ -45,7 +48,9 @@ for phase_index in range(config.N_phase):
 accr_col_surfs = [curr_configuration.top_column.inner_surface, curr_configuration.top_column.outer_surface,
                   curr_configuration.bot_column.inner_surface, curr_configuration.bot_column.outer_surface]
 
-for surface in accr_col_surfs:
+L = np.empty(4, dtype=object)
+
+for i, surface in enumerate(accr_col_surfs):
     # тензор косинусов между нормалью и направлением на наблюдателя размером phase x phi x theta
     # умножаем скалярно phi x theta x 3 на phase x 3 (по последнему индексу) и делаем reshape.
     cos_psi_rotation_matrix = np.einsum('ijl,tl->tij', surface.array_normal, obs_matrix)
@@ -84,12 +89,8 @@ for surface in accr_col_surfs:
                 else:
                     new_cos_psi_range[phase_index, phi_index, theta_index] = 0
     new_cos_psi_range = new_cos_psi_range * tensor_shadows * tensor_tau
-    # print(np.max(result[result > 0]))
 
-    # shadows
-    # calc shadowed_matrix (ns + columns)
-    # tau
-    # calc tau_matrix
+    L[i] = integralsService.calc_L(surface, curr_configuration.top_column.T_eff, new_cos_psi_range)
 
     # для разных матриц можем посчитать L и посмотреть какой вклад будет.
     # calc_L()
@@ -98,6 +99,9 @@ for surface in accr_col_surfs:
     # calc PF
     # calc_L_nu()
     # save
+
+print(L)
+plot_package.plot_scripts.plot_L(L)
 
 magnet_line_surfs = []
 for surf in magnet_line_surfs:
