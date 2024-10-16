@@ -4,6 +4,7 @@ import accretingNS
 import config
 from geometricTask import matrix
 import pathService
+import shadows
 
 mu = 0.1e31
 beta_mu = 40
@@ -44,18 +45,85 @@ for phase_index in range(config.N_phase):
 accr_col_surfs = [curr_configuration.top_column.inner_surface, curr_configuration.top_column.outer_surface,
                   curr_configuration.bot_column.inner_surface, curr_configuration.bot_column.outer_surface]
 
-for surf in accr_col_surfs:
+for surface in accr_col_surfs:
     # тензор косинусов между нормалью и направлением на наблюдателя размером phase x phi x theta
     # умножаем скалярно phi x theta x 3 на phase x 3 (по последнему индексу) и делаем reshape.
-    rotation_psi_matrix = np.einsum('ijl,tl->tij', surf.array_normal, obs_matrix)
-    # rotation_obs_matrix[k] > 0:
-    # if cos_psi_range[i, j] > 0:
+    cos_psi_rotation_matrix = np.einsum('ijl,tl->tij', surface.array_normal, obs_matrix)
+
+    tensor_shadows = np.zeros_like(cos_psi_rotation_matrix)
+    tensor_tau = np.zeros_like(cos_psi_rotation_matrix)
+
+    old_cos_psi_range = cos_psi_rotation_matrix.copy()
+    new_cos_psi_range = cos_psi_rotation_matrix.copy()
+
+    for phase_index in range(config.N_phase):
+        for phi_index in range(config.N_phi_accretion):
+            for theta_index in range(config.N_theta_accretion):
+                if old_cos_psi_range[phase_index, phi_index, theta_index] > 0:
+
+                    origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
+                    solutions = shadows.get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta,
+                                                                              obs_matrix[phase_index])
+
+                    tensor_shadows[phase_index, phi_index, theta_index] = shadows.check_shadow_with_dipole(surface,
+                                                                                                           phi_index,
+                                                                                                           theta_index,
+                                                                                                           obs_matrix[
+                                                                                                               phase_index],
+                                                                                                           solutions,
+                                                                                                           curr_configuration.top_column.inner_surface,
+                                                                                                           curr_configuration.bot_column.inner_surface)
+                    tensor_tau[phase_index, phi_index, theta_index] = shadows.get_tau_with_dipole(surface, phi_index,
+                                                                                                  theta_index,
+                                                                                                  obs_matrix[
+                                                                                                      phase_index],
+                                                                                                  solutions,
+                                                                                                  surface.surf_R_e,
+                                                                                                  beta_mu,
+                                                                                                  curr_configuration.M_accretion_rate,
+                                                                                                  curr_configuration.top_column.inner_surface,
+                                                                                                  curr_configuration.bot_column.inner_surface,
+                                                                                                  a_portion)
+
+                    new_cos_psi_range[phase_index, phi_index, theta_index] = new_cos_psi_range[
+                                                                                 phase_index, phi_index, theta_index] * \
+                                                                             tensor_shadows[
+                                                                                 phase_index, phi_index, theta_index] * \
+                                                                             tensor_tau[
+                                                                                 phase_index, phi_index, theta_index]
+
+                    top_column_phi_range = curr_configuration.top_column.inner_surface.phi_range
+                    top_column_theta_range = curr_configuration.top_column.inner_surface.theta_range
+                    bot_column_phi_range = curr_configuration.bot_column.inner_surface.phi_range
+                    bot_column_theta_range = curr_configuration.bot_column.inner_surface.theta_range
+
+                    old_cos_psi_range[phase_index, phi_index, theta_index] *= shadows.get_vals(surface, phi_index,
+                                                                                               theta_index,
+                                                                                               obs_matrix[phase_index],
+                                                                                               top_column_phi_range,
+                                                                                               bot_column_phi_range,
+                                                                                               top_column_theta_range,
+                                                                                               bot_column_theta_range,
+                                                                                               beta_mu,
+                                                                                               curr_configuration.M_accretion_rate,
+                                                                                               a_portion)
+                else:
+                    old_cos_psi_range[phase_index, phi_index, theta_index] = 0
+                    new_cos_psi_range[phase_index, phi_index, theta_index] = 0
+
+    result = old_cos_psi_range - new_cos_psi_range
+    print(result[result > 0])
+    print(result[result > 0].shape)
+    # print(np.max(result[result > 0]))
+print('done')
+    # rotation_obs_matrix[phase_index] > 0:
+    # if cos_psi_range[phi_index, theta_index] > 0:
     #     # проверка на пересечения
-    #     r = self.R_e / config.R_ns * np.sin(self.theta_range[j]) ** 2
+    #     r = self.R_e / config.R_ns * np.sin(self.theta_range[theta_index]) ** 2
     #
-    #     origin_x = np.sin(self.theta_range[j]) * np.cos(self.phi_range[i]) * r
-    #     origin_y = np.sin(self.theta_range[j]) * np.sin(self.phi_range[i]) * r
-    #     origin_z = np.cos(self.theta_range[j]) * r
+    #     origin_x = np.sin(self.theta_range[theta_index]) * np.cos(self.phi_range[phi_index]) * r
+    #     origin_y = np.sin(self.theta_range[theta_index]) * np.sin(self.phi_range[phi_index]) * r
+    #     origin_z = np.cos(self.theta_range[theta_index]) * r
     #
     #     direction_x = e_obs_mu[0, 0]
     #     direction_y = e_obs_mu[0, 1]
