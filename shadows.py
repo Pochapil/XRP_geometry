@@ -29,8 +29,11 @@ def get_cartesian_from_spherical(r, theta, phi):
     return x, y, z
 
 
-def intersection_with_sphere(origin_x, origin_y, origin_z, direction_x, direction_y, direction_z):
+def intersection_with_sphere(surface, origin_phi, origin_theta, direction_vector):
     # sphere x**2 + y**2 + z**2 == 1
+    r = surface.surf_R_e / config.R_ns * np.sin(origin_theta) ** 2
+    direction_x, direction_y, direction_z = vec_to_coord(direction_vector)
+    origin_x, origin_y, origin_z = get_cartesian_from_spherical(r, origin_theta, origin_phi)
 
     def find_intersect_solution(a, b, c):
         if b ** 2 - 4 * a * c >= 0:
@@ -55,7 +58,15 @@ def intersection_with_sphere(origin_x, origin_y, origin_z, direction_x, directio
 
 
 def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_vector):
-    '''очень затратная операция - необходимо параллелить'''
+    '''очень затратная операция - необходимо параллелить
+
+        есть аналитическое уравнение для полинома дипольной линии 5 степени
+       находим уравнение в сферических координатах.
+
+       достаем корни
+       ищем положительные
+
+    '''
     # вывод формулы был для 0 угла наблюдателя по фи (его смещали в выводе). поэтому находим phi_delta
     direction_phi, direction_theta = vec_to_angles(direction_vector)
     # вспомогательные переменные, были введены для упрощения аналитического вывода
@@ -94,13 +105,29 @@ def get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector, solu
 
 
 def get_intersection_phi_with_column(surface, intersect_phi):
+    # top_column_intersect_phi_correct = (top_column_phi_range[0] <= intersect_phi <= top_column_phi_range[
+    #     -1]) or (top_column_phi_range[0] <= intersect_phi + 2 * np.pi <= top_column_phi_range[-1])
     column_phi_range_begin, column_phi_range_end = surface.phi_range[0], surface.phi_range[-1]
-    return (column_phi_range_begin <= intersect_phi <= column_phi_range_end) or (
-            column_phi_range_begin <= intersect_phi + 2 * np.pi <= column_phi_range_end)
+    return (column_phi_range_begin <= intersect_phi <= column_phi_range_end) \
+           or (column_phi_range_begin <= intersect_phi + 2 * np.pi <= column_phi_range_end) \
+           or (column_phi_range_begin <= intersect_phi - 2 * np.pi <= column_phi_range_end)
 
 
 def check_shadow_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, top_column, bot_column):
+    # checks for 1 element area!
     # obs_vector = direction_vector
+    '''
+       есть аналитическое уравнение для полинома дипольной линии 5 степени
+       находим уравнение в сферических координатах.
+
+       достаем корни
+       ищем положительные
+       находим пересечение с колонками
+           если пересекается то истина
+           если нет то ложь
+
+       корни в магнитной СК - betta_mu
+       '''
     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
     r = surface.surf_R_e / config.R_ns * np.sin(origin_theta) ** 2
 
@@ -109,15 +136,10 @@ def check_shadow_with_dipole(surface, phi_index, theta_index, obs_vector, soluti
                                                                         solution)
         if intersect_phi is not None:
             # для верхней колонки:
-            # top_column_intersect_phi_correct = (top_column_phi_range[0] <= intersect_phi <= top_column_phi_range[
-            #     -1]) or (top_column_phi_range[0] <= intersect_phi + 2 * np.pi <= top_column_phi_range[-1])
-
             top_column_intersect_phi = get_intersection_phi_with_column(top_column, intersect_phi)
 
             # для нижней колонки:
             bot_column_intersect_phi = get_intersection_phi_with_column(bot_column, intersect_phi)
-            # bot_column_intersect_phi_correct = (bot_column_phi_range[0] <= intersect_phi <= bot_column_phi_range[
-            #     -1]) or (bot_column_phi_range[0] <= intersect_phi + 2 * np.pi <= bot_column_phi_range[-1])
 
             if (intersect_theta < top_column.theta_range[-1] and top_column_intersect_phi) \
                     or (intersect_theta > bot_column.theta_range[-1] and bot_column_intersect_phi):
@@ -140,7 +162,7 @@ def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, 
         intersect_phi, intersect_theta = get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector,
                                                                         solution)
         if intersect_phi is not None:
-            theta_end = np.pi / 2 - np.arctan(np.tan(beta_mu) * np.cos(intersect_phi))
+            theta_end = np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(intersect_phi))
 
             top_column_intersect_theta_correct = intersect_theta < theta_end
             bot_column_intersect_theta_correct = intersect_theta > theta_end
@@ -163,19 +185,6 @@ def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, 
 def get_vals(surface, phi_index, theta_index, direction_vector,
              top_column_phi_range, bot_column_phi_range, top_column_theta_range, bot_column_theta_range,
              betta_mu, M_accretion_rate, a_portion):
-    '''
-    есть аналитическое уравнение для полинома дипольной линии 5 степени
-    находим уравнение в сферических координатах.
-
-    достаем корни
-    ищем положительные
-    находим пересечение с колонками
-        если пересекается то истина
-        если нет то ложь
-
-    корни в магнитной СК - betta_mu
-    '''
-
     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
     r = surface.surf_R_e / config.R_ns * np.sin(origin_theta) ** 2
 
@@ -205,7 +214,7 @@ def get_vals(surface, phi_index, theta_index, direction_vector,
             # curr = abs(R_e / config.R_ns * np.sin(intersect_theta) ** 2 - intersect_r)
             # новые линии магнитосферы
             # theta_end = np.pi / 2 - betta_mu * np.cos(intersect_phi) - ОШИБКА !!
-            theta_end = np.pi / 2 - np.arctan(np.tan(betta_mu) * np.cos(intersect_phi))
+            theta_end = np.pi / 2 - np.arctan(np.tan(np.deg2rad(betta_mu)) * np.cos(intersect_phi))
 
             # для верхней колонки:
             top_column_intersect_phi_correct = (top_column_phi_range[0] <= intersect_phi <= top_column_phi_range[
@@ -253,8 +262,7 @@ def get_vals(surface, phi_index, theta_index, direction_vector,
 
 
 # def check_shadow(surface, phi_index, theta_index, obs_vector):
-#     # checks for 1 element area!
-#     # obs_vector = direction_vector
+
 #     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
 #
 #     solutions = get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, obs_vector)
