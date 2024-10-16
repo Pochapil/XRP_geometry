@@ -46,9 +46,8 @@ accr_col_surfs = [curr_configuration.top_column.inner_surface, curr_configuratio
 
 for surf in accr_col_surfs:
     # тензор косинусов между нормалью и направлением на наблюдателя размером phase x phi x theta
-    print(surf.array_normal.shape)
+    # умножаем скалярно phi x theta x 3 на phase x 3 (по последнему индексу) и делаем reshape.
     rotation_psi_matrix = np.einsum('ijl,tl->tij', surf.array_normal, obs_matrix)
-
     # rotation_obs_matrix[k] > 0:
     # if cos_psi_range[i, j] > 0:
     #     # проверка на пересечения
@@ -62,13 +61,6 @@ for surf in accr_col_surfs:
     #     direction_y = e_obs_mu[0, 1]
     #     direction_z = e_obs_mu[0, 2]
     #
-
-
-
-
-
-
-
 
     # shadows
     # calc shadowed_matrix (ns + columns)
