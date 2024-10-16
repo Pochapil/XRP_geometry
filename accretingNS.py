@@ -46,7 +46,9 @@ class AccretionColumn:
 
         # попробую что
         # R_e_outer_surface, R_e_inner_surface = self.R_e, self.R_e
-        self.R_e_outer_surface, self.R_e_inner_surface = (1 + config.dRe_div_Re) * R_e, R_e  # допущение что толщина = 0
+        self.R_e_outer_surface, self.R_e_inner_surface = (1 + config.dRe_div_Re) * R_e, R_e
+        if config.FLAG_PHI_0_OLD:
+            self.R_e_outer_surface, self.R_e_inner_surface = R_e, R_e  # допущение что толщина = 0
 
         M_accretion_rate = mc2 * config.L_edd / config.c ** 2
         self.T_eff, self.ksi_shock, self.L_x, self.beta = get_T_eff.get_Teff_distribution(
@@ -115,7 +117,8 @@ class Surface:
         self.phi_range = self.phi_range + phi_0_rad + phi_delta
         if config.FLAG_PHI_0_OLD:
             # - в терминах старого phi
-            self.phi_range = np.linspace(0, 2 * np.pi * a_portion, config.N_phi_accretion) + phi_0_rad + phi_delta
+            fi_0_old = np.deg2rad(phi_0 + config.fi_0_dict[a_portion])
+            self.phi_range = np.linspace(0, 2 * np.pi * a_portion, config.N_phi_accretion) + fi_0_old + phi_delta
 
         self.array_normal = self.create_array_normal(self.phi_range, self.theta_range, self.surface_type)
 
