@@ -1,6 +1,8 @@
 import numpy as np
-import config
 import time
+
+import config
+import newService
 
 
 def vec_to_angles(vector):
@@ -76,16 +78,115 @@ def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_ve
     return solutions
 
 
-def check_shadow(surface, phi_index, theta_index, obs_vector):
-    # checks for 1 element area!
+def get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector, solution):
+    if solution.real > 0 and solution.imag == 0:
+        direction_x, direction_y, direction_z = vec_to_coord(obs_vector)
+        origin_x, origin_y, origin_z = get_cartesian_from_spherical(r, origin_theta, origin_phi)
+
+        direction_t = solution.real * r
+        intersect_point = np.array([origin_x, origin_y, origin_z]) + direction_t * np.array(
+            [direction_x, direction_y, direction_z])
+
+        intersect_phi, intersect_theta = vec_to_angles(intersect_point)
+    else:
+        intersect_phi, intersect_theta = None, None
+    return intersect_phi, intersect_theta
+
+
+def get_intersection_phi_with_column(surface, intersect_phi):
+    column_phi_range_begin, column_phi_range_end = surface.phi_range[0], surface.phi_range[-1]
+    return (column_phi_range_begin <= intersect_phi <= column_phi_range_end) or (
+            column_phi_range_begin <= intersect_phi + 2 * np.pi <= column_phi_range_end)
+
+
+def check_shadow_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, top_column, bot_column):
     # obs_vector = direction_vector
     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
-
-    solutions = get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, obs_vector)
-
     r = surface.surf_R_e / config.R_ns * np.sin(origin_theta) ** 2
-    direction_x, direction_y, direction_z = vec_to_coord(obs_vector)
+
+    for solution in solutions:
+        intersect_phi, intersect_theta = get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector,
+                                                                        solution)
+        if intersect_phi is not None:
+            # для верхней колонки:
+            # top_column_intersect_phi_correct = (top_column_phi_range[0] <= intersect_phi <= top_column_phi_range[
+            #     -1]) or (top_column_phi_range[0] <= intersect_phi + 2 * np.pi <= top_column_phi_range[-1])
+
+            top_column_intersect_phi = get_intersection_phi_with_column(top_column, intersect_phi)
+
+            # для нижней колонки:
+            bot_column_intersect_phi = get_intersection_phi_with_column(bot_column, intersect_phi)
+            # bot_column_intersect_phi_correct = (bot_column_phi_range[0] <= intersect_phi <= bot_column_phi_range[
+            #     -1]) or (bot_column_phi_range[0] <= intersect_phi + 2 * np.pi <= bot_column_phi_range[-1])
+
+            if (intersect_theta < top_column.theta_range[-1] and top_column_intersect_phi) \
+                    or (intersect_theta > bot_column.theta_range[-1] and bot_column_intersect_phi):
+                return 0
+    return 1
+
+
+def get_tau_for_opacity(theta, R_e, M_accretion_rate, a_portion):
+    tau = config.k * M_accretion_rate * newService.get_delta_distance(theta, R_e) / (
+            newService.get_A_normal(theta, R_e, a_portion) * newService.get_free_fall_velocity(theta, R_e))
+    return tau
+
+
+def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, R_e, beta_mu, M_accretion_rate,
+                        top_column, bot_column, a_portion):
+    origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
+    r = surface.surf_R_e / config.R_ns * np.sin(origin_theta) ** 2
+
+    for solution in solutions:
+        intersect_phi, intersect_theta = get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector,
+                                                                        solution)
+        if intersect_phi is not None:
+            theta_end = np.pi / 2 - np.arctan(np.tan(beta_mu) * np.cos(intersect_phi))
+
+            top_column_intersect_theta_correct = intersect_theta < theta_end
+            bot_column_intersect_theta_correct = intersect_theta > theta_end
+
+            top_column_intersect_phi = get_intersection_phi_with_column(top_column, intersect_phi)
+            bot_column_intersect_phi = get_intersection_phi_with_column(bot_column, intersect_phi)
+
+            intersection_condition = (top_column_intersect_phi and top_column_intersect_theta_correct) or (
+                    bot_column_intersect_phi and bot_column_intersect_theta_correct)
+
+            if intersection_condition:
+                tau = get_tau_for_opacity(intersect_theta, R_e, M_accretion_rate, a_portion)
+                if tau > config.tau_cutoff:
+                    return np.exp(-1 * tau)
+                else:
+                    return 1
+    return 1
+
+
+def get_vals(surface, phi_index, theta_index, direction_vector,
+             top_column_phi_range, bot_column_phi_range, top_column_theta_range, bot_column_theta_range,
+             betta_mu, M_accretion_rate, a_portion):
+    '''
+    есть аналитическое уравнение для полинома дипольной линии 5 степени
+    находим уравнение в сферических координатах.
+
+    достаем корни
+    ищем положительные
+    находим пересечение с колонками
+        если пересекается то истина
+        если нет то ложь
+
+    корни в магнитной СК - betta_mu
+    '''
+
+    origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
+    r = surface.surf_R_e / config.R_ns * np.sin(origin_theta) ** 2
+
+    direction_x, direction_y, direction_z = vec_to_coord(direction_vector)
     origin_x, origin_y, origin_z = get_cartesian_from_spherical(r, origin_theta, origin_phi)
+
+    solutions = get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_vector)
+
+    '''думаю что нужно только phi theta для нахождения правильных пересечений. r,z нужно было раньше когда проверял на 
+    пересечение с колонкой'''
+    # мб добавить условие на минимум t.real -- and solution.real > 1e-2
     for solution in solutions:
         if solution.real > 0 and solution.imag == 0:
             direction_t = solution.real * r
@@ -93,18 +194,93 @@ def check_shadow(surface, phi_index, theta_index, obs_vector):
                 [direction_x, direction_y, direction_z])
 
             intersect_phi, intersect_theta = vec_to_angles(intersect_point)
+            if intersect_phi < 0:
+                intersect_phi += 2 * np.pi
 
-            theta_end = np.pi / 2 - np.arctan(np.tan(beta_mu) * np.cos(intersect_phi))
+            intersect_r = (intersect_point[0] ** 2 + intersect_point[1] ** 2 + intersect_point[2] ** 2) ** (1 / 2)
+
+            # if not (abs(R_e / config.R_ns * np.sin(intersect_theta) ** 2 - intersect_r) < 0.001):
+            #     print(abs(R_e / config.R_ns * np.sin(intersect_theta) ** 2 - intersect_r))
+
+            # curr = abs(R_e / config.R_ns * np.sin(intersect_theta) ** 2 - intersect_r)
+            # новые линии магнитосферы
+            # theta_end = np.pi / 2 - betta_mu * np.cos(intersect_phi) - ОШИБКА !!
+            theta_end = np.pi / 2 - np.arctan(np.tan(betta_mu) * np.cos(intersect_phi))
 
             # для верхней колонки:
-            # or (0 <= intersect_phi <= top_column_phi_range[-1] - 2 * np.pi) - вроде не нужно!
-            top_column_intersect_phi_correct = (top_column_phi_range[0] <= intersect_phi <= top_column_phi_range[-1])
+            top_column_intersect_phi_correct = (top_column_phi_range[0] <= intersect_phi <= top_column_phi_range[
+                -1]) or (0 <= intersect_phi <= top_column_phi_range[-1] - 2 * np.pi)
             top_column_intersect_theta_correct = intersect_theta < theta_end
 
             # для нижней колонки:
-            bot_column_intersect_phi_correct = (bot_column_phi_range[0] <= intersect_phi <= bot_column_phi_range[-1]) \
-                                               or (0 <= intersect_phi <= bot_column_phi_range[-1] - 2 * np.pi)
+            bot_column_intersect_phi_correct = (bot_column_phi_range[0] <= intersect_phi <= bot_column_phi_range[
+                -1]) or (0 <= intersect_phi <= bot_column_phi_range[-1] - 2 * np.pi)
             bot_column_intersect_theta_correct = intersect_theta > theta_end
+
+            # проверяем на пересечение с колонками
+            # intersect_r_correct = intersect_r > ksi_shock
+            # if not intersect_r_correct and (top_column_intersect_phi_correct or bot_column_intersect_phi_correct):
+            #     return 0
+
+            if (intersect_theta < top_column_theta_range[-1] and top_column_intersect_phi_correct) or (
+                    intersect_theta > bot_column_theta_range[-1] and bot_column_intersect_phi_correct):
+                return 0
+
+            intersection_condition = (top_column_intersect_phi_correct and top_column_intersect_theta_correct) or (
+                    bot_column_intersect_phi_correct and bot_column_intersect_theta_correct)
+
+            # if not (top_column_intersect_phi_correct and top_column_intersect_theta_correct) and (
+            #         bot_column_intersect_phi_correct and bot_column_intersect_theta_correct):
+            #     print('пересекли bot в точке')
+            #     print(intersect_phi / config.grad_to_rad, intersect_theta / config.grad_to_rad)
+            #     print(f'theta_end={theta_end / config.grad_to_rad}')
+
+            if config.tau_flag:
+                if intersection_condition:
+                    tau = get_tau_for_opacity(intersect_theta, surface.surf_R_e, M_accretion_rate, a_portion)
+                    if tau > config.tau_cutoff:
+                        return np.exp(-1 * tau)
+                    else:
+                        return 1
+
+            elif config.opacity_above_shock > 0:
+                if intersection_condition:
+                    return 1 - config.opacity_above_shock
+
+            else:
+                return 1
+    return 1
+
+
+# def check_shadow(surface, phi_index, theta_index, obs_vector):
+#     # checks for 1 element area!
+#     # obs_vector = direction_vector
+#     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
+#
+#     solutions = get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, obs_vector)
+#
+#     r = surface.surf_R_e / config.R_ns * np.sin(origin_theta) ** 2
+#     direction_x, direction_y, direction_z = vec_to_coord(obs_vector)
+#     origin_x, origin_y, origin_z = get_cartesian_from_spherical(r, origin_theta, origin_phi)
+#     for solution in solutions:
+#         if solution.real > 0 and solution.imag == 0:
+#             direction_t = solution.real * r
+#             intersect_point = np.array([origin_x, origin_y, origin_z]) + direction_t * np.array(
+#                 [direction_x, direction_y, direction_z])
+#
+#             intersect_phi, intersect_theta = vec_to_angles(intersect_point)
+#
+#             # для верхней колонки:
+#             top_column_intersect_phi_correct = (top_column_phi_range[0] <= intersect_phi <= top_column_phi_range[
+#                 -1]) or (top_column_phi_range[0] <= intersect_phi + 2 * np.pi <= top_column_phi_range[-1])
+#
+#             # для нижней колонки:
+#             bot_column_intersect_phi_correct = (bot_column_phi_range[0] <= intersect_phi <= bot_column_phi_range[
+#                 -1]) or (bot_column_phi_range[0] <= intersect_phi + 2 * np.pi <= bot_column_phi_range[-1])
+#
+#             if (intersect_theta < top_column_theta_range[-1] and top_column_intersect_phi_correct) \
+#                     or (intersect_theta > bot_column_theta_range[-1] and bot_column_intersect_phi_correct):
+#                 return 0
 
 
 if __name__ == '__main__':
