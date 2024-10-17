@@ -1,13 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import scienceplots
+import matplotlib as mpl
 
 import config
 
 plt.style.use(['science', 'notebook', 'grid'])
-
-import matplotlib as mpl
-
 mpl.rcParams['mathtext.fontset'] = 'cm'
 mpl.rcParams['font.family'] = 'STIXGeneral'
 
@@ -21,12 +19,6 @@ def extend_arr_for_plot(arr):
 
 def plot_L(L):
     legend_labels_arr = [r'$top_{pol}$', r'$top_{eq}$', r'$bottom_{pol}$', r'$bottom_{eq}$', 'sum']
-
-    buf = L.copy()
-    L[0] = buf[1]
-    L[1] = buf[0]
-    L[2] = buf[3]
-    L[3] = buf[2]
 
     colors_arr = ['red', 'red', 'green', 'green']
     marker_arr = ['.', '*', '+', '^']
@@ -44,6 +36,7 @@ def plot_L(L):
 
     x_axis_label = r'$\Phi$'
     y_axis_label = r'$L_{\rm{iso}}$' + ' [erg/s]'
+
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
     ax['a'].legend()
@@ -104,4 +97,11 @@ if __name__ == '__main__':
           0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
           0.00000000e+00]
          ]
+
+    buf = L.copy()
+    L[0] = buf[1]
+    L[1] = buf[0]
+    L[2] = buf[3]
+    L[3] = buf[2]
+
     plot_L(L)
