@@ -3,38 +3,14 @@ import time
 
 import config
 import newService
-from geometricTask import matrix
-
-
-def vec_to_angles(vector):
-    x = vector[0]
-    y = vector[1]
-    z = vector[2]
-    r = (x ** 2 + y ** 2 + z ** 2) ** (1 / 2)
-    theta = np.arccos(z / r)
-    phi = np.arctan2(y, x)
-    return phi, theta
-
-
-def vec_to_coord(vector):
-    x = vector[0]
-    y = vector[1]
-    z = vector[2]
-    return x, y, z
-
-
-def get_cartesian_from_spherical(r, theta, phi):
-    x = r * np.sin(theta) * np.cos(phi)
-    y = r * np.sin(theta) * np.sin(phi)
-    z = r * np.cos(theta)
-    return x, y, z
+from geometry import matrix
 
 
 def intersection_with_sphere(surface, origin_phi, origin_theta, direction_vector):
     # sphere x**2 + y**2 + z**2 == 1
     r = surface.surf_R_e / config.R_ns * np.sin(origin_theta) ** 2
-    direction_x, direction_y, direction_z = vec_to_coord(direction_vector)
-    origin_x, origin_y, origin_z = get_cartesian_from_spherical(r, origin_theta, origin_phi)
+    direction_x, direction_y, direction_z = matrix.vec_to_coord(direction_vector)
+    origin_x, origin_y, origin_z = matrix.get_cartesian_from_spherical(r, origin_theta, origin_phi)
 
     def find_intersect_solution(a, b, c):
         if b ** 2 - 4 * a * c >= 0:
@@ -69,7 +45,7 @@ def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_ve
 
     '''
     # вывод формулы был для 0 угла наблюдателя по фи (его смещали в выводе). поэтому находим phi_delta
-    direction_phi, direction_theta = vec_to_angles(direction_vector)
+    direction_phi, direction_theta = matrix.vec_to_angles(direction_vector)
     # вспомогательные переменные, были введены для упрощения аналитического вывода
     phi_delta = origin_phi - direction_phi
     eta = np.sin(direction_theta) / np.sin(origin_theta)
@@ -92,14 +68,14 @@ def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_ve
 
 def get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector, solution):
     if solution.real > 0 and solution.imag == 0:
-        direction_x, direction_y, direction_z = vec_to_coord(obs_vector)
-        origin_x, origin_y, origin_z = get_cartesian_from_spherical(r, origin_theta, origin_phi)
+        direction_x, direction_y, direction_z = matrix.vec_to_coord(obs_vector)
+        origin_x, origin_y, origin_z = matrix.get_cartesian_from_spherical(r, origin_theta, origin_phi)
 
         direction_t = solution.real * r
         intersect_point = np.array([origin_x, origin_y, origin_z]) + direction_t * np.array(
             [direction_x, direction_y, direction_z])
 
-        intersect_phi, intersect_theta = vec_to_angles(intersect_point)
+        intersect_phi, intersect_theta = matrix.vec_to_angles(intersect_point)
     else:
         intersect_phi, intersect_theta = None, None
     return intersect_phi, intersect_theta
