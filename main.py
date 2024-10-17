@@ -15,8 +15,6 @@ mc2 = 100
 a_portion = 0.44
 phi_0 = 0
 
-'''переделать phi_0 !!!!'''
-
 curr_configuration = accretingNS.AccretingPulsarConfiguration(mu, beta_mu, mc2, a_portion, phi_0)
 
 theta_obs = 60
@@ -44,9 +42,11 @@ for phase_index in range(config.N_phase):
 
     obs_matrix[phase_index] = e_obs_mu
 
-# возможно хранить будем все матрицы.
-accr_col_surfs = [curr_configuration.top_column.inner_surface, curr_configuration.top_column.outer_surface,
-                  curr_configuration.bot_column.inner_surface, curr_configuration.bot_column.outer_surface]
+# чтобы соответствовать порядку в старом
+# surfaces = {0: top_column.outer_surface, 1: top_column.inner_surface,
+#             2: bot_column.outer_surface, 3: bot_column.inner_surface}
+accr_col_surfs = [curr_configuration.top_column.outer_surface, curr_configuration.top_column.inner_surface,
+                  curr_configuration.bot_column.outer_surface, curr_configuration.bot_column.inner_surface]
 
 L = np.empty(4, dtype=object)
 
@@ -54,8 +54,10 @@ for i, surface in enumerate(accr_col_surfs):
     # тензор косинусов между нормалью и направлением на наблюдателя размером phase x phi x theta
     # умножаем скалярно phi x theta x 3 на phase x 3 (по последнему индексу) и делаем reshape.
     cos_psi_rotation_matrix = np.einsum('ijl,tl->tij', surface.array_normal, obs_matrix)
-
-    tensor_shadows = np.ones_like(cos_psi_rotation_matrix)
+    # возможно хранить будем все матрицы.
+    # для разных матриц можем посчитать L и посмотреть какой вклад будет.
+    tensor_shadows_NS = np.ones_like(cos_psi_rotation_matrix)
+    tensor_shadows_columns = np.ones_like(cos_psi_rotation_matrix)
     tensor_tau = np.ones_like(cos_psi_rotation_matrix)
 
     # old_cos_psi_range = cos_psi_rotation_matrix.copy()
@@ -65,15 +67,13 @@ for i, surface in enumerate(accr_col_surfs):
         for phi_index in range(config.N_phi_accretion):
             for theta_index in range(config.N_theta_accretion):
                 if new_cos_psi_range[phase_index, phi_index, theta_index] > 0:
-
                     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
-
                     if shadows.intersection_with_sphere(surface, origin_phi, origin_theta, obs_matrix[phase_index]):
-                        tensor_shadows[phase_index, phi_index, theta_index] = 0
+                        tensor_shadows_NS[phase_index, phi_index, theta_index] = 0
                     else:
                         solutions = shadows.get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta,
                                                                                   obs_matrix[phase_index])
-                        tensor_shadows[phase_index, phi_index, theta_index] = \
+                        tensor_shadows_columns[phase_index, phi_index, theta_index] = \
                             shadows.check_shadow_with_dipole(surface, phi_index, theta_index,
                                                              obs_matrix[phase_index], solutions,
                                                              curr_configuration.top_column.inner_surface,
@@ -88,18 +88,15 @@ for i, surface in enumerate(accr_col_surfs):
                                                         a_portion)
                 else:
                     new_cos_psi_range[phase_index, phi_index, theta_index] = 0
-    new_cos_psi_range = new_cos_psi_range * tensor_shadows * tensor_tau
+    new_cos_psi_range = new_cos_psi_range * tensor_shadows_NS * tensor_shadows_columns * tensor_tau
 
     L[i] = integralsService.calc_L(surface, curr_configuration.top_column.T_eff, new_cos_psi_range)
-
-    # для разных матриц можем посчитать L и посмотреть какой вклад будет.
-    # calc_L()
-
     # save
-    # calc PF
+
     # calc_L_nu()
     # save
 
+# calc PF
 print(L)
 plot_package.plot_scripts.plot_L(L)
 
