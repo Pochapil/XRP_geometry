@@ -37,7 +37,7 @@ def calculate_total_luminosity(surface, T_eff):
 def calc_L_nu(surface, T_eff, cos_tensor):
     ''' распределение L_nu от фазы на какой-то энергии излучения '''
 
-    L_nu = np.empty(config.N_phase, dtype=object)
+    L_nu = np.empty(config.N_energy, dtype=object)
 
     tilda_s = create_ds_for_integral(surface)
     for i, energy in enumerate(config.energy_arr):
