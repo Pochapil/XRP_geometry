@@ -24,14 +24,15 @@ def calc_L(surface, T_eff, cos_tensor):
     return L
 
 
-def calc_scatter_L(surface, L_x, cos_tensor):
+def calc_scatter_L(surface, L_x, cos_tensor, tau_scatter_matrix=None):
     tilda_s = create_ds_for_integral(surface)
-
     d = surface.surf_R_e * np.sin(surface.theta_range) ** 2  # distance to area
     coeff = 1 / (4 * np.pi * d ** 2)
+    if tau_scatter_matrix is not None:
+        coeff = coeff * (1 - np.exp(-tau_scatter_matrix))  # УЧЕСТЬ tau в отражаемой точке!!!!!!!!! np.abs ???
+        # z = (1 - np.exp(-tau_scatter_matrix)) tau = 45-50 ????
     L = L_x * np.abs(scipy.integrate.simps(scipy.integrate.simps(cos_tensor * tilda_s * coeff, surface.theta_range),
                                            surface.phi_range))
-
     return L
 
 
