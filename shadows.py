@@ -3,6 +3,7 @@ import time
 
 import config
 import newService
+from geometricTask import matrix
 
 
 def vec_to_angles(vector):
@@ -147,9 +148,12 @@ def check_shadow_with_dipole(surface, phi_index, theta_index, obs_vector, soluti
     return 1
 
 
-def get_tau_for_opacity(theta, R_e, M_accretion_rate, a_portion):
+def get_tau_for_opacity(phi, theta, R_e, M_accretion_rate, a_portion, obs_vector):
+    normal = matrix.newE_n(phi, theta)
+    cos_alpha = np.dot(normal, obs_vector)
     tau = config.k * M_accretion_rate * newService.get_delta_distance(theta, R_e) / (
             newService.get_A_normal(theta, R_e, a_portion) * newService.get_free_fall_velocity(theta, R_e))
+    tau /= cos_alpha
     return tau
 
 
@@ -174,7 +178,7 @@ def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, 
                     bot_column_intersect_phi and bot_column_intersect_theta_correct)
 
             if intersection_condition:
-                tau = get_tau_for_opacity(intersect_theta, R_e, M_accretion_rate, a_portion)
+                tau = get_tau_for_opacity(intersect_phi, intersect_theta, R_e, M_accretion_rate, a_portion, obs_vector)
                 if tau > config.tau_cutoff:
                     return np.exp(-1 * tau)
                 else:
