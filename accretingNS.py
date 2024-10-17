@@ -5,7 +5,7 @@ from scipy import interpolate
 import newService
 import config
 import BS_approach as get_T_eff
-import geometricTask.matrix as matrix
+import geometry.matrix as matrix
 
 # surfs - polar = outer; equatorial = inner
 column_surf_types = {'bot': 'bot', 'top': 'top'}
@@ -31,9 +31,12 @@ class AccretingPulsarConfiguration:
         self.bot_column = AccretionColumn(self.R_e, mu, mc2, self.a_portion, self.phi_0,
                                           column_type=column_surf_types['bot'])
 
-        self.top_magnet_lines = MagnetLine(self.beta_mu, self.top_column.inner_surface.phi_range,
+        self.top_magnet_lines = MagnetLine(self.top_column.R_e_inner_surface, self.beta_mu,
+                                           self.top_column.inner_surface.phi_range,
                                            self.top_column.inner_surface.theta_range[-1], self.top_column.column_type)
-        self.bot_magnet_lines = MagnetLine(self.beta_mu, self.top_column.inner_surface.phi_range,
+
+        self.bot_magnet_lines = MagnetLine(self.top_column.R_e_inner_surface, self.beta_mu,
+                                           self.top_column.inner_surface.phi_range,
                                            self.top_column.inner_surface.theta_range[-1], self.bot_column.column_type)
 
 
@@ -142,9 +145,9 @@ class Surface:
 
 
 class MagnetLine:
-    def __init__(self, beta_mu, top_column_phi_range, top_column_theta_end, column_type):
+    def __init__(self, R_e, beta_mu, top_column_phi_range, top_column_theta_end, column_type):
         self.column_type = column_type
-
+        self.surf_R_e = R_e
         theta_range_end = np.pi / 2 + beta_mu
         # ограничиваю колонкой
         theta_range_end = min((np.pi - top_column_theta_end), theta_range_end)
