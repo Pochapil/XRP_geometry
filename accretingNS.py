@@ -124,6 +124,14 @@ class Surface:
         self.array_normal = self.create_array_normal(self.phi_range, self.theta_range, self.surface_type)
 
     def create_array_normal(self, phi_range, theta_range, surface_type):
+        '''работало раньше, когда R_e были одинаковые!!!!!!!!!
+        мол outer surf (pol) - стреляет наружу
+            iner (eq) - внутрь
+        по факту нужно переделать:
+        для всех углов считать
+        array_normal = matrix.newE_n_n(phi_range, theta_range)
+        а потом разбираться с пересечениями и ослаблениями
+        '''
         # array_normal - матрица нормалей
         # тензор размером phi x theta x 3 (x,y,z)
         coefficient = -1
@@ -135,6 +143,8 @@ class Surface:
 
 class MagnetLine:
     def __init__(self, beta_mu, top_column_phi_range, top_column_theta_end, column_type):
+        self.column_type = column_type
+
         theta_range_end = np.pi / 2 + beta_mu
         # ограничиваю колонкой
         theta_range_end = min((np.pi - top_column_theta_end), theta_range_end)
@@ -156,3 +166,10 @@ class MagnetLine:
             # для нижней колонки меняем phi, theta. mask_array будет такой же
             self.theta_range = (np.pi - self.theta_range)  # [::-1]?
             self.phi_range = self.phi_range + np.pi
+
+        self.array_normal = self.create_array_normal(self.phi_range, self.theta_range)
+
+    def create_array_normal(self, phi_range, theta_range):
+        # беру только внутренние нормали, так как для расчета отраженного необходимо как раз нормали вовнутрь
+        array_normal = -1 * matrix.newE_n_n(phi_range, theta_range)
+        return array_normal
