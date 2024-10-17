@@ -3,6 +3,7 @@ import scipy.integrate
 from scipy import interpolate
 
 import config
+import newService
 
 
 def create_ds_for_integral(surface):
@@ -16,7 +17,6 @@ def create_ds_for_integral(surface):
     return tilda_s
 
 
-
 def calc_L(surface, T_eff, cos_tensor):
     tilda_s = create_ds_for_integral(surface)
     L = np.abs(4 * config.sigm_Stf_Bolc * scipy.integrate.simps(
@@ -24,8 +24,35 @@ def calc_L(surface, T_eff, cos_tensor):
     return L
 
 
-def calc_L_nu():
-    ...
+def calculate_total_luminosity(surface, T_eff):
+    # emission power
+    tilda_s = create_ds_for_integral(surface)
+    tensor = np.ones((config.N_phi_accretion, config.N_theta_accretion))
+
+    emission_power = (4 * config.sigm_Stf_Bolc * scipy.integrate.simps(
+        scipy.integrate.simps(T_eff ** 4 * tensor * tilda_s, surface.theta_range), surface.phi_range))
+    return emission_power
+
+
+def calc_L_nu(surface, T_eff, cos_tensor):
+    ''' распределение L_nu от фазы на какой-то энергии излучения '''
+
+    L_nu = np.empty(config.N_phase, dtype=object)
+
+    tilda_s = create_ds_for_integral(surface)
+    for i, energy in enumerate(config.energy_arr):
+        freq = newService.get_frequency_from_energy(energy)
+        plank_func = newService.plank_energy_on_frequency(freq, T_eff)
+
+        L_nu[i] = 4 * np.pi * np.abs(scipy.integrate.simps(
+            scipy.integrate.simps(plank_func * cos_tensor * tilda_s, surface.theta_range), surface.phi_range))
+
+    return L_nu
+
+
+# for energy_index in range(config.N_energy - 1):
+#     current_energy_min = config.energy_arr[energy_index]
+#     current_energy_max = config.energy_arr[energy_index + 1]
 
 
 # save

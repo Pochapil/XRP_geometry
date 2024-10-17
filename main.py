@@ -48,7 +48,12 @@ for phase_index in range(config.N_phase):
 accr_col_surfs = [curr_configuration.top_column.outer_surface, curr_configuration.top_column.inner_surface,
                   curr_configuration.bot_column.outer_surface, curr_configuration.bot_column.inner_surface]
 
+T_eff = curr_configuration.top_column.T_eff
+print(integralsService.calculate_total_luminosity(curr_configuration.top_column.inner_surface, T_eff))
+print(curr_configuration.top_column.L_x)
+
 L = np.empty(4, dtype=object)
+L_nu = np.empty(4, dtype=object)
 
 for i, surface in enumerate(accr_col_surfs):
     # тензор косинусов между нормалью и направлением на наблюдателя размером phase x phi x theta
@@ -90,14 +95,14 @@ for i, surface in enumerate(accr_col_surfs):
                     new_cos_psi_range[phase_index, phi_index, theta_index] = 0
     new_cos_psi_range = new_cos_psi_range * tensor_shadows_NS * tensor_shadows_columns * tensor_tau
 
-    L[i] = integralsService.calc_L(surface, curr_configuration.top_column.T_eff, new_cos_psi_range)
+    L[i] = integralsService.calc_L(surface, T_eff, new_cos_psi_range)
     # save
-
-    # calc_L_nu()
+    L_nu[i] = integralsService.calc_L_nu(surface, T_eff, new_cos_psi_range)
     # save
+    # calc PF
 
-# calc PF
 print(L)
+print(L_nu)
 plot_package.plot_scripts.plot_L(L)
 
 magnet_line_surfs = []
