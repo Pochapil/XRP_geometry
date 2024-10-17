@@ -3,7 +3,7 @@ import time
 
 import accretingNS
 import config
-from geometricTask import matrix
+from geometry import matrix
 import pathService
 import shadows
 import integralsService
@@ -55,7 +55,8 @@ print(curr_configuration.top_column.L_x)
 L = np.empty(4, dtype=object)
 L_nu = np.empty(4, dtype=object)
 
-for i, surface in enumerate(accr_col_surfs):
+
+def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=False):
     # тензор косинусов между нормалью и направлением на наблюдателя размером phase x phi x theta
     # умножаем скалярно phi x theta x 3 на phase x 3 (по последнему индексу) и делаем reshape.
     cos_psi_rotation_matrix = np.einsum('ijl,tl->tij', surface.array_normal, obs_matrix)
@@ -67,6 +68,11 @@ for i, surface in enumerate(accr_col_surfs):
 
     # old_cos_psi_range = cos_psi_rotation_matrix.copy()
     new_cos_psi_range = cos_psi_rotation_matrix.copy()
+
+    if mask_flag:
+        mask = np.zeros_like(new_cos_psi_range).astype(bool)
+        mask += surface.mask_array
+        new_cos_psi_range[mask] = 0
 
     for phase_index in range(config.N_phase):
         for phi_index in range(config.N_phi_accretion):
@@ -86,14 +92,20 @@ for i, surface in enumerate(accr_col_surfs):
 
                         tensor_tau[phase_index, phi_index, theta_index] = \
                             shadows.get_tau_with_dipole(surface, phi_index, theta_index, obs_matrix[phase_index],
-                                                        solutions, surface.surf_R_e, beta_mu,
+                                                        solutions, surface.surf_R_e, curr_configuration.beta_mu,
                                                         curr_configuration.M_accretion_rate,
                                                         curr_configuration.top_column.inner_surface,
                                                         curr_configuration.bot_column.inner_surface,
-                                                        a_portion)
+                                                        curr_configuration.a_portion)
                 else:
                     new_cos_psi_range[phase_index, phi_index, theta_index] = 0
     new_cos_psi_range = new_cos_psi_range * tensor_shadows_NS * tensor_shadows_columns * tensor_tau
+
+    return new_cos_psi_range
+
+
+for i, surface in enumerate(accr_col_surfs):
+    new_cos_psi_range = calc_shadows_and_tau(curr_configuration, surface, obs_matrix)
 
     L[i] = integralsService.calc_L(surface, T_eff, new_cos_psi_range)
     # save
@@ -105,12 +117,20 @@ print(L)
 print(L_nu)
 plot_package.plot_scripts.plot_L(L)
 
-magnet_line_surfs = []
-for surf in magnet_line_surfs:
-    # shadows
-    # calc shadowed_matrix (ns + columns)
-    # tau
-    # calc tau_matrix
+magnet_line_surfs = [curr_configuration.top_magnet_lines, curr_configuration.bot_magnet_lines]
+
+L = np.empty(2, dtype=object)
+L_nu = np.empty(2, dtype=object)
+
+for i, surface in enumerate(magnet_line_surfs):
+    xyz_magnet_line = matrix.get_xyz_coord(surface, normalize=True)  # вектор на отражающую площадку
+    # -xyz потому что берем угол от нормали к НЗ
+    cos_alpha_matrix = np.einsum('ijl,ijl->ij', surface.array_normal, -xyz_magnet_line)
+
+    new_cos_psi_range = calc_shadows_and_tau(curr_configuration, surface, obs_matrix, True)
+    print(new_cos_psi_range)
+
+    L[i] = integralsService.calc_scatter_L(surface, curr_configuration.top_column.L_x, new_cos_psi_range)
 
     # УЧЕСТЬ tau в отражаемой точке!!!!!!!!!
 
@@ -128,59 +148,4 @@ for surf in magnet_line_surfs:
     # save
     # calc nu L nu
 
-    # tij -> ti -> t
-    # scipy.integrate(axis=-1) --- можно интегрировать по тензору.
-
-# False - т.к. мне нужны внутренние нормали
-#         normal_array = self.outer_surface.create_array_normal(self.magnet_lines_phi_range,
-#                                                               self.magnet_lines_theta_range, False)
-#         # sum_intense изотропная светимость ( * 4 pi еще надо)
-#         # для интеграла по simpson
-#         cos_psi_range_final = []
-#         for t in range(config.t_max):
-#             cos_psi_range = np.empty([config.N_phi_accretion, config.N_theta_accretion])
-#             # поворот
-#             phi_mu = config.phi_mu_0 + config.omega_ns * config.grad_to_rad * t
-#             # расчет матрицы поворота в магнитную СК и вектора на наблюдателя
-#             A_matrix_analytic = matrix.newMatrixAnalytic(config.phi_rotate, config.betta_rotate, phi_mu,
-#                                                          updated_betta_mu)
-#             e_obs_mu = np.dot(A_matrix_analytic, e_obs)  # переход в магнитную СК
-#             for i in range(config.N_phi_accretion):
-#                 for j in range(config.N_theta_accretion):
-#                     # умножать на N_theta
-#                     # cos_psi_range[i, j] = np.dot(e_obs_mu, self.array_normal[i * config.N_theta_accretion + j])
-#                     cos_psi_range[i, j] = np.dot(e_obs_mu, normal_array[i][j])
-#                     if self.magnet_lines_mask_array[i, j]:
-#                         cos_psi_range[i, j] = 0
-#                     elif cos_psi_range[i, j] > 0:
-#                         # проверка на пересечения
-#                         r = self.outer_surface.R_e / config.R_ns * np.sin(self.magnet_lines_theta_range[j]) ** 2
-#
-#                         origin_x = np.sin(self.magnet_lines_theta_range[j]) * np.cos(self.magnet_lines_phi_range[i]) * r
-#                         origin_y = np.sin(self.magnet_lines_theta_range[j]) * np.sin(self.magnet_lines_phi_range[i]) * r
-#                         origin_z = np.cos(self.magnet_lines_theta_range[j]) * r
-#
-#                         direction_x = e_obs_mu[0, 0]
-#                         direction_y = e_obs_mu[0, 1]
-#                         direction_z = e_obs_mu[0, 2]
-#
-#                         if accretionColumnService.intersection_with_sphere(origin_x, origin_y, origin_z, direction_x,
-#                                                                            direction_y, direction_z):
-#                             cos_psi_range[i, j] = 0
-#                         else:
-#                             cos_psi_range[i, j] *= accretionColumnService.get_vals(self.magnet_lines_phi_range[i],
-#                                                                                    self.magnet_lines_theta_range[j],
-#                                                                                    e_obs_mu, origin_x, origin_y,
-#                                                                                    origin_z, direction_x, direction_y,
-#                                                                                    direction_z,
-#                                                                                    self.outer_surface.ksi_shock,
-#                                                                                    top_column_phi_range,
-#                                                                                    bot_column_phi_range,
-#                                                                                    top_column_theta_range,
-#                                                                                    bot_column_theta_range,
-#                                                                                    self.outer_surface.R_e,
-#                                                                                    r, updated_betta_mu)
-#                     else:
-#                         cos_psi_range[i, j] = 0
-#             cos_psi_range_final.append(cos_psi_range)
-#         self.magnet_lines_cos_psi_range = cos_psi_range_final
+plot_package.plot_scripts.plot_L(L)
