@@ -1,5 +1,7 @@
 import numpy as np
 
+import config
+
 
 # матрицы поворота
 def newRx(f):
@@ -129,4 +131,48 @@ def newE_n_n(phi_sphere, theta_sphere):
     res = -2 * np.cos(theta_sphere)[np.newaxis, :, np.newaxis] * newE_theta_n(phi_sphere, theta_sphere)
     res += np.sin(theta_sphere)[np.newaxis, :, np.newaxis] * newE_r_n(phi_sphere, theta_sphere)
     res /= ((3 * np.cos(theta_sphere)[np.newaxis, :, np.newaxis] ** 2 + 1) ** (1 / 2))
+    return res
+
+
+# scatter_point_coord_matrix = np.dstack(np.meshgrid(x, y, z))
+def get_xyz_coord(surface, normalize=False):
+    r = surface.surf_R_e / config.R_ns * np.sin(surface.theta_range) ** 2
+    if normalize:
+        r = 1
+    x = r * np.sin(surface.theta_range)[np.newaxis, :] * np.cos(surface.phi_range)[:, np.newaxis]
+    y = r * np.sin(surface.theta_range)[np.newaxis, :] * np.sin(surface.phi_range)[:, np.newaxis]
+    z = r * np.cos(surface.theta_range) * np.ones_like(surface.phi_range)[:, np.newaxis]
+    res = np.hstack((x, y, z)).reshape((config.N_phi_accretion, config.N_theta_accretion, 3), order='F')
+    return res
+
+
+def vec_to_angles(vector):
+    x = vector[0]
+    y = vector[1]
+    z = vector[2]
+    r = (x ** 2 + y ** 2 + z ** 2) ** (1 / 2)
+    theta = np.arccos(z / r)
+    phi = np.arctan2(y, x)
+    return phi, theta
+
+
+def vec_to_coord(vector):
+    x = vector[0]
+    y = vector[1]
+    z = vector[2]
+    return x, y, z
+
+
+def get_cartesian_from_spherical(r, theta, phi):
+    x = r * np.sin(theta) * np.cos(phi)
+    y = r * np.sin(theta) * np.sin(phi)
+    z = r * np.cos(theta)
+    return x, y, z
+
+
+def get_xyz_coord_angles(r, phi_arr, theta_arr):
+    x = r * np.sin(theta_arr)[np.newaxis, :] * np.cos(phi_arr)[:, np.newaxis]
+    y = r * np.sin(theta_arr)[np.newaxis, :] * np.sin(phi_arr)[:, np.newaxis]
+    z = r * np.cos(theta_arr) * np.ones_like(phi_arr)[:, np.newaxis]
+    res = np.hstack((x, y, z)).reshape((phi_arr.shape[0], theta_arr.shape[0], 3), order='F')
     return res
