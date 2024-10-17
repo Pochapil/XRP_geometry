@@ -125,11 +125,19 @@ def check_shadow_with_dipole(surface, phi_index, theta_index, obs_vector, soluti
 
 
 def get_tau_for_opacity(phi, theta, R_e, M_accretion_rate, a_portion, obs_vector):
+    '''очень маленькие cos = 0.005??'''
     normal = matrix.newE_n(phi, theta)
-    cos_alpha = np.dot(normal, obs_vector)
+    cos_alpha = np.dot(normal, obs_vector)  # /(np.linalg.norm(normal) * np.linalg.norm(obs_vector))
     tau = config.k * M_accretion_rate * newService.get_delta_distance(theta, R_e) / (
             newService.get_A_normal(theta, R_e, a_portion) * newService.get_free_fall_velocity(theta, R_e))
     tau /= cos_alpha
+    return tau
+
+
+def get_tau_for_scatter_with_cos(theta_range, R_e, M_accretion_rate, a_portion, cos_alpha):
+    tau = config.k * M_accretion_rate * newService.get_delta_distance(theta_range, R_e) / (
+            newService.get_A_normal(theta_range, R_e, a_portion) * newService.get_free_fall_velocity(theta_range, R_e))
+    tau = tau[np.newaxis, :] / cos_alpha
     return tau
 
 
