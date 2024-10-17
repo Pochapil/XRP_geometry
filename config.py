@@ -28,9 +28,12 @@ dRe_div_Re = 0.25  # взял просто число
 ksi_rad = 3 / 2
 ksi_param = 0.5  # между 1 и 2 формулой в статье - размер магнитосферы
 k = 0.35  # opacity непрозрачность [см**2 / г]
+
 new_magnet_lines_flag = True
 tau_flag = True
+NS_shadow_flag = True
 FLAG_PHI_0_OLD = False
+FLAG_R_E_OLD = False
 
 tau_cutoff = 0
 opacity_above_shock = 0  # непрозрачность вещества над ударной волной: 0 - полностью прозрачное, 1 - непрозрачное
@@ -76,12 +79,6 @@ phi_rotate = np.deg2rad(0)
 # угол между собственным вращением НЗ и магнитной осью
 
 phi_mu_0 = np.deg2rad(0)
-
-NS_shadow_flag = True
-# print(PROJECT_DIR)
-
-
-# print(PROJECT_DIR + full_file_folder)
 
 # для pretty графиков - индекс по энергии и сколько subfigures
 N_column_plot = 5

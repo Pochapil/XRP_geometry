@@ -48,7 +48,7 @@ class AccretionColumn:
         # попробую что
         # R_e_outer_surface, R_e_inner_surface = self.R_e, self.R_e
         self.R_e_outer_surface, self.R_e_inner_surface = (1 + config.dRe_div_Re) * R_e, R_e
-        if config.FLAG_PHI_0_OLD:
+        if config.FLAG_R_E_OLD:
             self.R_e_outer_surface, self.R_e_inner_surface = R_e, R_e  # допущение что толщина = 0
 
         M_accretion_rate = mc2 * config.L_edd / config.c ** 2
