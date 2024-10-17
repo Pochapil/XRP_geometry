@@ -31,10 +31,10 @@ class AccretingPulsarConfiguration:
         self.bot_column = AccretionColumn(self.R_e, mu, mc2, self.a_portion, self.phi_0,
                                           column_type=column_surf_types['bot'])
 
-        self.top_magnet_lines = ...
-        self.bot_magnet_lines = ...
-
-        pass
+        self.top_magnet_lines = MagnetLine(self.beta_mu, self.top_column.inner_surface.phi_range,
+                                           self.top_column.inner_surface.theta_range[-1], self.top_column.column_type)
+        self.bot_magnet_lines = MagnetLine(self.beta_mu, self.top_column.inner_surface.phi_range,
+                                           self.top_column.inner_surface.theta_range[-1], self.bot_column.column_type)
 
 
 class AccretionColumn:
@@ -134,5 +134,25 @@ class Surface:
 
 
 class MagnetLine:
-    def __init__(self):
-        ...
+    def __init__(self, beta_mu, top_column_phi_range, top_column_theta_end, column_type):
+        theta_range_end = np.pi / 2 + beta_mu
+        # ограничиваю колонкой
+        theta_range_end = min((np.pi - top_column_theta_end), theta_range_end)
+        theta_range_begin = top_column_theta_end
+
+        self.theta_range = np.linspace(theta_range_begin, theta_range_end, config.N_theta_accretion)
+        self.phi_range = top_column_phi_range
+
+        self.mask_array = np.zeros((config.N_phi_accretion, config.N_theta_accretion)).astype(bool)
+        # mask = np.zeros_like(x).astype(bool)
+
+        for i, phi in enumerate(self.phi_range):
+            for j, theta in enumerate(self.theta_range):
+                theta_end = np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(phi))
+                if theta > theta_end:
+                    self.mask_array[i][j] = True
+
+        if column_type == column_surf_types['bot']:
+            # для нижней колонки меняем phi, theta. mask_array будет такой же
+            self.theta_range = (np.pi - self.theta_range)  # [::-1]?
+            self.phi_range = self.phi_range + np.pi
