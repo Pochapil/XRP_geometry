@@ -130,3 +130,57 @@ for surf in magnet_line_surfs:
 
     # tij -> ti -> t
     # scipy.integrate(axis=-1) --- можно интегрировать по тензору.
+
+# False - т.к. мне нужны внутренние нормали
+#         normal_array = self.outer_surface.create_array_normal(self.magnet_lines_phi_range,
+#                                                               self.magnet_lines_theta_range, False)
+#         # sum_intense изотропная светимость ( * 4 pi еще надо)
+#         # для интеграла по simpson
+#         cos_psi_range_final = []
+#         for t in range(config.t_max):
+#             cos_psi_range = np.empty([config.N_phi_accretion, config.N_theta_accretion])
+#             # поворот
+#             phi_mu = config.phi_mu_0 + config.omega_ns * config.grad_to_rad * t
+#             # расчет матрицы поворота в магнитную СК и вектора на наблюдателя
+#             A_matrix_analytic = matrix.newMatrixAnalytic(config.phi_rotate, config.betta_rotate, phi_mu,
+#                                                          updated_betta_mu)
+#             e_obs_mu = np.dot(A_matrix_analytic, e_obs)  # переход в магнитную СК
+#             for i in range(config.N_phi_accretion):
+#                 for j in range(config.N_theta_accretion):
+#                     # умножать на N_theta
+#                     # cos_psi_range[i, j] = np.dot(e_obs_mu, self.array_normal[i * config.N_theta_accretion + j])
+#                     cos_psi_range[i, j] = np.dot(e_obs_mu, normal_array[i][j])
+#                     if self.magnet_lines_mask_array[i, j]:
+#                         cos_psi_range[i, j] = 0
+#                     elif cos_psi_range[i, j] > 0:
+#                         # проверка на пересечения
+#                         r = self.outer_surface.R_e / config.R_ns * np.sin(self.magnet_lines_theta_range[j]) ** 2
+#
+#                         origin_x = np.sin(self.magnet_lines_theta_range[j]) * np.cos(self.magnet_lines_phi_range[i]) * r
+#                         origin_y = np.sin(self.magnet_lines_theta_range[j]) * np.sin(self.magnet_lines_phi_range[i]) * r
+#                         origin_z = np.cos(self.magnet_lines_theta_range[j]) * r
+#
+#                         direction_x = e_obs_mu[0, 0]
+#                         direction_y = e_obs_mu[0, 1]
+#                         direction_z = e_obs_mu[0, 2]
+#
+#                         if accretionColumnService.intersection_with_sphere(origin_x, origin_y, origin_z, direction_x,
+#                                                                            direction_y, direction_z):
+#                             cos_psi_range[i, j] = 0
+#                         else:
+#                             cos_psi_range[i, j] *= accretionColumnService.get_vals(self.magnet_lines_phi_range[i],
+#                                                                                    self.magnet_lines_theta_range[j],
+#                                                                                    e_obs_mu, origin_x, origin_y,
+#                                                                                    origin_z, direction_x, direction_y,
+#                                                                                    direction_z,
+#                                                                                    self.outer_surface.ksi_shock,
+#                                                                                    top_column_phi_range,
+#                                                                                    bot_column_phi_range,
+#                                                                                    top_column_theta_range,
+#                                                                                    bot_column_theta_range,
+#                                                                                    self.outer_surface.R_e,
+#                                                                                    r, updated_betta_mu)
+#                     else:
+#                         cos_psi_range[i, j] = 0
+#             cos_psi_range_final.append(cos_psi_range)
+#         self.magnet_lines_cos_psi_range = cos_psi_range_final
