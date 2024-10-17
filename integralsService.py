@@ -24,6 +24,17 @@ def calc_L(surface, T_eff, cos_tensor):
     return L
 
 
+def calc_scatter_L(surface, L_x, cos_tensor):
+    tilda_s = create_ds_for_integral(surface)
+
+    d = surface.surf_R_e * np.sin(surface.theta_range) ** 2  # distance to area
+    coeff = 1 / (4 * np.pi * d ** 2)
+    L = L_x * np.abs(scipy.integrate.simps(scipy.integrate.simps(cos_tensor * tilda_s * coeff, surface.theta_range),
+                                           surface.phi_range))
+
+    return L
+
+
 def calculate_total_luminosity(surface, T_eff):
     # emission power
     tilda_s = create_ds_for_integral(surface)
@@ -72,8 +83,8 @@ np.array([np.sin(theta_obs) * np.cos(phi),
 '''
 
 
-def calc_scatter_L():
-    ...
+# def calc_scatter_L():
+#     ...
 
 
 # save
