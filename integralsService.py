@@ -16,12 +16,6 @@ def create_ds_for_integral(surface):
     return tilda_s
 
 
-# shadows
-# calc shadowed_matrix (ns + columns)
-# tau
-# calc tau_matrix
-
-# для разных матриц можем посчитать L и посмотреть какой вклад будет.
 
 def calc_L(surface, T_eff, cos_tensor):
     tilda_s = create_ds_for_integral(surface)
@@ -30,8 +24,6 @@ def calc_L(surface, T_eff, cos_tensor):
     return L
 
 
-# save
-# calc PF
 def calc_L_nu():
     ...
 
