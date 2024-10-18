@@ -145,8 +145,11 @@ if __name__ == '__main__':
                                                                   curr_configuration.M_accretion_rate, a_portion,
                                                                   cos_alpha_matrix)
 
-        L[i] = integralsService.calc_scatter_L(magnet_surface, curr_configuration.top_column.L_x, new_cos_psi_range,
-                                               tau_scatter_matrix)
+        L_x = integralsService.calculate_total_luminosity(curr_configuration.top_column.inner_surface, T_eff)
+        # надо брать не curr_configuration.top_column.L_x а посчитанный через интеграл! хоть они и отличаются на сильно
+        L[i] = integralsService.calc_scatter_L(magnet_surface, L_x, new_cos_psi_range, tau_scatter_matrix)
+
+        L_nu[i] = integralsService.calc_scatter_L_nu(magnet_surface, T_eff, new_cos_psi_range, tau_scatter_matrix)
 
         # save
 
@@ -155,3 +158,4 @@ if __name__ == '__main__':
         # save
 
     plot_package.plot_scripts.plot_L(L)
+    print(L_nu)
