@@ -20,7 +20,14 @@ def create_file_path(file_path):
 
 def save_arr_as_txt(arr, file_folder, file_name):
     full_file_name = file_folder / pathlib.Path(file_name)
-    np.savetxt(full_file_name, arr)
+    create_file_path(file_folder)
+    np.savetxt(full_file_name, arr)  # encoding='utf-8'
+
+
+def save_arr_as_txt_from_str(arr, file_folder, file_name):
+    full_file_name = file_folder + file_name
+    create_file_path(file_folder)
+    np.savetxt(full_file_name, arr)  # encoding='utf-8'
 
 
 def load_arr_from_txt(file_folder, file_name):

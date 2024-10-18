@@ -1,7 +1,8 @@
-import numpy as np
-import time
 from itertools import repeat
 import multiprocessing as mp
+import pathlib
+import time
+import numpy as np
 
 import accretingNS
 import config
@@ -119,6 +120,36 @@ def make_save_values_file():
         f.write(f'avg L with scatter / L_x = {number:.6f}\n')
 
 
+def save_some_files():
+    file_name = 'surfaces_T_eff.txt'
+    save.save_arr_as_txt(curr_configuration.top_column.T_eff, cur_path, file_name)
+
+    file_name = "save_phi_range.txt"
+    save.save_arr_as_txt(curr_configuration.top_column.outer_surface.phi_range, cur_path, file_name)
+
+    file_name = "save_theta_range.txt"
+    save.save_arr_as_txt(curr_configuration.top_column.outer_surface.theta_range, cur_path, file_name)
+
+    tau_array = shadows.get_tau_for_opacity_old(curr_configuration.top_magnet_lines.theta_range,
+                                                curr_configuration.R_e, curr_configuration.M_accretion_rate,
+                                                curr_configuration.a_portion)
+    file_name = "save_tau_range.txt"
+    save.save_arr_as_txt(tau_array, cur_path, file_name)
+
+    ans = np.apply_along_axis(matrix.vec_to_angles, axis=1, arr=obs_matrix)
+    observer_phi = ans[:, 0]
+    observer_theta = ans[:, 1]
+    file_name = 'observer_angles.txt'
+    np.savetxt(cur_path / pathlib.Path(file_name), np.vstack((observer_phi, observer_theta)), delimiter=',')
+    # save.save_arr_as_txt(np.vstack((observer_phi, observer_theta)), cur_path, file_name)
+
+    file_name = 'total_luminosity_of_surfaces.txt'
+    save.save_arr_as_txt(np.append(L_surfs, np.sum(L_surfs, axis=0)[np.newaxis, :], axis=0), cur_path, file_name)
+
+    file_name = "energy.txt"
+    save.save_arr_as_txt(config.energy_arr, cur_path, file_name)
+
+
 if __name__ == '__main__':
     mu = 0.1e31
     beta_mu = 40
@@ -134,21 +165,6 @@ if __name__ == '__main__':
     cur_path = cur_dir_saved.get_path()
     print(cur_path)
     save.create_file_path(cur_path)
-
-    file_name = 'surfaces_T_eff.txt'
-    save.save_arr_as_txt(curr_configuration.top_column.T_eff, cur_path, file_name)
-
-    file_name = "save_phi_range.txt"
-    save.save_arr_as_txt(curr_configuration.top_column.outer_surface.phi_range, cur_path, file_name)
-
-    file_name = "save_theta_range.txt"
-    save.save_arr_as_txt(curr_configuration.top_column.outer_surface.theta_range, cur_path, file_name)
-
-    tau_array = shadows.get_tau_for_opacity_old(curr_configuration.top_magnet_lines.theta_range,
-                                                curr_configuration.R_e, curr_configuration.M_accretion_rate,
-                                                curr_configuration.a_portion)
-    file_name = "save_tau_range.txt"
-    save.save_arr_as_txt(tau_array, cur_path, file_name)
 
     theta_obs_rad = np.deg2rad(theta_obs)
     beta_mu_rad = np.deg2rad(beta_mu)
@@ -184,8 +200,8 @@ if __name__ == '__main__':
         L_surfs[i] = integralsService.calc_L(surface, curr_configuration.top_column.T_eff, new_cos_psi_range)
         L_nu_surfs[i] = integralsService.calc_L_nu(surface, curr_configuration.top_column.T_eff, new_cos_psi_range)
 
-    PF_L_surf = integralsService.get_PF(np.sum(L_surfs, axis=0))
-    PF_L_nu_surf = integralsService.get_PF(np.sum(L_nu_surfs, axis=0))
+    PF_L_surfs = integralsService.get_PF(np.sum(L_surfs, axis=0))
+    PF_L_nu_surfs = integralsService.get_PF(np.sum(L_nu_surfs, axis=0))
 
     plot_package.plot_scripts.plot_L(L_surfs)
 
@@ -234,3 +250,31 @@ if __name__ == '__main__':
     PF_L_nu_surf = integralsService.get_PF(np.sum(L_nu_scatter, axis=0))
 
     make_save_values_file()
+    save_some_files()
+
+    for i, energy in enumerate(config.energy_arr):
+        file_name = f"L_nu_of_energy_{energy:.2f}_KeV_of_surfaces.txt"
+        save.save_arr_as_txt(np.sum(L_nu_surfs, axis=0)[i], cur_path / ('L_nu/' + 'txt/'), file_name)
+
+        file_name = f"nu_L_nu_of_energy_{energy:.2f}_KeV_of_surfaces.txt"
+        freq = newService.get_frequency_from_energy(energy)
+        save.save_arr_as_txt(np.sum(L_nu_surfs, axis=0)[i] * freq, cur_path / ('nu_L_nu/' + 'txt/'), file_name)
+
+    file_name = "PF.txt"
+    save.save_arr_as_txt(PF_L_nu_surf, cur_path / 'L_nu/', file_name)
+    save.save_arr_as_txt(PF_L_nu_surf, cur_path / 'nu_L_nu/', file_name)
+
+    file_name = "scattered_energy_top.txt"
+    save.save_arr_as_txt(L_scatter[0], cur_path / 'scattered_on_magnet_lines/', file_name)
+
+    file_name = "scattered_energy_bot.txt"
+    save.save_arr_as_txt(L_scatter[1], cur_path / 'scattered_on_magnet_lines/', file_name)
+
+    file_name = "top_column_scatter_L_nu.txt"
+    save.save_arr_as_txt(L_nu_scatter[0], cur_path / ('scattered_on_magnet_lines/' + 'L_nu/'), file_name)
+
+    file_name = "bot_column_scatter_L_nu.txt"
+    save.save_arr_as_txt(L_nu_scatter[1], cur_path / ('scattered_on_magnet_lines/' + 'L_nu/'), file_name)
+
+
+
