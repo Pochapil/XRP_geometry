@@ -32,8 +32,10 @@ k = 0.35  # opacity непрозрачность [см**2 / г]
 new_magnet_lines_flag = True
 tau_flag = True
 NS_shadow_flag = True
+
 FLAG_PHI_0_OLD = False
 FLAG_R_E_OLD = False
+outer_R_e_flag = False  # if true = обрезаем по ksi; False - по тета (тета iner == тета outer)
 
 tau_cutoff = 0
 opacity_above_shock = 0  # непрозрачность вещества над ударной волной: 0 - полностью прозрачное, 1 - непрозрачное
