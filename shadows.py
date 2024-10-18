@@ -71,7 +71,7 @@ def get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector, solu
         direction_x, direction_y, direction_z = matrix.vec_to_coord(obs_vector)
         origin_x, origin_y, origin_z = matrix.get_cartesian_from_spherical(r, origin_theta, origin_phi)
 
-        direction_t = solution.real * r
+        direction_t = solution.real * r  # ???? wtf = это был вывод (4.2 в дипломе) t = R_0 * x
         intersect_point = np.array([origin_x, origin_y, origin_z]) + direction_t * np.array(
             [direction_x, direction_y, direction_z])
 
@@ -132,25 +132,27 @@ def get_tau_for_opacity(phi, theta, R_e_of_atenuation_surf, M_accretion_rate, a_
     tau = config.k * M_accretion_rate * newService.get_delta_distance(theta, R_e_of_atenuation_surf)
     tau /= (newService.get_A_normal(theta, R_e_of_atenuation_surf, a_portion)
             * newService.get_free_fall_velocity(theta, R_e_of_atenuation_surf))
-    print(f'{tau=}')
+    # print(f'{tau=}')
     tau /= cos_alpha
     # print(f'{cos_alpha=}')
     return tau
 
 
-def get_tau_for_scatter_with_cos(theta_range, R_e, M_accretion_rate, a_portion, cos_alpha):
-    tau = config.k * M_accretion_rate * newService.get_delta_distance(theta_range, R_e) / (
-            newService.get_A_normal(theta_range, R_e, a_portion) * newService.get_free_fall_velocity(theta_range, R_e))
+def get_tau_for_scatter_with_cos(theta_range, R_e_emission_surf, M_accretion_rate, a_portion, cos_alpha):
+    tau = config.k * M_accretion_rate * newService.get_delta_distance(theta_range, R_e_emission_surf)
+    tau /= (newService.get_A_normal(theta_range, R_e_emission_surf, a_portion)
+            * newService.get_free_fall_velocity(theta_range, R_e_emission_surf))
     tau = tau[np.newaxis, :] / cos_alpha
-    print(f'tau_min = {np.min(tau)}, max = {np.max(tau)}')
+    print(f'cos_alpha_min = {np.min(cos_alpha)}, cos_alpha_max = {np.max(cos_alpha)}')
+    # print(f'tau_min = {np.min(tau)}, max = {np.max(tau)}')
     return tau
 
 
 def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, R_e_of_atenuation_surf, beta_mu,
                         M_accretion_rate, top_column, bot_column, a_portion):
-    '''R_e_of_inner_magnet_line = inner surf!!!!! я беру пересечения только с внутренней (пока что)'''
+    '''R_e_of_atenuation_surf = inner surf!!!!! я беру пересечения только с внутренней (пока что)'''
     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
-    # здесь радиус основания
+    # здесь радиус основания, радиус излучающей так как r = для положения излучающей
     r = surface.surf_R_e / config.R_ns * np.sin(origin_theta) ** 2
 
     for solution in solutions:
