@@ -86,16 +86,3 @@ def get_PF(L):
     min_val = np.min(L, axis=-1)
     max_val = np.max(L, axis=-1)
     return (max_val - min_val) / (max_val + min_val)
-
-# for energy_index in range(config.N_energy - 1):
-#     current_energy_min = config.energy_arr[energy_index]
-#     current_energy_max = config.energy_arr[energy_index + 1]
-
-
-# save
-
-
-# shadows
-# calc shadowed_matrix (ns + columns)
-# tau
-# calc tau_matrix
