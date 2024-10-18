@@ -76,7 +76,7 @@ def calc_scatter_L_nu(surface, T_eff, cos_tensor, tau_scatter_matrix=None):
         coeff = coeff * (1 - np.exp(-np.abs(tau_scatter_matrix)))  # УЧЕСТЬ tau в отражаемой точке!!!!!!!!!
         # np.abs ??? хотя вроде бы косинус между нормалью и на НЗ не может быть отрицательным
         # z = (1 - np.exp(-tau_scatter_matrix)) tau = 45-50 ????
-    L_nu = emission_intensity[:, np.newaxis] * np.abs(
+    L_nu = emission_intensity * np.abs(
         scipy.integrate.simps(scipy.integrate.simps(cos_tensor * tilda_s * coeff, surface.theta_range),
                               surface.phi_range))
     return L_nu
