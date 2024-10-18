@@ -144,6 +144,12 @@ if __name__ == '__main__':
     file_name = "save_theta_range.txt"
     save.save_arr_as_txt(curr_configuration.top_column.outer_surface.theta_range, cur_path, file_name)
 
+    tau_array = shadows.get_tau_for_opacity_old(curr_configuration.top_magnet_lines.theta_range,
+                                                curr_configuration.R_e, curr_configuration.M_accretion_rate,
+                                                curr_configuration.a_portion)
+    file_name = "save_tau_range.txt"
+    save.save_arr_as_txt(tau_array, cur_path, file_name)
+
     theta_obs_rad = np.deg2rad(theta_obs)
     beta_mu_rad = np.deg2rad(beta_mu)
 
