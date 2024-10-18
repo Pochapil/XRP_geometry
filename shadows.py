@@ -143,7 +143,7 @@ def get_tau_for_scatter_with_cos(theta_range, R_e_emission_surf, M_accretion_rat
     tau /= (newService.get_A_normal(theta_range, R_e_emission_surf, a_portion)
             * newService.get_free_fall_velocity(theta_range, R_e_emission_surf))
     tau = tau[np.newaxis, :] / cos_alpha
-    print(f'cos_alpha_min = {np.min(cos_alpha)}, cos_alpha_max = {np.max(cos_alpha)}')
+    # print(f'cos_alpha_min = {np.min(cos_alpha)}, cos_alpha_max = {np.max(cos_alpha)}')
     # print(f'tau_min = {np.min(tau)}, max = {np.max(tau)}')
     return tau
 
