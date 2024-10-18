@@ -29,7 +29,8 @@ def calc_scatter_L(surface, L_x, cos_tensor, tau_scatter_matrix=None):
     d = surface.surf_R_e * np.sin(surface.theta_range) ** 2  # distance to area
     coeff = 1 / (4 * np.pi * d ** 2)
     if tau_scatter_matrix is not None:
-        coeff = coeff * (1 - np.exp(-tau_scatter_matrix))  # УЧЕСТЬ tau в отражаемой точке!!!!!!!!! np.abs ???
+        coeff = coeff * (1 - np.exp(-np.abs(tau_scatter_matrix)))  # УЧЕСТЬ tau в отражаемой точке!!!!!!!!!
+        # np.abs ??? хотя вроде бы косинус между нормалью и на НЗ не может быть отрицательным
         # z = (1 - np.exp(-tau_scatter_matrix)) tau = 45-50 ????
     L = L_x * np.abs(scipy.integrate.simps(scipy.integrate.simps(cos_tensor * tilda_s * coeff, surface.theta_range),
                                            surface.phi_range))
@@ -74,8 +75,6 @@ def calc_L_nu(surface, T_eff, cos_tensor):
 # calc shadowed_matrix (ns + columns)
 # tau
 # calc tau_matrix
-
-# УЧЕСТЬ tau в отражаемой точке!!!!!!!!!
 
 '''
 np.array([np.sin(theta_obs) * np.cos(phi),
