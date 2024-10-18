@@ -1,5 +1,7 @@
 import numpy as np
 import time
+from itertools import repeat
+import multiprocessing as mp
 
 import accretingNS
 import config
@@ -69,7 +71,6 @@ def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=Fals
 
 
 if __name__ == '__main__':
-
     mu = 0.1e31
     beta_mu = 40
     mc2 = 100
@@ -116,10 +117,18 @@ if __name__ == '__main__':
 
     # PF_L = np.empty(4)
     # PF_L_nu = np.empty((4, config.N_energy))
+    # print(mp.cpu_count())
+    t1 = time.perf_counter()
+    with mp.Pool(processes=4) as pool:
+        new_cos_psi_range_async = pool.starmap(calc_shadows_and_tau,
+                                               zip(repeat(curr_configuration), accr_col_surfs, repeat(obs_matrix)))
+    t2 = time.perf_counter()
+    print(f'{t2 - t1} seconds')
     # ------------------------------------------------ L_calc ----------------------------------------------------
     for i, surface in enumerate(accr_col_surfs):
-        new_cos_psi_range = calc_shadows_and_tau(curr_configuration, surface, obs_matrix)
-
+        # new_cos_psi_range = calc_shadows_and_tau(curr_configuration, surface, obs_matrix)
+        # print(new_cos_psi_range_async[i][np.abs(new_cos_psi_range_async[i] - new_cos_psi_range) > 1e-3].shape)
+        new_cos_psi_range = new_cos_psi_range_async[i]
         L[i] = integralsService.calc_L(surface, T_eff, new_cos_psi_range)
         # save
         L_nu[i] = integralsService.calc_L_nu(surface, T_eff, new_cos_psi_range)
@@ -139,8 +148,8 @@ if __name__ == '__main__':
 
     magnet_line_surfs = [curr_configuration.top_magnet_lines, curr_configuration.bot_magnet_lines]
 
-    L = np.empty(2, dtype=object)
-    L_nu = np.empty(2, dtype=object)
+    L = np.empty((2, config.N_phase))
+    L_nu = np.empty((2, config.N_energy, config.N_phase))
 
     # ------------------------------------------------ L_scatter ----------------------------------------------------
     for i, magnet_surface in enumerate(magnet_line_surfs):
@@ -174,4 +183,4 @@ if __name__ == '__main__':
         # save
 
     plot_package.plot_scripts.plot_L(L)
-    print(L_nu)
+    # print(L_nu)
