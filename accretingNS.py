@@ -165,6 +165,9 @@ class MagnetLine:
         self.theta_range = np.linspace(theta_range_begin, theta_range_end, config.N_theta_accretion)
         self.phi_range = top_column_phi_range
 
+        # маска - чтобы не портить сетку по teta и phi и оставить ее регулярной
+        # мы просто смотрим что ячейки сетки лежат над диском (для верхних магнитных линий)
+        # для нижней колонки mask_array будет такой же
         self.mask_array = np.zeros((config.N_phi_accretion, config.N_theta_accretion)).astype(bool)
         # mask = np.zeros_like(x).astype(bool)
 
