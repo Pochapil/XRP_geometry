@@ -141,7 +141,7 @@ def get_xyz_coord(surface, normalize=False):
         r = 1
     x = r * np.sin(surface.theta_range)[np.newaxis, :] * np.cos(surface.phi_range)[:, np.newaxis]
     y = r * np.sin(surface.theta_range)[np.newaxis, :] * np.sin(surface.phi_range)[:, np.newaxis]
-    z = r * np.cos(surface.theta_range) * np.ones_like(surface.phi_range)[:, np.newaxis]
+    z = r * np.cos(surface.theta_range)[np.newaxis, :] * np.ones_like(surface.phi_range)[:, np.newaxis]
     res = np.hstack((x, y, z)).reshape((config.N_phi_accretion, config.N_theta_accretion, 3), order='F')
     return res
 
@@ -150,7 +150,8 @@ def vec_to_angles(vector):
     x = vector[0]
     y = vector[1]
     z = vector[2]
-    r = (x ** 2 + y ** 2 + z ** 2) ** (1 / 2)
+    r = np.linalg.norm(vector)
+    # r = (x ** 2 + y ** 2 + z ** 2) ** (1 / 2)
     theta = np.arccos(z / r)
     phi = np.arctan2(y, x)
     return phi, theta
