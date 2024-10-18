@@ -61,9 +61,9 @@ class AccretionColumn:
             mu, M_accretion_rate
         )
 
-        self.outer_surface = Surface(self.R_e_outer_surface, self.a_portion, self.phi_0, self.ksi_shock,
+        self.outer_surface = Surface(self.R_e_outer_surface, self.R_e, self.a_portion, self.phi_0, self.ksi_shock,
                                      self.column_type, surface_type=surface_surf_types['outer'])
-        self.inner_surface = Surface(self.R_e_inner_surface, self.a_portion, self.phi_0, self.ksi_shock,
+        self.inner_surface = Surface(self.R_e_inner_surface, self.R_e, self.a_portion, self.phi_0, self.ksi_shock,
                                      self.column_type, surface_type=surface_surf_types['inner'])
 
         self.correct_T_eff()
@@ -92,18 +92,21 @@ class AccretionColumn:
 
 
 class Surface:
-    def __init__(self, surf_R_e, a_portion, phi_0, ksi_shock, column_type, surface_type):
+    def __init__(self, surf_R_e, col_R_e, a_portion, phi_0, ksi_shock, column_type, surface_type):
         self.surf_R_e = surf_R_e  # R_e на котором сидит - R_e либо R_e + \delta R_e
         self.surface_type = surface_type
 
         self.theta_accretion_begin = newService.get_theta_accretion_begin(self.surf_R_e)
-        if (config.R_ns * ksi_shock / self.surf_R_e) >= 1:
+        # if (config.R_ns * ksi_shock / self.surf_R_e) >= 1:
+        if (config.R_ns * ksi_shock / col_R_e) >= 1:
             # есть набор параметров при которых модель не работает и ударная волна дальше магнитосферы, берем 90
             '''вопрос - мб нужна формула с arctan...'''
             self.theta_accretion_end = np.pi / 2
         else:
             # из усл силовой линии МП : r = R_e sin**2; end: ksi_shock = R_e sin**2
-            self.theta_accretion_end = np.arcsin((config.R_ns * ksi_shock / self.surf_R_e) ** (1 / 2))
+            # беру col_R_e - чтобы обрезать большую колонку по тета а не кси.
+            # self.theta_accretion_end = np.arcsin((config.R_ns * ksi_shock / self.surf_R_e) ** (1 / 2))
+            self.theta_accretion_end = np.arcsin((config.R_ns * ksi_shock / col_R_e) ** (1 / 2))
 
         # для нижней сместить углы
         if column_type == column_surf_types['bot']:
