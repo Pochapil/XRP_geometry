@@ -39,7 +39,7 @@ def calc_L(surface, T_eff, cos_tensor):
 def calc_L_nu(surface, T_eff, cos_tensor):
     ''' распределение L_nu от фазы на какой-то энергии излучения '''
 
-    L_nu = np.empty(config.N_energy, dtype=object)
+    L_nu = np.empty((config.N_energy, config.N_phase))
 
     tilda_s = create_ds_for_integral(surface)
     for i, energy in enumerate(config.energy_arr):
@@ -80,6 +80,12 @@ def calc_scatter_L_nu(surface, T_eff, cos_tensor, tau_scatter_matrix=None):
         scipy.integrate.simps(scipy.integrate.simps(cos_tensor * tilda_s * coeff, surface.theta_range),
                               surface.phi_range))
     return L_nu
+
+
+def get_PF(L):
+    min_val = np.min(L, axis=-1)
+    max_val = np.max(L, axis=-1)
+    return (max_val - min_val) / (max_val + min_val)
 
 # for energy_index in range(config.N_energy - 1):
 #     current_energy_min = config.energy_arr[energy_index]
