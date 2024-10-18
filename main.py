@@ -14,15 +14,15 @@ def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=Fals
     # тензор косинусов между нормалью и направлением на наблюдателя размером phase x phi x theta
     # умножаем скалярно phi x theta x 3 на phase x 3 (по последнему индексу) и делаем reshape.
     cos_psi_rotation_matrix = np.einsum('ijl,tl->tij', surface.array_normal, obs_matrix)
+
     # print(f'obs_matrix = {np.max(np.linalg.norm(obs_matrix, axis=1))}')
     # print(f'array_normal_max = {np.max(np.linalg.norm(surface.array_normal, axis=2))}')
+
     # возможно хранить будем все матрицы.
     # для разных матриц можем посчитать L и посмотреть какой вклад будет.
     tensor_shadows_NS = np.ones_like(cos_psi_rotation_matrix)
     tensor_shadows_columns = np.ones_like(cos_psi_rotation_matrix)
     tensor_tau = np.ones_like(cos_psi_rotation_matrix)
-
-    # old_cos_psi_range = cos_psi_rotation_matrix.copy()
     new_cos_psi_range = cos_psi_rotation_matrix.copy()
 
     if mask_flag:
@@ -35,17 +35,22 @@ def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=Fals
             for theta_index in range(config.N_theta_accretion):
                 if new_cos_psi_range[phase_index, phi_index, theta_index] > 0:
                     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
+                    # сначала проверяем на затмение НЗ
                     if shadows.intersection_with_sphere(surface, origin_phi, origin_theta, obs_matrix[phase_index]):
                         tensor_shadows_NS[phase_index, phi_index, theta_index] = 0
+                    # иначе тяжелые вычисления
                     else:
+                        # расчет для полинома - находим корни для пересечения с внутр поверхностью на магн линии!
                         solutions = shadows.get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta,
                                                                                   obs_matrix[phase_index])
+                        # расчитываем затмение колонкой
                         tensor_shadows_columns[phase_index, phi_index, theta_index] = \
                             shadows.check_shadow_with_dipole(surface, phi_index, theta_index,
                                                              obs_matrix[phase_index], solutions,
                                                              curr_configuration.top_column.inner_surface,
                                                              curr_configuration.bot_column.inner_surface)
                         if tensor_shadows_columns[phase_index, phi_index, theta_index] > 0:
+                            # если затмения нет то считаем ослабление тау
                             tensor_tau[phase_index, phi_index, theta_index] = \
                                 shadows.get_tau_with_dipole(surface, phi_index, theta_index, obs_matrix[phase_index],
                                                             solutions, curr_configuration.top_column.R_e,
@@ -55,6 +60,7 @@ def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=Fals
                                                             curr_configuration.bot_column.inner_surface,
                                                             curr_configuration.a_portion)
                 else:
+                    # если косинус < 0 -> поверхность излучает от наблюдателя и мы не получим вклад в интеграл
                     new_cos_psi_range[phase_index, phi_index, theta_index] = 0
     new_cos_psi_range = new_cos_psi_range * tensor_shadows_NS * tensor_shadows_columns * tensor_tau
     # if tensor_tau[tensor_tau != 1].shape[0] > 0:
@@ -105,8 +111,11 @@ if __name__ == '__main__':
     print(integralsService.calculate_total_luminosity(curr_configuration.top_column.inner_surface, T_eff))
     print(curr_configuration.top_column.L_x)
 
-    L = np.empty(4, dtype=object)
-    L_nu = np.empty(4, dtype=object)
+    L = np.empty((4, config.N_phase))
+    L_nu = np.empty((4, config.N_energy, config.N_phase))
+
+    # PF_L = np.empty(4)
+    # PF_L_nu = np.empty((4, config.N_energy))
     # ------------------------------------------------ L_calc ----------------------------------------------------
     for i, surface in enumerate(accr_col_surfs):
         new_cos_psi_range = calc_shadows_and_tau(curr_configuration, surface, obs_matrix)
@@ -117,8 +126,15 @@ if __name__ == '__main__':
         # save
         # calc PF
 
+        # PF_L[i] = integralsService.get_PF(L[i])
+        # PF_L_nu[i] = integralsService.get_PF(L_nu[i])
+
     # print(L)
     # print(L_nu)
+
+    PF_L = integralsService.get_PF(np.sum(L, axis=0))
+    PF_L_nu = integralsService.get_PF(np.sum(L_nu, axis=0))
+
     plot_package.plot_scripts.plot_L(L)
 
     magnet_line_surfs = [curr_configuration.top_magnet_lines, curr_configuration.bot_magnet_lines]
