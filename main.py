@@ -102,8 +102,8 @@ if __name__ == '__main__':
                       curr_configuration.bot_column.outer_surface, curr_configuration.bot_column.inner_surface]
 
     T_eff = curr_configuration.top_column.T_eff
-    # print(integralsService.calculate_total_luminosity(curr_configuration.top_column.inner_surface, T_eff))
-    # print(curr_configuration.top_column.L_x)
+    print(integralsService.calculate_total_luminosity(curr_configuration.top_column.inner_surface, T_eff))
+    print(curr_configuration.top_column.L_x)
 
     L = np.empty(4, dtype=object)
     L_nu = np.empty(4, dtype=object)
@@ -117,8 +117,8 @@ if __name__ == '__main__':
         # save
         # calc PF
 
-    print(L)
-    print(L_nu)
+    # print(L)
+    # print(L_nu)
     plot_package.plot_scripts.plot_L(L)
 
     magnet_line_surfs = [curr_configuration.top_magnet_lines, curr_configuration.bot_magnet_lines]
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     # ------------------------------------------------ L_scatter ----------------------------------------------------
     for i, magnet_surface in enumerate(magnet_line_surfs):
         new_cos_psi_range = calc_shadows_and_tau(curr_configuration, magnet_surface, obs_matrix, True)
-        print(new_cos_psi_range)
+        # print(new_cos_psi_range)
 
         # УЧЕСТЬ угол падения от центра в отражаемой точке!!!!!!!!!
         xyz_magnet_line = matrix.get_xyz_coord(magnet_surface, normalize=True)  # вектор на отражающую площадку
