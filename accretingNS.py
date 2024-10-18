@@ -97,16 +97,22 @@ class Surface:
         self.surface_type = surface_type
 
         self.theta_accretion_begin = newService.get_theta_accretion_begin(self.surf_R_e)
-        # if (config.R_ns * ksi_shock / self.surf_R_e) >= 1:
-        if (config.R_ns * ksi_shock / col_R_e) >= 1:
-            # есть набор параметров при которых модель не работает и ударная волна дальше магнитосферы, берем 90
-            '''вопрос - мб нужна формула с arctan...'''
-            self.theta_accretion_end = np.pi / 2
+
+        if config.outer_R_e_flag:
+            # обрезать большую колонку по кси.
+            if (config.R_ns * ksi_shock / self.surf_R_e) >= 1:
+                self.theta_accretion_end = np.pi / 2
+            else:
+                self.theta_accretion_end = np.arcsin((config.R_ns * ksi_shock / self.surf_R_e) ** (1 / 2))
         else:
-            # из усл силовой линии МП : r = R_e sin**2; end: ksi_shock = R_e sin**2
             # беру col_R_e - чтобы обрезать большую колонку по тета а не кси.
-            # self.theta_accretion_end = np.arcsin((config.R_ns * ksi_shock / self.surf_R_e) ** (1 / 2))
-            self.theta_accretion_end = np.arcsin((config.R_ns * ksi_shock / col_R_e) ** (1 / 2))
+            if (config.R_ns * ksi_shock / col_R_e) >= 1:
+                # есть набор параметров при которых модель не работает и ударная волна дальше магнитосферы, берем 90
+                '''вопрос - мб нужна формула с arctan...'''
+                self.theta_accretion_end = np.pi / 2
+            else:
+                # из усл силовой линии МП : r = R_e sin**2; end: ksi_shock = R_e sin**2
+                self.theta_accretion_end = np.arcsin((config.R_ns * ksi_shock / col_R_e) ** (1 / 2))
 
         # для нижней сместить углы
         if column_type == column_surf_types['bot']:
