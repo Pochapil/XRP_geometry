@@ -25,7 +25,7 @@ class PathSaver:
 
         fi_0_old = (phi_0 + config.fi_0_dict[a_portion]) % 360
         # поменять название betta_mu на beta. i на theta!
-        self.save_dir = self.prefix_dir / f'i={theta_obs}' / f'betta_mu={beta_mu}'
+        self.save_dir = self.prefix_dir / f'i={theta_obs} betta_mu={beta_mu}'
         # поменять fi_0 на phi_0
         self.save_dir = self.save_dir / f'mc2={mc2}' / f'a={a_portion:.2f} fi_0={fi_0_old}'
 
