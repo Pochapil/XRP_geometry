@@ -65,20 +65,20 @@ def calc_scatter_L(surface, L_x, cos_tensor, tau_scatter_matrix=None):
     return L
 
 
-def calc_scatter_L_nu(surface, T_eff, cos_tensor, tau_scatter_matrix=None):
+def calc_scatter_L_nu(magnet_surface, emission_surface, T_eff, cos_tensor, tau_scatter_matrix=None):
     tensor = np.ones((config.N_phi_accretion, config.N_theta_accretion))
-    emission_intensity = calc_L_nu(surface, T_eff, tensor)
+    emission_intensity = calc_L_nu(emission_surface, T_eff, tensor)
 
-    tilda_s = create_ds_for_integral(surface)
-    d = surface.surf_R_e * np.sin(surface.theta_range) ** 2  # distance to area
+    tilda_s = create_ds_for_integral(magnet_surface)
+    d = magnet_surface.surf_R_e * np.sin(magnet_surface.theta_range) ** 2  # distance to area
     coeff = 1 / (4 * np.pi * d ** 2)
     if tau_scatter_matrix is not None:
         coeff = coeff * (1 - np.exp(-np.abs(tau_scatter_matrix)))  # УЧЕСТЬ tau в отражаемой точке!!!!!!!!!
         # np.abs ??? хотя вроде бы косинус между нормалью и на НЗ не может быть отрицательным
         # z = (1 - np.exp(-tau_scatter_matrix)) tau = 45-50 ????
     L_nu = emission_intensity * np.abs(
-        scipy.integrate.simps(scipy.integrate.simps(cos_tensor * tilda_s * coeff, surface.theta_range),
-                              surface.phi_range))
+        scipy.integrate.simps(scipy.integrate.simps(cos_tensor * tilda_s * coeff, magnet_surface.theta_range),
+                              magnet_surface.phi_range))
     return L_nu
 
 

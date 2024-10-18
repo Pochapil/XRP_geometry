@@ -150,7 +150,6 @@ if __name__ == '__main__':
 
     L = np.empty((2, config.N_phase))
     L_nu = np.empty((2, config.N_energy, config.N_phase))
-
     # ------------------------------------------------ L_scatter ----------------------------------------------------
     for i, magnet_surface in enumerate(magnet_line_surfs):
         new_cos_psi_range = calc_shadows_and_tau(curr_configuration, magnet_surface, obs_matrix, True)
@@ -174,13 +173,8 @@ if __name__ == '__main__':
         # надо брать не curr_configuration.top_column.L_x а посчитанный через интеграл! хоть они и отличаются на сильно
         L[i] = integralsService.calc_scatter_L(magnet_surface, L_x, new_cos_psi_range, tau_scatter_matrix)
 
-        L_nu[i] = integralsService.calc_scatter_L_nu(magnet_surface, T_eff, new_cos_psi_range, tau_scatter_matrix)
-
-        # save
-
-        # calc_scatter_L_nu()
-
-        # save
+        L_nu[i] = integralsService.calc_scatter_L_nu(magnet_surface, curr_configuration.top_column.inner_surface, T_eff,
+                                                     new_cos_psi_range, tau_scatter_matrix)
 
     plot_package.plot_scripts.plot_L(L)
     # print(L_nu)
