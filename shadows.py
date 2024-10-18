@@ -124,13 +124,17 @@ def check_shadow_with_dipole(surface, phi_index, theta_index, obs_vector, soluti
     return 1
 
 
-def get_tau_for_opacity(phi, theta, R_e, M_accretion_rate, a_portion, obs_vector):
+def get_tau_for_opacity(phi, theta, R_e_of_atenuation_surf, M_accretion_rate, a_portion, obs_vector):
     '''очень маленькие cos = 0.005??'''
+    # phi, theta - в точке пересечения; R_e =
     normal = matrix.newE_n(phi, theta)
-    cos_alpha = np.dot(normal, obs_vector)  # /(np.linalg.norm(normal) * np.linalg.norm(obs_vector))
-    tau = config.k * M_accretion_rate * newService.get_delta_distance(theta, R_e) / (
-            newService.get_A_normal(theta, R_e, a_portion) * newService.get_free_fall_velocity(theta, R_e))
+    cos_alpha = np.dot(normal, obs_vector) / (np.linalg.norm(normal) * np.linalg.norm(obs_vector))
+    tau = config.k * M_accretion_rate * newService.get_delta_distance(theta, R_e_of_atenuation_surf)
+    tau /= (newService.get_A_normal(theta, R_e_of_atenuation_surf, a_portion)
+            * newService.get_free_fall_velocity(theta, R_e_of_atenuation_surf))
+    print(f'{tau=}')
     tau /= cos_alpha
+    # print(f'{cos_alpha=}')
     return tau
 
 
@@ -138,18 +142,22 @@ def get_tau_for_scatter_with_cos(theta_range, R_e, M_accretion_rate, a_portion, 
     tau = config.k * M_accretion_rate * newService.get_delta_distance(theta_range, R_e) / (
             newService.get_A_normal(theta_range, R_e, a_portion) * newService.get_free_fall_velocity(theta_range, R_e))
     tau = tau[np.newaxis, :] / cos_alpha
+    print(f'tau_min = {np.min(tau)}, max = {np.max(tau)}')
     return tau
 
 
-def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, R_e, beta_mu, M_accretion_rate,
-                        top_column, bot_column, a_portion):
+def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, R_e_of_atenuation_surf, beta_mu,
+                        M_accretion_rate, top_column, bot_column, a_portion):
+    '''R_e_of_inner_magnet_line = inner surf!!!!! я беру пересечения только с внутренней (пока что)'''
     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
+    # здесь радиус основания
     r = surface.surf_R_e / config.R_ns * np.sin(origin_theta) ** 2
 
     for solution in solutions:
         intersect_phi, intersect_theta = get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector,
                                                                         solution)
         if intersect_phi is not None:
+            # из геометрических выводов = конец магнитосферной линии
             theta_end = np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(intersect_phi))
 
             top_column_intersect_theta_correct = intersect_theta < theta_end
@@ -162,7 +170,8 @@ def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, 
                     bot_column_intersect_phi and bot_column_intersect_theta_correct)
 
             if intersection_condition:
-                tau = get_tau_for_opacity(intersect_phi, intersect_theta, R_e, M_accretion_rate, a_portion, obs_vector)
+                tau = get_tau_for_opacity(intersect_phi, intersect_theta, R_e_of_atenuation_surf, M_accretion_rate,
+                                          a_portion, obs_vector)
                 if tau > config.tau_cutoff:
                     return np.exp(-1 * tau)
                 else:
