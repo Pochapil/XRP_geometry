@@ -8,8 +8,8 @@ class PathSaver:
 
     def __init__(self, mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
         '''
-        поменять название betta_mu на beta, i на theta_obs, fi_0 на phi_0 !!!!
-        'NS_shadow_off/'
+            поменять название betta_mu на beta, i на theta_obs, fi_0 на phi_0 !!!!
+            'NS_shadow_off/'
         '''
         # возможно убрать 1 parent!
         self.PROJECT_DIR = pathlib.Path(__file__).resolve().parent

@@ -2,11 +2,6 @@ import numpy as np
 
 import config
 
-approx_type = True
-approx_method = "cone"
-if approx_type:
-    approx_method = "dipole"
-
 
 def get_delta_distance_at_surface_NS(R_e):
     # R=R_e * sin_theta ** 2

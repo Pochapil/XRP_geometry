@@ -53,6 +53,7 @@ def calc_L_nu(surface, T_eff, cos_tensor):
 
 
 def calc_scatter_L(surface, L_x, cos_tensor, tau_scatter_matrix=None):
+    # расчет отраженной светимости
     tilda_s = create_ds_for_integral(surface)
     d = surface.surf_R_e * np.sin(surface.theta_range) ** 2  # distance to area
     coeff = 1 / (4 * np.pi * d ** 2)
@@ -66,6 +67,13 @@ def calc_scatter_L(surface, L_x, cos_tensor, tau_scatter_matrix=None):
 
 
 def calc_scatter_L_nu(magnet_surface, emission_surface, T_eff, cos_tensor, tau_scatter_matrix=None):
+    ''' распределение L_nu от фазы на какой-то энергии излучения
+    1/2 - так как при расчете L_nu ы брали 4 pi чтобы из потока F_nu получить светимость L_nu (предполагая
+    изотропность источника). Теперь же надо посчитать поток F_nu для рассеяния и отражения - поэтому так как
+    площадка излучает в полуплоскость надо взять 1/2 от интеграла
+
+    поток, который должен быть отражен на самом деле в 2 раза меньше, так как излучает только в полуплоскость,
+    а мы считаем L_nu как изотропное и поэтому умножали на 4 pi. надо на 2 pi'''
     tensor = np.ones((config.N_phi_accretion, config.N_theta_accretion))
     emission_intensity = calc_L_nu(emission_surface, T_eff, tensor)
 

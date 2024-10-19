@@ -7,12 +7,16 @@ from geometry import matrix
 
 
 def intersection_with_sphere(surface, origin_phi, origin_theta, direction_vector):
+    '''
+        проверка на пересечение (затмение) НЗ
+    '''
     # sphere x**2 + y**2 + z**2 == 1
     r = surface.surf_R_e / config.R_ns * np.sin(origin_theta) ** 2
     direction_x, direction_y, direction_z = matrix.vec_to_coord(direction_vector)
     origin_x, origin_y, origin_z = matrix.get_cartesian_from_spherical(r, origin_theta, origin_phi)
 
     def find_intersect_solution(a, b, c):
+        # решение кв. уравнения; мы не падаем в комплексные числа! вернем -1
         if b ** 2 - 4 * a * c >= 0:
             t_1 = (-b + (b ** 2 - 4 * a * c) ** (1 / 2)) / (2 * a)
             t_2 = (-b - (b ** 2 - 4 * a * c) ** (1 / 2)) / (2 * a)
@@ -20,6 +24,7 @@ def intersection_with_sphere(surface, origin_phi, origin_theta, direction_vector
         else:
             return -1, -1
 
+    # коэф-ты получаются из уравнений рейтрейсинга
     a_sphere = direction_x ** 2 + direction_y ** 2 + direction_z ** 2
     b_sphere = 2 * (origin_x * direction_x + origin_y * direction_y + origin_z * direction_z)
     c_sphere = origin_x ** 2 + origin_y ** 2 + origin_z ** 2 - 1
@@ -28,6 +33,7 @@ def intersection_with_sphere(surface, origin_phi, origin_theta, direction_vector
     t_sphere = find_intersect_solution(a_sphere, b_sphere, c_sphere)
 
     # print("t_sphere1 = %f,t_sphere2 = %f" % (t_sphere[0], t_sphere[1]))
+    # если корни положительны то было пересечение. если отрицательны то пересечения нет в сторону наблюдателя
     if t_sphere[0] > 0 or t_sphere[1] > 0:
         return True
 
@@ -35,14 +41,13 @@ def intersection_with_sphere(surface, origin_phi, origin_theta, direction_vector
 
 
 def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_vector):
-    '''очень затратная операция - необходимо параллелить
+    '''
+        очень затратная операция - необходимо параллелить
 
-        есть аналитическое уравнение для полинома дипольной линии 5 степени
-       находим уравнение в сферических координатах.
+        есть аналитическое уравнение для пересечения с дипольной линией - полином 5 степени
+        находим уравнение в сферических координатах.
 
-       достаем корни
-       ищем положительные
-
+        достаем корни, ищем положительные
     '''
     # вывод формулы был для 0 угла наблюдателя по фи (его смещали в выводе). поэтому находим phi_delta
     direction_phi, direction_theta = matrix.vec_to_angles(direction_vector)

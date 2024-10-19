@@ -16,7 +16,12 @@ import save
 
 
 def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=False):
-    # тензор косинусов между нормалью и направлением на наблюдателя размером phase x phi x theta
+    '''
+    функция расчитывает матрицу косинусов на каждой фазе для направлений наблюдателя
+
+    mask_flag --- для расчета по магнитным линиям - их надо обрезать
+    '''
+    # тензор косинусов между нормалью на площадке и направлением на наблюдателя. размер phase x phi x theta
     # умножаем скалярно phi x theta x 3 на phase x 3 (по последнему индексу) и делаем reshape.
     cos_psi_rotation_matrix = np.einsum('ijl,tl->tij', surface.array_normal, obs_matrix)
 
@@ -32,11 +37,11 @@ def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=Fals
 
     if mask_flag:
         mask = np.zeros_like(new_cos_psi_range).astype(bool)
-        mask += surface.mask_array
+        mask += surface.mask_array  # происходит broadcast в матрицу размера phase x phi x theta
         new_cos_psi_range[mask] = 0
     # print(surface)
     # for phase_index in range(config.N_phase):
-    # для возможности распаралелить еще больше чем на 4 поверхности
+    # для возможности распараллелить еще больше чем на 4 поверхности (разрезая наблюдателя на чанки)
     for phase_index in range(obs_matrix.shape[0]):
         for phi_index in range(config.N_phi_accretion):
             for theta_index in range(config.N_theta_accretion):
@@ -194,58 +199,59 @@ def save_new_way():
         save.save_arr_as_txt(L_nu_scatter[:, i], cur_path / folder / 'scatter/', file_name)
 
 
-if __name__ == '__main__':
+def calc_async_with_split(surfs_arr, mask_flag):
+    '''для возможности распаралелить еще больше чем на 4 поверхности
+    тут мы разбиваем массив наблюдателя на чанки и передаем на расчет, потом сливаем их вместе
+    '''
 
-    def calc_async_with_split(surfs_arr, mask_flag):
-        '''для возможности распаралелить еще больше чем на 4 поверхности
-        тут мы разбиваем массив наблюдателя на чанки и передаем на расчет, потом сливаем их вместе
-        '''
+    obs_matrix_new = np.split(obs_matrix, [obs_matrix.shape[0] // 2])
+    obs_matrix_new_to_func = []
+    for i in range(len(surfs_arr)):
+        obs_matrix_new_to_func.append(obs_matrix_new[0])
+    for i in range(len(surfs_arr)):
+        obs_matrix_new_to_func.append(obs_matrix_new[1])
 
-        obs_matrix_new = np.split(obs_matrix, [obs_matrix.shape[0] // 2])
-        obs_matrix_new_to_func = []
-        for i in range(len(surfs_arr)):
-            obs_matrix_new_to_func.append(obs_matrix_new[0])
-        for i in range(len(surfs_arr)):
-            obs_matrix_new_to_func.append(obs_matrix_new[1])
+    t1 = time.perf_counter()
+    with mp.Pool(processes=2 * len(surfs_arr)) as pool:
+        new_cos_psi_range_async_8 = pool.starmap(calc_shadows_and_tau,
+                                                 zip(repeat(curr_configuration), cycle(surfs_arr),
+                                                     obs_matrix_new_to_func, repeat(mask_flag)))
+    t2 = time.perf_counter()
+    print(f'{t2 - t1} seconds')
 
-        t1 = time.perf_counter()
-        with mp.Pool(processes=2 * len(surfs_arr)) as pool:
-            new_cos_psi_range_async_8 = pool.starmap(calc_shadows_and_tau,
-                                                     zip(repeat(curr_configuration), cycle(surfs_arr),
-                                                         obs_matrix_new_to_func, repeat(mask_flag)))
-        t2 = time.perf_counter()
-        print(f'{t2 - t1} seconds')
+    new_cos_psi_range_async = np.empty(
+        (len(surfs_arr), config.N_phase, config.N_phi_accretion, config.N_theta_accretion))
 
-        new_cos_psi_range_async = np.empty(
-            (len(surfs_arr), config.N_phase, config.N_phi_accretion, config.N_theta_accretion))
-
-        for i in range(len(surfs_arr)):
-            new_cos_psi_range_async[i] = np.vstack(
-                (new_cos_psi_range_async_8[i], new_cos_psi_range_async_8[i + len(surfs_arr)]))
-            # print(new_cos_psi_range_async_4[i][np.abs(new_cos_psi_range_async_4[i] - new_cos_psi_range) > 1e-3].shape)
-        return new_cos_psi_range_async
+    for i in range(len(surfs_arr)):
+        new_cos_psi_range_async[i] = np.vstack(
+            (new_cos_psi_range_async_8[i], new_cos_psi_range_async_8[i + len(surfs_arr)]))
+        # print(new_cos_psi_range_async_4[i][np.abs(new_cos_psi_range_async_4[i] - new_cos_psi_range) > 1e-3].shape)
+    return new_cos_psi_range_async
 
 
-    def calc_cos_psi(surfs_arr, mask_flag):
-        '''объединил все методы расчета в 1 функцию'''
-        if config.ASYNC_FLAG:
-            if config.N_cpus == 8:
-                new_cos_psi_range = calc_async_with_split(surfs_arr, mask_flag)
-            else:
-                t1 = time.perf_counter()
-                with mp.Pool(processes=len(surfs_arr)) as pool:
-                    new_cos_psi_range = pool.starmap(calc_shadows_and_tau,
-                                                     zip(repeat(curr_configuration), surfs_arr,
-                                                         repeat(obs_matrix), repeat(mask_flag)))
-                t2 = time.perf_counter()
-                print(f'{t2 - t1} seconds')
+def calc_cos_psi(surfs_arr, mask_flag):
+    '''объединил все методы расчета в 1 функцию'''
+    # 4 или 8 процессов будет запущено
+    if config.ASYNC_FLAG:
+        if config.N_cpus == 8:
+            new_cos_psi_range = calc_async_with_split(surfs_arr, mask_flag)
         else:
-            new_cos_psi_range = np.empty(4, dtype=object)
-            for i, surface in enumerate(accr_col_surfs):
-                new_cos_psi_range[i] = calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag)
+            t1 = time.perf_counter()
+            with mp.Pool(processes=len(surfs_arr)) as pool:
+                new_cos_psi_range = pool.starmap(calc_shadows_and_tau,
+                                                 zip(repeat(curr_configuration), surfs_arr,
+                                                     repeat(obs_matrix), repeat(mask_flag)))
+            t2 = time.perf_counter()
+            print(f'{t2 - t1} seconds')
+    else:
+        new_cos_psi_range = np.empty(4, dtype=object)
+        for i, surface in enumerate(accr_col_surfs):
+            new_cos_psi_range[i] = calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag)
 
-        return new_cos_psi_range
+    return new_cos_psi_range
 
+
+if __name__ == '__main__':
 
     # ------------------------------------------------- start -------------------------------------------------------
     mu = 0.1e31
@@ -261,7 +267,7 @@ if __name__ == '__main__':
     cur_dir_saved = pathService.PathSaver(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     cur_path = cur_dir_saved.get_path()
     print(cur_path)
-    save.create_file_path(cur_path)
+    # save.create_file_path(cur_path)
 
     theta_obs_rad = np.deg2rad(theta_obs)
     beta_mu_rad = np.deg2rad(beta_mu)
@@ -270,9 +276,15 @@ if __name__ == '__main__':
 
     obs_matrix = np.empty((config.N_phase, 3))
     # rotate и сохранить матрицу векторов наблюдателя
+    # удобнее всего работать в системе координат связанной с магнитной осью - там конфигурация колонок постоянна
+    # поэтому переходим от вращения звезды к вращению наблюдателя
     for phase_index in range(config.N_phase):
+        # поворот
         phi_mu = config.phi_mu_0 + config.omega_ns_rad * phase_index
+        # расчет матрицы поворота в магнитную СК для вектора на наблюдателя
+        # (изначально задавали наблюдателя в системе координат оси вращения)
         A_matrix_analytic = matrix.newMatrixAnalytic(config.phi_rotate, config.betta_rotate, phi_mu, beta_mu_rad)
+        # переход в магнитную СК
         e_obs_mu = np.dot(A_matrix_analytic, e_obs)
         obs_matrix[phase_index] = e_obs_mu
 
