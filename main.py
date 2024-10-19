@@ -1,4 +1,4 @@
-from itertools import repeat
+from itertools import repeat, cycle
 import multiprocessing as mp
 import pathlib
 import time
@@ -35,7 +35,9 @@ def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=Fals
         mask += surface.mask_array
         new_cos_psi_range[mask] = 0
     # print(surface)
-    for phase_index in range(config.N_phase):
+    # for phase_index in range(config.N_phase):
+    # для возможности распаралелить еще больше чем на 4 поверхности
+    for phase_index in range(obs_matrix.shape[0]):
         for phi_index in range(config.N_phi_accretion):
             for theta_index in range(config.N_theta_accretion):
                 if new_cos_psi_range[phase_index, phi_index, theta_index] > 0:
@@ -140,7 +142,7 @@ def save_some_files():
     observer_phi = ans[:, 0]
     observer_theta = ans[:, 1]
     file_name = 'observer_angles.txt'
-    np.savetxt(cur_path / pathlib.Path(file_name), np.vstack((observer_phi, observer_theta)), delimiter=',')
+    np.savetxt(cur_path / file_name, np.vstack((observer_phi, observer_theta)), delimiter=',')
     # save.save_arr_as_txt(np.vstack((observer_phi, observer_theta)), cur_path, file_name)
 
     file_name = 'total_luminosity_of_surfaces.txt'
@@ -149,8 +151,103 @@ def save_some_files():
     file_name = "energy.txt"
     save.save_arr_as_txt(config.energy_arr, cur_path, file_name)
 
+    # --------------------------------------------folders------------------------------------------------
+    for i, energy in enumerate(config.energy_arr):
+        file_name = f"L_nu_of_energy_{energy:.2f}_KeV_of_surfaces.txt"
+        save.save_arr_as_txt(np.sum(L_nu_surfs, axis=0)[i], cur_path / ('L_nu/' + 'txt/'), file_name)
+
+        file_name = f"nu_L_nu_of_energy_{energy:.2f}_KeV_of_surfaces.txt"
+        freq = newService.get_frequency_from_energy(energy)
+        save.save_arr_as_txt(np.sum(L_nu_surfs, axis=0)[i] * freq, cur_path / ('nu_L_nu/' + 'txt/'), file_name)
+
+    file_name = "PF.txt"
+    save.save_arr_as_txt(PF_L_nu_surf, cur_path / 'L_nu/', file_name)
+    save.save_arr_as_txt(PF_L_nu_surf, cur_path / 'nu_L_nu/', file_name)
+
+    file_name = "scattered_energy_top.txt"
+    save.save_arr_as_txt(L_scatter[0], cur_path / 'scattered_on_magnet_lines/', file_name)
+
+    file_name = "scattered_energy_bot.txt"
+    save.save_arr_as_txt(L_scatter[1], cur_path / 'scattered_on_magnet_lines/', file_name)
+
+    file_name = "top_column_scatter_L_nu.txt"
+    save.save_arr_as_txt(L_nu_scatter[0], cur_path / ('scattered_on_magnet_lines/' + 'L_nu/'), file_name)
+
+    file_name = "bot_column_scatter_L_nu.txt"
+    save.save_arr_as_txt(L_nu_scatter[1], cur_path / ('scattered_on_magnet_lines/' + 'L_nu/'), file_name)
+
+
+def save_new_way():
+    folder = 'new_way/'
+
+    file_name = "L_surfs.txt"
+    save.save_arr_as_txt(L_surfs, cur_path / folder / 'surfs/', file_name)
+
+    file_name = "L_scatter.txt"
+    save.save_arr_as_txt(L_scatter, cur_path / folder / 'scatter/', file_name)
+
+    for i, energy in enumerate(config.energy_arr):
+        file_name = f"L_nu_surfs_of_energy_{energy:.2f}_KeV.txt"
+        save.save_arr_as_txt(L_nu_surfs[:, i], cur_path / folder / 'surfs/', file_name)
+
+        file_name = f"L_nu_scatter_of_energy_{energy:.2f}_KeV.txt"
+        save.save_arr_as_txt(L_nu_scatter[:, i], cur_path / folder / 'scatter/', file_name)
+
 
 if __name__ == '__main__':
+
+    def calc_async_with_split(surfs_arr, mask_flag):
+        '''для возможности распаралелить еще больше чем на 4 поверхности
+        тут мы разбиваем массив наблюдателя на чанки и передаем на расчет, потом сливаем их вместе
+        '''
+
+        obs_matrix_new = np.split(obs_matrix, [obs_matrix.shape[0] // 2])
+        obs_matrix_new_to_func = []
+        for i in range(len(surfs_arr)):
+            obs_matrix_new_to_func.append(obs_matrix_new[0])
+        for i in range(len(surfs_arr)):
+            obs_matrix_new_to_func.append(obs_matrix_new[1])
+
+        t1 = time.perf_counter()
+        with mp.Pool(processes=2 * len(surfs_arr)) as pool:
+            new_cos_psi_range_async_8 = pool.starmap(calc_shadows_and_tau,
+                                                     zip(repeat(curr_configuration), cycle(surfs_arr),
+                                                         obs_matrix_new_to_func, repeat(mask_flag)))
+        t2 = time.perf_counter()
+        print(f'{t2 - t1} seconds')
+
+        new_cos_psi_range_async = np.empty(
+            (len(surfs_arr), config.N_phase, config.N_phi_accretion, config.N_theta_accretion))
+
+        for i in range(len(surfs_arr)):
+            new_cos_psi_range_async[i] = np.vstack(
+                (new_cos_psi_range_async_8[i], new_cos_psi_range_async_8[i + len(surfs_arr)]))
+            # print(new_cos_psi_range_async_4[i][np.abs(new_cos_psi_range_async_4[i] - new_cos_psi_range) > 1e-3].shape)
+        return new_cos_psi_range_async
+
+
+    def calc_cos_psi(surfs_arr, mask_flag):
+        '''объединил все методы расчета в 1 функцию'''
+        if config.ASYNC_FLAG:
+            if config.N_cpus == 8:
+                new_cos_psi_range = calc_async_with_split(surfs_arr, mask_flag)
+            else:
+                t1 = time.perf_counter()
+                with mp.Pool(processes=len(surfs_arr)) as pool:
+                    new_cos_psi_range = pool.starmap(calc_shadows_and_tau,
+                                                     zip(repeat(curr_configuration), surfs_arr,
+                                                         repeat(obs_matrix), repeat(mask_flag)))
+                t2 = time.perf_counter()
+                print(f'{t2 - t1} seconds')
+        else:
+            new_cos_psi_range = np.empty(4, dtype=object)
+            for i, surface in enumerate(accr_col_surfs):
+                new_cos_psi_range[i] = calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag)
+
+        return new_cos_psi_range
+
+
+    # ------------------------------------------------- start -------------------------------------------------------
     mu = 0.1e31
     beta_mu = 40
     mc2 = 100
@@ -179,24 +276,21 @@ if __name__ == '__main__':
         e_obs_mu = np.dot(A_matrix_analytic, e_obs)
         obs_matrix[phase_index] = e_obs_mu
 
+    # ------------------------------------------------ L_calc -------------------------------------------------------
+    accr_col_surfs = [curr_configuration.top_column.outer_surface, curr_configuration.top_column.inner_surface,
+                      curr_configuration.bot_column.outer_surface, curr_configuration.bot_column.inner_surface]
     # чтобы соответствовать порядку в старом
     # surfaces = {0: top_column.outer_surface, 1: top_column.inner_surface,
     #             2: bot_column.outer_surface, 3: bot_column.inner_surface}
-    accr_col_surfs = [curr_configuration.top_column.outer_surface, curr_configuration.top_column.inner_surface,
-                      curr_configuration.bot_column.outer_surface, curr_configuration.bot_column.inner_surface]
-    t1 = time.perf_counter()
-    with mp.Pool(processes=4) as pool:
-        new_cos_psi_range_async = pool.starmap(calc_shadows_and_tau,
-                                               zip(repeat(curr_configuration), accr_col_surfs, repeat(obs_matrix)))
-    t2 = time.perf_counter()
-    print(f'{t2 - t1} seconds')
-    # ------------------------------------------------ L_calc ----------------------------------------------------
+
+    new_cos_psi_range_surfs = calc_cos_psi(accr_col_surfs, False)
+
     L_surfs = np.empty((4, config.N_phase))
     L_nu_surfs = np.empty((4, config.N_energy, config.N_phase))
     for i, surface in enumerate(accr_col_surfs):
         # new_cos_psi_range = calc_shadows_and_tau(curr_configuration, surface, obs_matrix)
         # print(new_cos_psi_range_async[i][np.abs(new_cos_psi_range_async[i] - new_cos_psi_range) > 1e-3].shape)
-        new_cos_psi_range = new_cos_psi_range_async[i]
+        new_cos_psi_range = new_cos_psi_range_surfs[i]
         L_surfs[i] = integralsService.calc_L(surface, curr_configuration.top_column.T_eff, new_cos_psi_range)
         L_nu_surfs[i] = integralsService.calc_L_nu(surface, curr_configuration.top_column.T_eff, new_cos_psi_range)
 
@@ -205,20 +299,17 @@ if __name__ == '__main__':
 
     plot_package.plot_scripts.plot_L(L_surfs)
 
+    # ----------------------------------------------- Scatter -----------------------------------------------------
     magnet_line_surfs = [curr_configuration.top_magnet_lines, curr_configuration.bot_magnet_lines]
-    t1 = time.perf_counter()
-    with mp.Pool(processes=2) as pool:
-        new_cos_psi_range_async = pool.starmap(calc_shadows_and_tau,
-                                               zip(repeat(curr_configuration), magnet_line_surfs, repeat(obs_matrix),
-                                                   repeat(True)))
-    t2 = time.perf_counter()
-    print(f'{t2 - t1} seconds')
+
+    new_cos_psi_range_surfs = calc_cos_psi(magnet_line_surfs, True)
+
     L_scatter = np.empty((2, config.N_phase))
     L_nu_scatter = np.empty((2, config.N_energy, config.N_phase))
     # ------------------------------------------------ L_scatter ----------------------------------------------------
     for i, magnet_surface in enumerate(magnet_line_surfs):
         # new_cos_psi_range = calc_shadows_and_tau(curr_configuration, magnet_surface, obs_matrix, True)
-        new_cos_psi_range = new_cos_psi_range_async[i]
+        new_cos_psi_range = new_cos_psi_range_surfs[i]
 
         # УЧЕСТЬ угол падения от центра в отражаемой точке!!!!!!!!!
         xyz_magnet_line = matrix.get_xyz_coord(magnet_surface, normalize=True)  # вектор на отражающую площадку
@@ -251,30 +342,4 @@ if __name__ == '__main__':
 
     make_save_values_file()
     save_some_files()
-
-    for i, energy in enumerate(config.energy_arr):
-        file_name = f"L_nu_of_energy_{energy:.2f}_KeV_of_surfaces.txt"
-        save.save_arr_as_txt(np.sum(L_nu_surfs, axis=0)[i], cur_path / ('L_nu/' + 'txt/'), file_name)
-
-        file_name = f"nu_L_nu_of_energy_{energy:.2f}_KeV_of_surfaces.txt"
-        freq = newService.get_frequency_from_energy(energy)
-        save.save_arr_as_txt(np.sum(L_nu_surfs, axis=0)[i] * freq, cur_path / ('nu_L_nu/' + 'txt/'), file_name)
-
-    file_name = "PF.txt"
-    save.save_arr_as_txt(PF_L_nu_surf, cur_path / 'L_nu/', file_name)
-    save.save_arr_as_txt(PF_L_nu_surf, cur_path / 'nu_L_nu/', file_name)
-
-    file_name = "scattered_energy_top.txt"
-    save.save_arr_as_txt(L_scatter[0], cur_path / 'scattered_on_magnet_lines/', file_name)
-
-    file_name = "scattered_energy_bot.txt"
-    save.save_arr_as_txt(L_scatter[1], cur_path / 'scattered_on_magnet_lines/', file_name)
-
-    file_name = "top_column_scatter_L_nu.txt"
-    save.save_arr_as_txt(L_nu_scatter[0], cur_path / ('scattered_on_magnet_lines/' + 'L_nu/'), file_name)
-
-    file_name = "bot_column_scatter_L_nu.txt"
-    save.save_arr_as_txt(L_nu_scatter[1], cur_path / ('scattered_on_magnet_lines/' + 'L_nu/'), file_name)
-
-
-
+    save_new_way()
