@@ -98,7 +98,7 @@ class Surface:
 
         self.theta_accretion_begin = newService.get_theta_accretion_begin(self.surf_R_e)
 
-        if config.outer_R_e_flag:
+        if config.outer_R_e_ksi_flag:
             # обрезать большую колонку по кси.
             if (config.R_ns * ksi_shock / self.surf_R_e) >= 1:
                 self.theta_accretion_end = np.pi / 2

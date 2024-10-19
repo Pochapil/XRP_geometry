@@ -157,46 +157,49 @@ def save_some_files():
     save.save_arr_as_txt(config.energy_arr, cur_path, file_name)
 
     # --------------------------------------------folders------------------------------------------------
-    for i, energy in enumerate(config.energy_arr):
-        file_name = f"L_nu_of_energy_{energy:.2f}_KeV_of_surfaces.txt"
-        save.save_arr_as_txt(np.sum(L_nu_surfs, axis=0)[i], cur_path / ('L_nu/' + 'txt/'), file_name)
 
-        file_name = f"nu_L_nu_of_energy_{energy:.2f}_KeV_of_surfaces.txt"
-        freq = newService.get_frequency_from_energy(energy)
-        save.save_arr_as_txt(np.sum(L_nu_surfs, axis=0)[i] * freq, cur_path / ('nu_L_nu/' + 'txt/'), file_name)
+    if config.old_path_flag:
 
-    file_name = "PF.txt"
-    save.save_arr_as_txt(PF_L_nu_surf, cur_path / 'L_nu/', file_name)
-    save.save_arr_as_txt(PF_L_nu_surf, cur_path / 'nu_L_nu/', file_name)
+        old_path = cur_dir_saved.get_old_path()
 
-    file_name = "scattered_energy_top.txt"
-    save.save_arr_as_txt(L_scatter[0], cur_path / 'scattered_on_magnet_lines/', file_name)
+        for i, energy in enumerate(config.energy_arr):
+            file_name = f"L_nu_of_energy_{energy:.2f}_KeV_of_surfaces.txt"
+            save.save_arr_as_txt(np.sum(L_nu_surfs, axis=0)[i], old_path / ('L_nu/' + 'txt/'), file_name)
 
-    file_name = "scattered_energy_bot.txt"
-    save.save_arr_as_txt(L_scatter[1], cur_path / 'scattered_on_magnet_lines/', file_name)
+            file_name = f"nu_L_nu_of_energy_{energy:.2f}_KeV_of_surfaces.txt"
+            freq = newService.get_frequency_from_energy(energy)
+            save.save_arr_as_txt(np.sum(L_nu_surfs, axis=0)[i] * freq, old_path / ('nu_L_nu/' + 'txt/'), file_name)
 
-    file_name = "top_column_scatter_L_nu.txt"
-    save.save_arr_as_txt(L_nu_scatter[0], cur_path / ('scattered_on_magnet_lines/' + 'L_nu/'), file_name)
+        file_name = "PF.txt"
+        save.save_arr_as_txt(PF_L_nu_surf, old_path / 'L_nu/', file_name)
+        save.save_arr_as_txt(PF_L_nu_surf, old_path / 'nu_L_nu/', file_name)
 
-    file_name = "bot_column_scatter_L_nu.txt"
-    save.save_arr_as_txt(L_nu_scatter[1], cur_path / ('scattered_on_magnet_lines/' + 'L_nu/'), file_name)
+        file_name = "scattered_energy_top.txt"
+        save.save_arr_as_txt(L_scatter[0], old_path / 'scattered_on_magnet_lines/', file_name)
+
+        file_name = "scattered_energy_bot.txt"
+        save.save_arr_as_txt(L_scatter[1], old_path / 'scattered_on_magnet_lines/', file_name)
+
+        file_name = "top_column_scatter_L_nu.txt"
+        save.save_arr_as_txt(L_nu_scatter[0], old_path / ('scattered_on_magnet_lines/' + 'L_nu/'), file_name)
+
+        file_name = "bot_column_scatter_L_nu.txt"
+        save.save_arr_as_txt(L_nu_scatter[1], old_path / ('scattered_on_magnet_lines/' + 'L_nu/'), file_name)
 
 
 def save_new_way():
-    folder = 'new_way/'
-
     file_name = "L_surfs.txt"
-    save.save_arr_as_txt(L_surfs, cur_path / folder / 'surfs/', file_name)
+    save.save_arr_as_txt(L_surfs, cur_path / 'surfs/', file_name)
 
     file_name = "L_scatter.txt"
-    save.save_arr_as_txt(L_scatter, cur_path / folder / 'scatter/', file_name)
+    save.save_arr_as_txt(L_scatter, cur_path / 'scatter/', file_name)
 
     for i, energy in enumerate(config.energy_arr):
         file_name = f"L_nu_surfs_of_energy_{energy:.2f}_KeV.txt"
-        save.save_arr_as_txt(L_nu_surfs[:, i], cur_path / folder / 'surfs/', file_name)
+        save.save_arr_as_txt(L_nu_surfs[:, i], cur_path / 'surfs/', file_name)
 
         file_name = f"L_nu_scatter_of_energy_{energy:.2f}_KeV.txt"
-        save.save_arr_as_txt(L_nu_scatter[:, i], cur_path / folder / 'scatter/', file_name)
+        save.save_arr_as_txt(L_nu_scatter[:, i], cur_path / 'scatter/', file_name)
 
 
 def calc_async_with_split(surfs_arr, mask_flag):
@@ -265,9 +268,11 @@ if __name__ == '__main__':
     curr_configuration = accretingNS.AccretingPulsarConfiguration(mu, beta_mu, mc2, a_portion, phi_0)
 
     cur_dir_saved = pathService.PathSaver(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
-    cur_path = cur_dir_saved.get_path()
+    folder = 'txt/'
+    # cur_path = path to save txt !!!
+    cur_path = cur_dir_saved.get_path() / folder
     print(cur_path)
-    # save.create_file_path(cur_path)
+    save.create_file_path(cur_path)
 
     theta_obs_rad = np.deg2rad(theta_obs)
     beta_mu_rad = np.deg2rad(beta_mu)

@@ -13,7 +13,8 @@ class PathSaver:
         '''
         # возможно убрать 1 parent!
         self.PROJECT_DIR = pathlib.Path(__file__).resolve().parent
-        self.prefix_dir = self.PROJECT_DIR / 'new_magnet_lines' / 'new_condition' / 'new_data'
+
+        self.old_prefix_dir = self.PROJECT_DIR / 'new_magnet_lines' / 'new_condition' / 'new_data'
 
         buf = mu
         count = 1
@@ -21,13 +22,20 @@ class PathSaver:
             count += 1
             buf //= 10
 
-        self.prefix_dir = self.prefix_dir / f'mu=0.1e{count}' / 'tau' / 'figs' / 'loop'
-
+        self.old_prefix_dir = self.old_prefix_dir / f'mu=0.1e{count}' / 'tau' / 'figs' / 'loop'
         fi_0_old = (phi_0 + config.fi_0_dict[a_portion]) % 360
         # поменять название betta_mu на beta. i на theta!
-        self.save_dir = self.prefix_dir / f'i={theta_obs} betta_mu={beta_mu}'
+        self.old_save_dir = self.old_prefix_dir / f'i={theta_obs} betta_mu={beta_mu}'
         # поменять fi_0 на phi_0
-        self.save_dir = self.save_dir / f'mc2={mc2}' / f'a={a_portion:.2f} fi_0={fi_0_old}'
+        self.old_save_dir = self.old_save_dir / f'mc2={mc2}' / f'a={a_portion:.2f} fi_0={fi_0_old}'
+
+        # ------------------------ new way ---------------------------
+
+        self.prefix_dir = self.PROJECT_DIR / 'data'
+        self.prefix_dir = self.prefix_dir / f'mu=0.1e{count}'
+        self.save_dir = self.prefix_dir / f'theta_obs={theta_obs}' / f'beta_mu={beta_mu}'
+        # поменять fi_0 на phi_0
+        self.save_dir = self.save_dir / f'mc2={mc2}' / f'a={a_portion:.2f}' / f'phi_0={phi_0}'
 
         if print_flag:
             print(f'PROJECT_DIR: {self.PROJECT_DIR}')
@@ -64,6 +72,9 @@ class PathSaver:
 
     def get_path(self):
         return self.save_dir
+
+    def get_old_path(self):
+        return self.old_save_dir
 
 
 if __name__ == '__main__':

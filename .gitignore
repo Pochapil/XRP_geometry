@@ -163,3 +163,4 @@ cython_debug/
 
 # DataFolder
 new_magnet_lines/
+data/
