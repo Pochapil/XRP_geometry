@@ -74,3 +74,10 @@ def get_frequency_from_energy(energy):
     coefficient = 1000  # КэВ а не эВ
     frequency = coefficient * energy / config.h_plank_evs  # E = h f
     return frequency  # гц!
+
+
+def extend_arr_for_plot(arr):
+    # нужно расширить массивы, чтобы покрыть фазу [0,2]
+    append_index = config.N_phase_for_plot - config.N_phase
+    array_to_plot = np.append(arr, arr[0:append_index])
+    return array_to_plot

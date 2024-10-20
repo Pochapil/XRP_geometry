@@ -36,6 +36,14 @@ def load_arr_from_txt(file_folder, file_name):
 
 def save_figure(fig, file_path, file_name):
     create_file_path(file_path)
+    full_file_name = file_path / (file_name + '.png')
+    fig.savefig(full_file_name, dpi=fig.dpi)
+    # fig.savefig(full_file_name, dpi=200)
+    plt.close(fig)
+
+
+def save_figure_txt(fig, file_path, file_name):
+    create_file_path(file_path)
     full_file_name = file_path + file_name
     fig.savefig(full_file_name, dpi=fig.dpi)
     # fig.savefig(full_file_name, dpi=200)

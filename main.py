@@ -90,6 +90,13 @@ def calc_number_pow(num):
 
 def make_save_values_file():
     file_name = 'save_values.txt'
+
+    if config.old_path_flag:
+        old_path = cur_dir_saved.get_old_path()
+        cur_path = old_path
+    else:
+        cur_path = cur_path_data
+
     with open(cur_path / file_name, 'w') as f:
         f.write(f'R_e = {curr_configuration.top_column.R_e / config.R_ns:.6f}\n')
         f.write(f'ksi_shock = {curr_configuration.top_column.ksi_shock:.6f}\n')
@@ -128,6 +135,11 @@ def make_save_values_file():
 
 
 def save_some_files():
+    if config.old_path_flag:
+        cur_path = cur_dir_saved.get_old_path()
+    else:
+        cur_path = cur_path_data
+
     file_name = 'surfaces_T_eff.txt'
     save.save_arr_as_txt(curr_configuration.top_column.T_eff, cur_path, file_name)
 
@@ -188,6 +200,7 @@ def save_some_files():
 
 
 def save_new_way():
+    cur_path = cur_path_data
     file_name = "L_surfs.txt"
     save.save_arr_as_txt(L_surfs, cur_path / 'surfs/', file_name)
 
@@ -270,9 +283,10 @@ if __name__ == '__main__':
     cur_dir_saved = pathService.PathSaver(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     folder = 'txt/'
     # cur_path = path to save txt !!!
-    cur_path = cur_dir_saved.get_path() / folder
-    print(cur_path)
-    save.create_file_path(cur_path)
+    cur_path = cur_dir_saved.get_path()
+    cur_path_data = cur_path / folder
+    print(cur_path_data)
+    save.create_file_path(cur_path_data)
 
     theta_obs_rad = np.deg2rad(theta_obs)
     beta_mu_rad = np.deg2rad(beta_mu)
@@ -314,7 +328,7 @@ if __name__ == '__main__':
     PF_L_surfs = integralsService.get_PF(np.sum(L_surfs, axis=0))
     PF_L_nu_surfs = integralsService.get_PF(np.sum(L_nu_surfs, axis=0))
 
-    plot_package.plot_scripts.plot_L(L_surfs)
+    # plot_package.plot_scripts.plot_L(L_surfs)
 
     # ----------------------------------------------- Scatter -----------------------------------------------------
     magnet_line_surfs = [curr_configuration.top_magnet_lines, curr_configuration.bot_magnet_lines]
@@ -352,7 +366,7 @@ if __name__ == '__main__':
                                                              curr_configuration.top_column.T_eff,
                                                              new_cos_psi_range, tau_scatter_matrix)
 
-    plot_package.plot_scripts.plot_L(L_scatter)
+    # plot_package.plot_scripts.plot_L(L_scatter)
 
     PF_L_surf = integralsService.get_PF(np.sum(L_scatter, axis=0))
     PF_L_nu_surf = integralsService.get_PF(np.sum(L_nu_scatter, axis=0))
@@ -360,3 +374,15 @@ if __name__ == '__main__':
     make_save_values_file()
     save_some_files()
     save_new_way()
+
+    cur_path_fig = cur_path / 'fig'
+    save.create_file_path(cur_path_data)
+    plot_package.plot_scripts.plot_total_luminosity_of_surfaces(L_surfs, cur_path_fig)
+
+    ans = np.apply_along_axis(matrix.vec_to_angles, axis=1, arr=obs_matrix)
+    observer_phi = ans[:, 0]
+    observer_theta = ans[:, 1]
+
+    plot_package.plot_scripts.plot_observer_angles(observer_phi, observer_theta, cur_path_fig)
+    plot_package.plot_scripts.plot_Teff_to_ksi(curr_configuration.R_e, curr_configuration.top_column.T_eff,
+                                               curr_configuration.top_column.inner_surface.theta_range, cur_path_fig)
