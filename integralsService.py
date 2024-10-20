@@ -90,7 +90,3 @@ def calc_scatter_L_nu(magnet_surface, emission_surface, T_eff, cos_tensor, tau_s
     return L_nu
 
 
-def get_PF(L):
-    min_val = np.min(L, axis=-1)
-    max_val = np.max(L, axis=-1)
-    return (max_val - min_val) / (max_val + min_val)

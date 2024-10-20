@@ -58,6 +58,12 @@ def get_pulsed_fraction(arr):
     return (max_value - min_value) / (max_value + min_value)
 
 
+def get_PF(L):
+    min_val = np.min(L, axis=-1)
+    max_val = np.max(L, axis=-1)
+    return (max_val - min_val) / (max_val + min_val)
+
+
 # нужно ли на пи?
 def plank_energy_on_wavelength(wavelength, T):
     return 2 * config.h_plank_ergs * config.c ** 2 / wavelength ** 5 \

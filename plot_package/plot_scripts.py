@@ -31,7 +31,6 @@ def plot_total_luminosity_of_surfaces(L_surfs, save_dir=None):
 
     x_axis_label = r'$\Phi$'
     y_axis_label = r'$L_{\rm{iso}}$' + ' [erg/s]'
-
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
     ax['a'].legend()
@@ -88,9 +87,7 @@ def plot_Teff_to_ksi(R_e, T_eff, theta_range, save_dir=None):
     ksi = R_e * (np.sin(theta_range)) ** 2
 
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
-
-    ax['a'].plot(ksi, T_eff)
-
+    ax['a'].plot(ksi, T_eff, color='black')
     x_axis_label = r'$\xi$'
     y_axis_label = r'$T_{eff} \: [K]$'
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
@@ -99,6 +96,65 @@ def plot_Teff_to_ksi(R_e, T_eff, theta_range, save_dir=None):
     if save_dir is not None:
         file_name = 'T_eff'
         save.save_figure(fig, save_dir, file_name)
+
+
+def f():
+    folder = 'L_nu/'
+
+    phi_for_plot = np.linspace(0, 2, config.N_phase_for_plot)
+
+    x_axis_label = r'$h \nu$' + ' [keV]'
+    y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
+
+
+def plot_PF_to_energy(L_nu_surfs, L_nu_scatter, save_dir=None):
+    # sum(L_nu_surfs + L_nu_scatter)
+
+    folder = 'L_nu/'
+
+    energy_arr = config.energy_arr
+    L_nu = np.sum(L_nu_surfs, axis=0) + np.sum(L_nu_scatter, axis=0)
+    PF = newService.get_PF(L_nu)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    ax['a'].plot(energy_arr, PF, color='black')
+    x_axis_label = r'$h \nu$' + ' [keV]'
+    y_axis_label = 'PF'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+
+    if save_dir is not None:
+        file_name = 'PF'
+        save.save_figure(fig, save_dir / folder, file_name)
+
+
+def plot_L_nu(L_nu_surfs, save_dir):
+    # sum L_nu
+    folder = 'L_nu/'
+
+    L_nu_to_plot = newService.extend_arr_for_plot(L_nu_surfs)
+
+    phi_for_plot = np.linspace(0, 2, config.N_phase_for_plot)
+
+    x_axis_label = r'$h \nu$' + ' [keV]'
+    y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
+
+    for i, energy in enumerate(config.energy_arr):
+        fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+        # for L_nu_surf in L_nu_surfs[:, i, :]:
+        L_nu_to_plot = newService.extend_arr_for_plot(np.sum(L_nu_surfs[:, i, :], axis=0))
+        PF = newService.get_PF(L_nu_to_plot)
+        fig_title = r'$L_{\nu}^' + r'{' + f'{energy:.2f} keV' + r'}' + r'(\Phi)$' + '  ' + f'PF = {PF:.3f}'
+        ax['a'].plot(phi_for_plot, L_nu_to_plot, color='black',
+                     label=r'$L_{\nu}^' + r'{' + f'{energy:.2f}' + r'}' + r'(\Phi)$')
+        ax['a'].set_xlabel(x_axis_label, fontsize=24)
+        ax['a'].set_ylabel(y_axis_label, fontsize=24)
+        # ax['a'].legend()
+        fig.suptitle(fig_title, fontsize=16)
+
+        if save_dir is not None:
+            file_name = f'L_nu_of_energy_{energy:.2f}_KeV_of_surfaces'
+            save.save_figure(fig, save_dir / folder, file_name)
 
 
 if __name__ == '__main__':

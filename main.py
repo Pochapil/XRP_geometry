@@ -325,8 +325,8 @@ if __name__ == '__main__':
         L_surfs[i] = integralsService.calc_L(surface, curr_configuration.top_column.T_eff, new_cos_psi_range)
         L_nu_surfs[i] = integralsService.calc_L_nu(surface, curr_configuration.top_column.T_eff, new_cos_psi_range)
 
-    PF_L_surfs = integralsService.get_PF(np.sum(L_surfs, axis=0))
-    PF_L_nu_surfs = integralsService.get_PF(np.sum(L_nu_surfs, axis=0))
+    PF_L_surfs = newService.get_PF(np.sum(L_surfs, axis=0))
+    PF_L_nu_surfs = newService.get_PF(np.sum(L_nu_surfs, axis=0))
 
     # plot_package.plot_scripts.plot_L(L_surfs)
 
@@ -368,8 +368,8 @@ if __name__ == '__main__':
 
     # plot_package.plot_scripts.plot_L(L_scatter)
 
-    PF_L_surf = integralsService.get_PF(np.sum(L_scatter, axis=0))
-    PF_L_nu_surf = integralsService.get_PF(np.sum(L_nu_scatter, axis=0))
+    PF_L_surf = newService.get_PF(np.sum(L_scatter, axis=0))
+    PF_L_nu_surf = newService.get_PF(np.sum(L_nu_scatter, axis=0))
 
     make_save_values_file()
     save_some_files()
@@ -386,3 +386,6 @@ if __name__ == '__main__':
     plot_package.plot_scripts.plot_observer_angles(observer_phi, observer_theta, cur_path_fig)
     plot_package.plot_scripts.plot_Teff_to_ksi(curr_configuration.R_e, curr_configuration.top_column.T_eff,
                                                curr_configuration.top_column.inner_surface.theta_range, cur_path_fig)
+
+    plot_package.plot_scripts.plot_PF_to_energy(L_nu_surfs, L_nu_scatter, cur_path_fig)
+    plot_package.plot_scripts.plot_L_nu(L_nu_surfs, cur_path_fig)
