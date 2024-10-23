@@ -376,7 +376,7 @@ if __name__ == '__main__':
     save_new_way()
 
     cur_path_fig = cur_path / 'fig'
-    save.create_file_path(cur_path_data)
+    save.create_file_path(cur_path_fig)
     plot_package.plot_scripts.plot_total_luminosity_of_surfaces(L_surfs, cur_path_fig)
 
     ans = np.apply_along_axis(matrix.vec_to_angles, axis=1, arr=obs_matrix)
@@ -387,5 +387,11 @@ if __name__ == '__main__':
     plot_package.plot_scripts.plot_Teff_to_ksi(curr_configuration.R_e, curr_configuration.top_column.T_eff,
                                                curr_configuration.top_column.inner_surface.theta_range, cur_path_fig)
 
+    # ----------------------L_nu--------------------------
     plot_package.plot_scripts.plot_PF_to_energy(L_nu_surfs, L_nu_scatter, cur_path_fig)
     plot_package.plot_scripts.plot_L_nu(L_nu_surfs, cur_path_fig)
+    plot_package.plot_scripts.plot_L_nu_all_in_one(L_nu_surfs, cur_path_fig)
+    plot_package.plot_scripts.plot_L_nu_on_phase(L_nu_surfs, cur_path_fig)
+    plot_package.plot_scripts.plot_L_nu_avg(L_nu_surfs, cur_path_fig)
+    plot_package.plot_scripts.plot_L_nu_with_bb(L_nu_surfs, curr_configuration.top_column.T_eff, cur_path_fig)
+    # -----------------

@@ -110,8 +110,6 @@ def f():
 def plot_PF_to_energy(L_nu_surfs, L_nu_scatter, save_dir=None):
     # sum(L_nu_surfs + L_nu_scatter)
 
-    folder = 'L_nu/'
-
     energy_arr = config.energy_arr
     L_nu = np.sum(L_nu_surfs, axis=0) + np.sum(L_nu_scatter, axis=0)
     PF = newService.get_PF(L_nu)
@@ -124,20 +122,17 @@ def plot_PF_to_energy(L_nu_surfs, L_nu_scatter, save_dir=None):
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
 
     if save_dir is not None:
+        folder = 'L_nu/'
         file_name = 'PF'
         save.save_figure(fig, save_dir / folder, file_name)
 
 
-def plot_L_nu(L_nu_surfs, save_dir):
+def plot_L_nu(L_nu_surfs, save_dir=None):
     # sum L_nu
-    folder = 'L_nu/'
 
     L_nu_to_plot = newService.extend_arr_for_plot(L_nu_surfs)
 
     phi_for_plot = np.linspace(0, 2, config.N_phase_for_plot)
-
-    x_axis_label = r'$h \nu$' + ' [keV]'
-    y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
 
     for i, energy in enumerate(config.energy_arr):
         fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
@@ -147,14 +142,111 @@ def plot_L_nu(L_nu_surfs, save_dir):
         fig_title = r'$L_{\nu}^' + r'{' + f'{energy:.2f} keV' + r'}' + r'(\Phi)$' + '  ' + f'PF = {PF:.3f}'
         ax['a'].plot(phi_for_plot, L_nu_to_plot, color='black',
                      label=r'$L_{\nu}^' + r'{' + f'{energy:.2f}' + r'}' + r'(\Phi)$')
+
+        x_axis_label = r'$h \nu$' + ' [keV]'
+        y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
         ax['a'].set_xlabel(x_axis_label, fontsize=24)
         ax['a'].set_ylabel(y_axis_label, fontsize=24)
         # ax['a'].legend()
         fig.suptitle(fig_title, fontsize=16)
 
         if save_dir is not None:
+            folder = 'L_nu/'
             file_name = f'L_nu_of_energy_{energy:.2f}_KeV_of_surfaces'
             save.save_figure(fig, save_dir / folder, file_name)
+
+
+def plot_L_nu_all_in_one(L_nu_surfs, save_dir=None):
+    phi_for_plot = np.linspace(0, 2, config.N_phase_for_plot)
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    for i, energy in enumerate(config.energy_arr):
+        L_nu_to_plot = newService.extend_arr_for_plot(np.sum(L_nu_surfs[:, i, :], axis=0))
+        ax['a'].plot(phi_for_plot, L_nu_to_plot, label=f'{energy:.2f} keV')
+
+        x_axis_label = r'$\Phi$'
+        y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
+        ax['a'].set_xlabel(x_axis_label, fontsize=24)
+        ax['a'].set_ylabel(y_axis_label, fontsize=24)
+
+    if save_dir is not None:
+        folder = 'L_nu/'
+        file_name = 'L_nu'
+        save.save_figure(fig, save_dir / folder, file_name)
+
+
+def plot_L_nu_on_phase(L_nu_surfs, save_dir=None, phase_index=0):
+    # phase_index - индекс фазы для L_nu(nu)
+
+    L_nu_on_phase = np.sum(L_nu_surfs[:, :, phase_index], axis=0)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    ax['a'].plot(config.energy_arr, L_nu_on_phase)
+
+    x_axis_label = r'$h \nu$' + ' [keV]'
+    y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+
+    if save_dir is not None:
+        folder = 'L_nu/'
+        file_name = 'L_nu(nu)'
+        save.save_figure(fig, save_dir / folder, file_name)
+
+
+def plot_L_nu_avg(L_nu_surfs, save_dir=None):
+    L_nu_avg_on_phase = np.mean(np.sum(L_nu_surfs, axis=0), axis=1)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    ax['a'].plot(config.energy_arr, L_nu_avg_on_phase)
+
+    x_axis_label = r'$h \nu$' + ' [keV]'
+    y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+
+    ax['a'].set_xscale('log')
+    ax['a'].set_yscale('log')
+    # plt.xscale('log')
+
+    if save_dir is not None:
+        folder = 'L_nu/'
+        file_name = 'L_nu(nu)_avg_log_log'
+        save.save_figure(fig, save_dir / folder, file_name)
+
+
+def plot_L_nu_with_bb(L_nu_surfs, T_eff, save_dir=None):
+    freq_arr = newService.get_frequency_from_energy(np.array(config.energy_arr))
+
+    # file_name = "surfaces_T_eff.txt"
+    # T_eff = main_service.load_arr_from_txt(config.full_file_folder, file_name)
+
+    black_body_max = newService.plank_energy_on_frequency(freq_arr, np.max(T_eff))
+    black_body_min = newService.plank_energy_on_frequency(freq_arr, np.min(T_eff))
+
+    L_nu_avg_on_phase = np.mean(np.sum(L_nu_surfs, axis=0), axis=1)
+    coeff_max = np.max(L_nu_avg_on_phase) / np.max(black_body_max)
+    coeff_min = np.max(L_nu_avg_on_phase) / np.max(black_body_min)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+
+    ax['a'].plot(config.energy_arr, coeff_max * np.array(black_body_max), label=f'black body max T={np.max(T_eff):.1f}')
+    ax['a'].plot(config.energy_arr, coeff_min * np.array(black_body_min), label=f'black body min T={np.min(T_eff):.1f}')
+    ax['a'].plot(config.energy_arr, L_nu_avg_on_phase, label=r'$L_{\nu} \, avg$', color='black')
+
+    x_axis_label = r'$h \nu$' + ' [keV]'
+    y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+
+    ax['a'].legend()
+    ax['a'].set_xscale('log')
+    ax['a'].set_yscale('log')
+    ax['a'].set_ylim(np.min(L_nu_avg_on_phase))
+
+    if save_dir is not None:
+        folder = 'L_nu/'
+        file_name = 'L_nu(nu)_avg_and_black_body'
+        save.save_figure(fig, save_dir / folder, file_name)
 
 
 if __name__ == '__main__':

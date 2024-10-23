@@ -118,6 +118,7 @@ def qCalc(u, v, ksi, s, ksi_shock):
 
 
 def get_Teff_distribution(delta_ns, A_normal, mu, M_accretion_rate):
+    # типо main = главная функция для расчета
     '''решение зависит от n размера пространства !!! взял n=3 везде
     delta_ns - уповерхности НЗ --- the distance between the field lines $\delta$
     A_normal - уповерхности НЗ --- a cross-section

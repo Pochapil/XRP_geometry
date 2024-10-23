@@ -76,6 +76,7 @@ energy_step = (energy_max / energy_min) ** (1 / (N_energy - 1))
 energy_arr = list(energy_min * energy_step ** i for i in range(N_energy - 1))
 # чтобы убрать погрешности и закрыть массив точным числом
 energy_arr.append(energy_max)
+# energy_arr = np.array(energy_arr)
 
 # obs_i_angle_deg угол между нормалью к двойной системе и наблюдателем
 
@@ -93,7 +94,7 @@ energy_indexes = [0, 12, 15, 17, 19]
 energy_indexes_luminosity = [0, 12, 14, 16, 18]
 
 fi_0_dict = {0.11: 340, 0.165: 330, 0.22: 320, 0.275: 310, 0.33: 300, 0.385: 290, 0.44: 280, 0.5: 270, 0.55: 260,
-             0.605: 250, 0.66: 240, 0.715: 230, 0.77: 220, 0.825: 210, 0.25: 320, 0.65: 240}
+             0.605: 250, 0.66: 240, 0.715: 230, 0.77: 220, 0.825: 210, 0.25: 320, 0.65: 240, 1: 0}
 
 # val_ksi = 100
 # val_n = 1e15
