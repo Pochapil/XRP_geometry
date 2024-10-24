@@ -19,15 +19,13 @@ def plot_total_luminosity_of_surfaces(L_surfs, save_dir=None):
     marker_arr = ['.', '*', '+', '^']
     line_style_arr = [':', '-']
 
-    phi_for_plot = np.linspace(0, 2, config.N_phase_for_plot)
-
-    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    fig, ax = plt.subplot_mosaic('a', figsize=(21, 10))
     for i, L_surf in enumerate(L_surfs):
-        ax['a'].plot(phi_for_plot, newService.extend_arr_for_plot(L_surf), label=legend_labels_arr[i],
+        ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(L_surf), label=legend_labels_arr[i],
                      color=colors_arr[i], marker=marker_arr[i], linestyle=line_style_arr[i % 2], markersize=12)
 
-    ax['a'].plot(phi_for_plot, newService.extend_arr_for_plot(np.sum(L_surfs, axis=0)), label=legend_labels_arr[-1],
-                 color='black')
+    ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(np.sum(L_surfs, axis=0)),
+                 label=legend_labels_arr[-1], color='black')
 
     x_axis_label = r'$\Phi$'
     y_axis_label = r'$L_{\rm{iso}}$' + ' [erg/s]'
@@ -57,10 +55,9 @@ def plot_observer_angles(observer_phi, observer_theta, save_dir=None):
 
     fig_title = 'Observer angles'
 
-    phi_for_plot = np.linspace(0, 2, config.N_phase_for_plot)
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
-    ax['a'].plot(phi_for_plot, np.rad2deg(observer_theta), label=r'$\theta_{observer}$')
-    ax['a'].plot(phi_for_plot, np.rad2deg(observer_phi), label=r'$\phi_{observer}$')
+    ax['a'].plot(config.phi_for_plot, np.rad2deg(observer_theta), label=r'$\theta_{observer}$')
+    ax['a'].plot(config.phi_for_plot, np.rad2deg(observer_phi), label=r'$\phi_{observer}$')
     ax['a'].legend()
 
     x_axis_label = r'$\Phi$'
@@ -89,7 +86,7 @@ def plot_Teff_to_ksi(R_e, T_eff, theta_range, save_dir=None):
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
     ax['a'].plot(ksi, T_eff, color='black')
     x_axis_label = r'$\xi$'
-    y_axis_label = r'$T_{eff} \: [K]$'
+    y_axis_label = r'$T_{\rm eff} ~ [K]$'
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
 
@@ -98,29 +95,22 @@ def plot_Teff_to_ksi(R_e, T_eff, theta_range, save_dir=None):
         save.save_figure(fig, save_dir, file_name)
 
 
-def f():
-    folder = 'L_nu/'
-
-    phi_for_plot = np.linspace(0, 2, config.N_phase_for_plot)
-
-    x_axis_label = r'$h \nu$' + ' [keV]'
-    y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
-
-
-def plot_PF_to_energy(L_nu_surfs, L_nu_scatter, save_dir=None):
+def plot_PF_to_energy(L_nu_surfs, save_dir=None):
     # sum(L_nu_surfs + L_nu_scatter)
 
-    energy_arr = config.energy_arr
-    L_nu = np.sum(L_nu_surfs, axis=0) + np.sum(L_nu_scatter, axis=0)
+    L_nu = np.sum(L_nu_surfs, axis=0)
+    # L_nu = np.sum(L_nu_surfs, axis=0) + np.sum(L_nu_scatter, axis=0)
+
     PF = newService.get_PF(L_nu)
 
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
-    ax['a'].plot(energy_arr, PF, color='black')
+    ax['a'].plot(config.energy_arr, PF, color='black')
     x_axis_label = r'$h \nu$' + ' [keV]'
     y_axis_label = 'PF'
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
 
+    ax['a'].set_ylim(0, 1)
     if save_dir is not None:
         folder = 'L_nu/'
         file_name = 'PF'
@@ -129,10 +119,7 @@ def plot_PF_to_energy(L_nu_surfs, L_nu_scatter, save_dir=None):
 
 def plot_L_nu(L_nu_surfs, save_dir=None):
     # sum L_nu
-
     L_nu_to_plot = newService.extend_arr_for_plot(L_nu_surfs)
-
-    phi_for_plot = np.linspace(0, 2, config.N_phase_for_plot)
 
     for i, energy in enumerate(config.energy_arr):
         fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
@@ -140,7 +127,7 @@ def plot_L_nu(L_nu_surfs, save_dir=None):
         L_nu_to_plot = newService.extend_arr_for_plot(np.sum(L_nu_surfs[:, i, :], axis=0))
         PF = newService.get_PF(L_nu_to_plot)
         fig_title = r'$L_{\nu}^' + r'{' + f'{energy:.2f} keV' + r'}' + r'(\Phi)$' + '  ' + f'PF = {PF:.3f}'
-        ax['a'].plot(phi_for_plot, L_nu_to_plot, color='black',
+        ax['a'].plot(config.phi_for_plot, L_nu_to_plot, color='black',
                      label=r'$L_{\nu}^' + r'{' + f'{energy:.2f}' + r'}' + r'(\Phi)$')
 
         x_axis_label = r'$h \nu$' + ' [keV]'
@@ -157,11 +144,10 @@ def plot_L_nu(L_nu_surfs, save_dir=None):
 
 
 def plot_L_nu_all_in_one(L_nu_surfs, save_dir=None):
-    phi_for_plot = np.linspace(0, 2, config.N_phase_for_plot)
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
     for i, energy in enumerate(config.energy_arr):
         L_nu_to_plot = newService.extend_arr_for_plot(np.sum(L_nu_surfs[:, i, :], axis=0))
-        ax['a'].plot(phi_for_plot, L_nu_to_plot, label=f'{energy:.2f} keV')
+        ax['a'].plot(config.phi_for_plot, L_nu_to_plot, label=f'{energy:.2f} keV')
 
         x_axis_label = r'$\Phi$'
         y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
@@ -180,7 +166,7 @@ def plot_L_nu_on_phase(L_nu_surfs, save_dir=None, phase_index=0):
     L_nu_on_phase = np.sum(L_nu_surfs[:, :, phase_index], axis=0)
 
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
-    ax['a'].plot(config.energy_arr, L_nu_on_phase)
+    ax['a'].plot(config.energy_arr, L_nu_on_phase, color='black')
 
     x_axis_label = r'$h \nu$' + ' [keV]'
     y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
@@ -197,7 +183,7 @@ def plot_L_nu_avg(L_nu_surfs, save_dir=None):
     L_nu_avg_on_phase = np.mean(np.sum(L_nu_surfs, axis=0), axis=1)
 
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
-    ax['a'].plot(config.energy_arr, L_nu_avg_on_phase)
+    ax['a'].plot(config.energy_arr, L_nu_avg_on_phase, color='black')
 
     x_axis_label = r'$h \nu$' + ' [keV]'
     y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
@@ -247,6 +233,92 @@ def plot_L_nu_with_bb(L_nu_surfs, T_eff, save_dir=None):
         folder = 'L_nu/'
         file_name = 'L_nu(nu)_avg_and_black_body'
         save.save_figure(fig, save_dir / folder, file_name)
+
+
+def plot_scatter_L(L_surfs, L_scatter, save_dir=None):
+    legend_labels_arr = [r'$top_{pol}$', r'$top_{eq}$', r'$bottom_{pol}$', r'$bottom_{eq}$', 'sum']
+
+    colors_arr = ['red', 'red', 'green', 'green']
+    marker_arr = ['.', '*', '+', '^']
+    line_style_arr = [':', '-']
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(21, 10))
+    for i, L_surf in enumerate(L_surfs):
+        ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(L_surf), label=legend_labels_arr[i],
+                     color=colors_arr[i], marker=marker_arr[i], linestyle=line_style_arr[i % 2], markersize=12)
+
+    ax['a'].plot(config.phi_for_plot,
+                 newService.extend_arr_for_plot(np.sum(L_surfs, axis=0) + np.sum(L_scatter, axis=0)),
+                 label=legend_labels_arr[-1], color='black')
+
+    ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(L_scatter[0]), label='top_scatter', color='purple',
+                 marker='*', markersize=12)
+    ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(L_scatter[1]), label='bot_scatter', color='blue',
+                 marker='^', markersize=12)
+
+    x_axis_label = r'$\Phi$'
+    y_axis_label = r'$L_{\rm{iso}}$' + ' [erg/s]'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+    ax['a'].legend()
+
+    if save_dir is not None:
+        folder = 'scattered_on_magnet_lines/'
+        file_name = 'total_luminosity_of_surfaces_with_scatter'
+        save.save_figure(fig, save_dir / folder, file_name)
+
+
+def plot_PF_to_energy_with_scatter(L_nu_surfs, L_nu_scatter, save_dir=None):
+    L_nu = np.sum(L_nu_surfs, axis=0) + np.sum(L_nu_scatter, axis=0)
+    PF = newService.get_PF(L_nu)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    ax['a'].plot(config.energy_arr, PF, color='black')
+
+    x_axis_label = r'$h \nu$' + ' [keV]'
+    y_axis_label = 'PF'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+
+    ax['a'].set_ylim(0, 1)
+
+    if save_dir is not None:
+        folder = 'scattered_on_magnet_lines/' + 'L_nu/'
+        file_name = 'PF'
+        save.save_figure(fig, save_dir / folder, file_name)
+
+
+def plot_scatter_L_nu(L_nu_surfs, L_nu_scatter, save_dir=None):
+    L_nu_surfs_total = np.sum(L_nu_surfs, axis=0)
+    L_nu_total = L_nu_surfs_total + np.sum(L_nu_scatter, axis=0)
+
+    legend_labels_arr = [r'$top_{scatter}$', r'$bot_{scatter}$']
+    colors_arr = ['blue', 'red']
+    for i, energy in enumerate(config.energy_arr):
+        fig, ax = plt.subplot_mosaic('a', figsize=(21, 10))
+
+        for j, L_nu in enumerate(L_nu_scatter):
+            ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(L_nu[i]), label=legend_labels_arr[j],
+                         color=colors_arr[j])
+
+        ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(L_nu_surfs_total[i]), label='without scatter',
+                     color='green')
+        ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(L_nu_total[i]), label='sum', color='black')
+
+        x_axis_label = r'$\Phi$'
+        y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
+        ax['a'].set_xlabel(x_axis_label, fontsize=24)
+        ax['a'].set_ylabel(y_axis_label, fontsize=24)
+        ax['a'].legend()
+
+        PF = newService.get_PF(L_nu_total[i])
+        fig_title = r'$L_{\nu}^' + r'{' + f'{energy:.2f} keV' + r'}' + r'(\Phi)$' + '  ' + f'PF = {PF:.3f}'
+        fig.suptitle(fig_title, fontsize=16)
+
+        if save_dir is not None:
+            folder = 'scattered_on_magnet_lines/' + 'L_nu/'
+            file_name = f'L_nu_of_energy_{energy:.2f}_KeV_of_surfaces'
+            save.save_figure(fig, save_dir / folder, file_name)
 
 
 if __name__ == '__main__':
@@ -301,9 +373,5 @@ if __name__ == '__main__':
           ]
 
     buf = L1.copy()
-    L1[0] = buf[1]
-    L1[1] = buf[0]
-    L1[2] = buf[3]
-    L1[3] = buf[2]
 
     plot_total_luminosity_of_surfaces(L1)

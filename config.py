@@ -67,6 +67,8 @@ N_theta_accretion = 100
 N_wavelength_range = 10
 N_frequency_range = 100
 
+phi_for_plot = np.linspace(0, 2, N_phase_for_plot)
+
 N_energy = 20
 energy_min = 1  # [КэВ]
 energy_max = 40  # [КэВ]

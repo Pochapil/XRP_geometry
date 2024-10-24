@@ -59,6 +59,7 @@ def get_pulsed_fraction(arr):
 
 
 def get_PF(L):
+    # берем по последней размерности - это фаза (ожидаем что поступают данные в таком виде)
     min_val = np.min(L, axis=-1)
     max_val = np.max(L, axis=-1)
     return (max_val - min_val) / (max_val + min_val)

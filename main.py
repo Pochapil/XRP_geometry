@@ -183,8 +183,8 @@ def save_some_files():
             save.save_arr_as_txt(np.sum(L_nu_surfs, axis=0)[i] * freq, old_path / ('nu_L_nu/' + 'txt/'), file_name)
 
         file_name = "PF.txt"
-        save.save_arr_as_txt(PF_L_nu_surf, old_path / 'L_nu/', file_name)
-        save.save_arr_as_txt(PF_L_nu_surf, old_path / 'nu_L_nu/', file_name)
+        save.save_arr_as_txt(PF_L_nu_surfs, old_path / 'L_nu/', file_name)
+        save.save_arr_as_txt(PF_L_nu_surfs, old_path / 'nu_L_nu/', file_name)
 
         file_name = "scattered_energy_top.txt"
         save.save_arr_as_txt(L_scatter[0], old_path / 'scattered_on_magnet_lines/', file_name)
@@ -368,13 +368,16 @@ if __name__ == '__main__':
 
     # plot_package.plot_scripts.plot_L(L_scatter)
 
-    PF_L_surf = newService.get_PF(np.sum(L_scatter, axis=0))
-    PF_L_nu_surf = newService.get_PF(np.sum(L_nu_scatter, axis=0))
+    PF_L_scatter = newService.get_PF(np.sum(L_scatter, axis=0))
+    PF_L_nu_scatter = newService.get_PF(np.sum(L_nu_scatter, axis=0))
 
+    # ------------------------------------------------- save txt -----------------------------------------------------
     make_save_values_file()
     save_some_files()
     save_new_way()
 
+    t1 = time.perf_counter()
+    # ------------------------------------------------- save figs -------------------------------------------------
     cur_path_fig = cur_path / 'fig'
     save.create_file_path(cur_path_fig)
     plot_package.plot_scripts.plot_total_luminosity_of_surfaces(L_surfs, cur_path_fig)
@@ -382,16 +385,21 @@ if __name__ == '__main__':
     ans = np.apply_along_axis(matrix.vec_to_angles, axis=1, arr=obs_matrix)
     observer_phi = ans[:, 0]
     observer_theta = ans[:, 1]
-
     plot_package.plot_scripts.plot_observer_angles(observer_phi, observer_theta, cur_path_fig)
     plot_package.plot_scripts.plot_Teff_to_ksi(curr_configuration.R_e, curr_configuration.top_column.T_eff,
                                                curr_configuration.top_column.inner_surface.theta_range, cur_path_fig)
 
-    # ----------------------L_nu--------------------------
-    plot_package.plot_scripts.plot_PF_to_energy(L_nu_surfs, L_nu_scatter, cur_path_fig)
+    # -------------------------------------------------- L_nu --------------------------------------------------
+    plot_package.plot_scripts.plot_PF_to_energy(L_nu_surfs, cur_path_fig)
     plot_package.plot_scripts.plot_L_nu(L_nu_surfs, cur_path_fig)
     plot_package.plot_scripts.plot_L_nu_all_in_one(L_nu_surfs, cur_path_fig)
     plot_package.plot_scripts.plot_L_nu_on_phase(L_nu_surfs, cur_path_fig)
     plot_package.plot_scripts.plot_L_nu_avg(L_nu_surfs, cur_path_fig)
     plot_package.plot_scripts.plot_L_nu_with_bb(L_nu_surfs, curr_configuration.top_column.T_eff, cur_path_fig)
-    # -----------------
+    # ------------------------------------------------- L_scatter -------------------------------------------------
+    plot_package.plot_scripts.plot_scatter_L(L_surfs, L_scatter, cur_path_fig)
+    plot_package.plot_scripts.plot_PF_to_energy_with_scatter(L_nu_surfs, L_nu_scatter, cur_path_fig)
+    plot_package.plot_scripts.plot_scatter_L_nu(L_nu_surfs, L_nu_scatter, cur_path_fig)
+    # -------------------------------------------------------------------------------------------------------------
+    t2 = time.perf_counter()
+    print(f'{t2 - t1} seconds')
