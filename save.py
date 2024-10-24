@@ -2,7 +2,9 @@ import pathlib
 import numpy as np
 import matplotlib.pyplot as plt
 
+import newService
 import pathService
+import config
 
 
 def create_file_path_from_str(file_path_str):
@@ -88,3 +90,31 @@ def load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     # if not np.isnan(buf).any():
     L_scatter = load_L_scatter(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     return np.sum(L_surfs, axis=0) + np.sum(L_scatter, axis=0)
+
+
+def load_L_nu_surfs(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, energy):
+    data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    folder = 'surfs/'
+    file_name = f'L_nu_surfs_of_energy_{energy:.2f}_KeV.txt'
+    return load_arr_from_txt(data_folder / folder, file_name)
+
+
+def load_L_nu_scatter(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, energy):
+    data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    folder = 'scatter/'
+    file_name = f'L_nu_scatter_of_energy_{energy:.2f}_KeV.txt'
+    return load_arr_from_txt(data_folder / folder, file_name)
+
+
+def load_L_nu_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
+    L_nu_total = np.empty((config.N_energy, config.N_phase))
+    for i, energy in enumerate(config.energy_arr):
+        L_nu_surfs = load_L_nu_surfs(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, energy)
+        L_nu_scatter = load_L_nu_scatter(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, energy)
+        L_nu_total[i] = np.sum(L_nu_surfs, axis=0) + np.sum(L_nu_scatter, axis=0)
+    return L_nu_total
+
+
+def load_PF(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
+    L_nu_total = load_L_nu_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    return newService.get_PF(L_nu_total)

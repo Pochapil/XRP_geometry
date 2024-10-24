@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scienceplots
 import matplotlib as mpl
+import matplotlib.cm as cm
 
 import pathService
 import config
@@ -82,6 +83,92 @@ def plot_L_to_a_portion(theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
     save.save_figure(fig, save_dir, file_name)
 
 
+def plot_masses_PF_L_nu(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr, energy_index=8):
+    # PF(L_nu) много точек, берутся линии по mc, a
+    ''' рисует графики PF от nu_L_nu (nu_L_nu усреднили по фазе)
+
+    сначала в цикле читаю PF, заношу в 2D массив
+    потом в цикле по fi_0 в мапу - ключ среднее по фазе nu_Lnu значение - значение PF массив
+    одновременно для L_nu запоминаю fi_0, чтобы окрасить в цвет (1 график)
+
+    рисую 3 графика ox - nu_L_nu, oy - PF:
+    1 - множество точек для разных mc2, a - папки по a - точки окрашены по fi_0
+    2 - множество точек для разных mc2, a - папки по a - точки окрашены для комбинаций mc2, a
+    3 - множество точек для разных mc2, a - все точки - точки окрашены для комбинаций mc2, a'''
+
+    line_color_dict = {0: 'blue', 1: 'green', 2: 'orange', 3: 'red', 4: 'purple', 5: 'black', 6: 'yellow'}
+    marker_index = 0
+    line_style = ['-', '--']
+    marker_dict = {0: '.', 1: '*', 2: '+', 3: '^'}
+    file_name = f'L_nu_of_energy_{config.energy_arr[energy_index]:.2f}_KeV_of_surfaces'
+
+    PF_tensor = np.empty((len(a_portion_arr), len(mc2_arr), len(phi_0_arr)))
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    for a_index, a_portion in enumerate(a_portion_arr):
+        for mc2_index, mc2 in enumerate(mc2_arr):
+            L_nu_data_dict = {}
+            color_dict = {}
+            full_dict = {}
+            for phi_0_index, phi_0 in enumerate(phi_0_arr):
+                PF = save.load_PF(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+                PF_tensor[a_index][mc2_index][phi_0_index] = PF[energy_index]
+
+                L_nu_total = save.load_L_nu_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+
+                freq_arr = newService.get_frequency_from_energy(np.array(config.energy_arr))
+                nu_L_nu_total = L_nu_total * freq_arr[:, np.newaxis]
+
+                L_nu_data_dict[np.mean(nu_L_nu_total)] = PF_tensor[a_index][mc2_index][phi_0_index]
+                color_dict[np.mean(nu_L_nu_total)] = phi_0_arr[phi_0_index]
+                full_dict[np.mean(nu_L_nu_total)] = (PF_tensor[a_index][mc2_index][phi_0_index], phi_0_arr[phi_0_index])
+
+            lists = sorted(L_nu_data_dict.items())  # sorted by key, return a list of tuples
+            x, y = zip(*lists)  # unpack a list of pairs into two tuples
+
+            lists = sorted(color_dict.items())
+            buffer, colors = zip(*lists)
+
+            lists = sorted(full_dict.items(), key=lambda item: item[1])
+            x_sort, y_sort = zip(*lists)
+            y_sort, colors_sort = zip(*y_sort)
+
+            lists = sorted(full_dict.items(), key=lambda item: item[1][1])
+            x_sort_fi_0, y_sort_fi_0 = zip(*lists)
+            y_sort_fi_0, _ = zip(*y_sort_fi_0)
+
+            colors = (np.array(colors_sort)) / 180
+
+            if marker_index == 0:
+                ax['a'].scatter(x_sort, y_sort, s=30, facecolors='none', edgecolors=cm.jet(colors))
+            else:
+                ax['a'].scatter(x_sort, y_sort, marker=marker_dict[marker_index % 4], color=cm.jet(colors))
+
+            ax['a'].plot(x_sort_fi_0, y_sort_fi_0, color='black', alpha=0.2, linestyle=line_style[mc2_index])
+
+        marker_index = 3
+
+        x_axis_label = r'$\nu L_{\nu}$' + ' [erg/s]'
+        y_axis_label = r'$PF_{' + f'{config.energy_arr[energy_index]:.2f}' + r'}$'
+        ax['a'].set_xlabel(x_axis_label, fontsize=24)
+        ax['a'].set_ylabel(y_axis_label, fontsize=24)
+        ax['a'].set_xscale('log')
+        # ax['a'].legend()
+
+    bounds = phi_0_arr.copy()
+    cmap = mpl.cm.jet
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', label=r'$\phi_0$',
+                 pad=0.01)
+
+    folder = 'PF_to_L_nu/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
+                                   phi_0=None, folder=folder)
+
+    file_name = f'theta={theta_obs} beta_mu={beta_mu} All_PF_to_L_nu.png'
+    save.save_figure(fig, save_dir, file_name)
+
+
 if __name__ == '__main__':
     mu = 0.1e31
     beta_mu = 40
@@ -95,3 +182,8 @@ if __name__ == '__main__':
 
     a_portion_arr = [0.22, 0.44, 0.66]
     plot_L_to_a_portion(theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+
+    mc2_arr = [30, 100]
+    a_portion_arr = [0.22, 0.66]
+    phi_0_arr = [0, 20, 40, 60, 80, 120, 140, 160, 180]
+    plot_masses_PF_L_nu(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)

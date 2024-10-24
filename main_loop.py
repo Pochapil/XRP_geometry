@@ -275,6 +275,13 @@ if __name__ == '__main__':
     mc2_arr = [30, 60, 100]
     a_portion_arr = [0.22, 0.44, 0.66, 1]
     phi_0_arr = [0]
+
+    beta_mu_arr = [40]
+    theta_obs_arr = [20]
+    mc2_arr = [30, 100]
+    a_portion_arr = [0.22, 0.66]
+    phi_0_arr = [100]
+
     # ------------------------------------------------- start -------------------------------------------------------
     N_big = len(theta_obs_arr) * len(beta_mu_arr) * len(mc2_arr) * len(a_portion_arr) * len(phi_0_arr)
     print(f'to calculate {N_big} loops need about {30 * N_big / 3600} hours')

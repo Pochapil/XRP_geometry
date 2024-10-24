@@ -67,6 +67,10 @@ class PathSaver:
         # ------------------------ new way ---------------------------
 
         self.prefix_dir = self.PROJECT_DIR / 'data'
+        # if config.tau_flag:
+        #     self.prefix_dir = self.prefix_dir / 'tau'
+        # else:
+        #     self.prefix_dir = self.prefix_dir / 'transperent'
         self.save_dir = self.prefix_dir / f'mu=0.1e{count}'
         self.save_dir = self.save_dir / f'theta_obs={theta_obs}' / f'beta_mu={beta_mu}'
         # поменять fi_0 на phi_0
