@@ -287,7 +287,7 @@ if __name__ == '__main__':
     cur_path_data = cur_path / folder
     print(cur_path_data)
     save.create_file_path(cur_path_data)
-
+    print(cur_dir_saved.save_dir)
     theta_obs_rad = np.deg2rad(theta_obs)
     beta_mu_rad = np.deg2rad(beta_mu)
 

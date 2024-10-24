@@ -314,7 +314,7 @@ if __name__ == '__main__':
                             e_obs_mu = np.dot(A_matrix_analytic, e_obs)
                             obs_matrix[phase_index] = e_obs_mu
 
-                        # ------------------------------------------------ L_calc -------------------------------------------------------
+                        # ------------------------------------------------ L_calc ------------------------------------
                         accr_col_surfs = [curr_configuration.top_column.outer_surface,
                                           curr_configuration.top_column.inner_surface,
                                           curr_configuration.bot_column.outer_surface,
@@ -341,14 +341,14 @@ if __name__ == '__main__':
 
                         # plot_package.plot_scripts.plot_L(L_surfs)
 
-                        # ----------------------------------------------- Scatter -----------------------------------------------------
+                        # ----------------------------------------------- Scatter -------------------------------------
                         magnet_line_surfs = [curr_configuration.top_magnet_lines, curr_configuration.bot_magnet_lines]
 
                         new_cos_psi_range_surfs = calc_cos_psi(magnet_line_surfs, True)
 
                         L_scatter = np.empty((2, config.N_phase))
                         L_nu_scatter = np.empty((2, config.N_energy, config.N_phase))
-                        # ------------------------------------------------ L_scatter ----------------------------------------------------
+                        # ------------------------------------------------ L_scatter ---------------------------------
                         for i, magnet_surface in enumerate(magnet_line_surfs):
                             # new_cos_psi_range = calc_shadows_and_tau(curr_configuration, magnet_surface, obs_matrix, True)
                             new_cos_psi_range = new_cos_psi_range_surfs[i]
@@ -390,7 +390,7 @@ if __name__ == '__main__':
                         make_save_values_file()
                         save_some_files()
                         save_new_way()
-
+                        # ---------------------------------------- save figs -------------------------------------------
                         # cur_path_fig = cur_path / 'fig'
                         # save.create_file_path(cur_path_fig)
                         # plot_package.plot_scripts.plot_total_luminosity_of_surfaces(L_surfs, cur_path_fig)
@@ -404,7 +404,7 @@ if __name__ == '__main__':
                         #                                            curr_configuration.top_column.inner_surface.theta_range,
                         #                                            cur_path_fig)
                         #
-                        # # -------------------------------------------------- L_nu -------------------------------------
+                        # # ------------------------------------------- L_nu -------------------------------------------
                         # plot_package.plot_scripts.plot_PF_to_energy(L_nu_surfs, cur_path_fig)
                         # plot_package.plot_scripts.plot_L_nu(L_nu_surfs, cur_path_fig)
                         # plot_package.plot_scripts.plot_L_nu_all_in_one(L_nu_surfs, cur_path_fig)
@@ -412,8 +412,8 @@ if __name__ == '__main__':
                         # plot_package.plot_scripts.plot_L_nu_avg(L_nu_surfs, cur_path_fig)
                         # plot_package.plot_scripts.plot_L_nu_with_bb(L_nu_surfs, curr_configuration.top_column.T_eff,
                         #                                             cur_path_fig)
-                        # # ------------------------------------------------- L_scatter ---------------------------------
+                        # # ------------------------------------------ L_scatter ---------------------------------------
                         # plot_package.plot_scripts.plot_scatter_L(L_surfs, L_scatter, cur_path_fig)
                         # plot_package.plot_scripts.plot_PF_to_energy_with_scatter(L_nu_surfs, L_nu_scatter, cur_path_fig)
                         # plot_package.plot_scripts.plot_scatter_L_nu(L_nu_surfs, L_nu_scatter, cur_path_fig)
-                        # # ---------------------------------------------------------------------------------------------
+                        # # --------------------------------------------------------------------------------------------

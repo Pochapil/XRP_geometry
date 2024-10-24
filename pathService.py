@@ -4,6 +4,41 @@ import config
 print_flag = False
 
 
+def get_prefix_dir():
+    PROJECT_DIR = pathlib.Path(__file__).resolve().parent
+    prefix_dir = PROJECT_DIR / 'data'
+    return prefix_dir
+
+
+def get_args_dir(mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None, phi_0=None):
+    buf = mu
+    count = 1
+    while buf > 1:
+        count += 1
+        buf //= 10
+
+    args_dir = pathlib.Path(f'mu=0.1e{count}')
+    if theta_obs is not None:
+        args_dir = args_dir / f'theta_obs={theta_obs}'
+    if beta_mu is not None:
+        args_dir = args_dir / f'beta_mu={beta_mu}'
+    if mc2 is not None:
+        args_dir = args_dir / f'mc2={mc2}'
+    if a_portion is not None:
+        args_dir = args_dir / f'a={a_portion:.2f}'
+    if phi_0 is not None:
+        args_dir = args_dir / f'phi_0={phi_0}'
+    return args_dir
+
+
+def get_dir(mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None, phi_0=None, folder=None):
+    prefix_dir = get_prefix_dir()
+    if folder is not None:
+        prefix_dir = prefix_dir / folder
+    args_dir = get_args_dir(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    return prefix_dir / args_dir
+
+
 class PathSaver:
 
     def __init__(self, mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
@@ -32,8 +67,8 @@ class PathSaver:
         # ------------------------ new way ---------------------------
 
         self.prefix_dir = self.PROJECT_DIR / 'data'
-        self.prefix_dir = self.prefix_dir / f'mu=0.1e{count}'
-        self.save_dir = self.prefix_dir / f'theta_obs={theta_obs}' / f'beta_mu={beta_mu}'
+        self.save_dir = self.prefix_dir / f'mu=0.1e{count}'
+        self.save_dir = self.save_dir / f'theta_obs={theta_obs}' / f'beta_mu={beta_mu}'
         # поменять fi_0 на phi_0
         self.save_dir = self.save_dir / f'mc2={mc2}' / f'a={a_portion:.2f}' / f'phi_0={phi_0}'
 
@@ -73,6 +108,9 @@ class PathSaver:
     def get_path(self):
         return self.save_dir
 
+    def get_save_args_dir(self):
+        return self.save_dir
+
     def get_old_path(self):
         return self.old_save_dir
 
@@ -86,3 +124,6 @@ if __name__ == '__main__':
     theta_obs = 60
 
     path1 = PathSaver(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    print(get_args_dir(mu, theta_obs, beta_mu, mc2, a_portion))
+
+    print(get_dir(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'aggr/'))

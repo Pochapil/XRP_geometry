@@ -21,10 +21,10 @@ def plot_total_luminosity_of_surfaces(L_surfs, save_dir=None):
 
     fig, ax = plt.subplot_mosaic('a', figsize=(21, 10))
     for i, L_surf in enumerate(L_surfs):
-        ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(L_surf), label=legend_labels_arr[i],
+        ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(L_surf), label=legend_labels_arr[i],
                      color=colors_arr[i], marker=marker_arr[i], linestyle=line_style_arr[i % 2], markersize=12)
 
-    ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(np.sum(L_surfs, axis=0)),
+    ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(np.sum(L_surfs, axis=0)),
                  label=legend_labels_arr[-1], color='black')
 
     x_axis_label = r'$\Phi$'
@@ -56,8 +56,8 @@ def plot_observer_angles(observer_phi, observer_theta, save_dir=None):
     fig_title = 'Observer angles'
 
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
-    ax['a'].plot(config.phi_for_plot, np.rad2deg(observer_theta), label=r'$\theta_{observer}$')
-    ax['a'].plot(config.phi_for_plot, np.rad2deg(observer_phi), label=r'$\phi_{observer}$')
+    ax['a'].plot(config.phase_for_plot, np.rad2deg(observer_theta), label=r'$\theta_{observer}$')
+    ax['a'].plot(config.phase_for_plot, np.rad2deg(observer_phi), label=r'$\phi_{observer}$')
     ax['a'].legend()
 
     x_axis_label = r'$\Phi$'
@@ -127,7 +127,7 @@ def plot_L_nu(L_nu_surfs, save_dir=None):
         L_nu_to_plot = newService.extend_arr_for_plot(np.sum(L_nu_surfs[:, i, :], axis=0))
         PF = newService.get_PF(L_nu_to_plot)
         fig_title = r'$L_{\nu}^' + r'{' + f'{energy:.2f} keV' + r'}' + r'(\Phi)$' + '  ' + f'PF = {PF:.3f}'
-        ax['a'].plot(config.phi_for_plot, L_nu_to_plot, color='black',
+        ax['a'].plot(config.phase_for_plot, L_nu_to_plot, color='black',
                      label=r'$L_{\nu}^' + r'{' + f'{energy:.2f}' + r'}' + r'(\Phi)$')
 
         x_axis_label = r'$h \nu$' + ' [keV]'
@@ -147,7 +147,7 @@ def plot_L_nu_all_in_one(L_nu_surfs, save_dir=None):
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
     for i, energy in enumerate(config.energy_arr):
         L_nu_to_plot = newService.extend_arr_for_plot(np.sum(L_nu_surfs[:, i, :], axis=0))
-        ax['a'].plot(config.phi_for_plot, L_nu_to_plot, label=f'{energy:.2f} keV')
+        ax['a'].plot(config.phase_for_plot, L_nu_to_plot, label=f'{energy:.2f} keV')
 
         x_axis_label = r'$\Phi$'
         y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
@@ -244,16 +244,16 @@ def plot_scatter_L(L_surfs, L_scatter, save_dir=None):
 
     fig, ax = plt.subplot_mosaic('a', figsize=(21, 10))
     for i, L_surf in enumerate(L_surfs):
-        ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(L_surf), label=legend_labels_arr[i],
+        ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(L_surf), label=legend_labels_arr[i],
                      color=colors_arr[i], marker=marker_arr[i], linestyle=line_style_arr[i % 2], markersize=12)
 
-    ax['a'].plot(config.phi_for_plot,
+    ax['a'].plot(config.phase_for_plot,
                  newService.extend_arr_for_plot(np.sum(L_surfs, axis=0) + np.sum(L_scatter, axis=0)),
                  label=legend_labels_arr[-1], color='black')
 
-    ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(L_scatter[0]), label='top_scatter', color='purple',
-                 marker='*', markersize=12)
-    ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(L_scatter[1]), label='bot_scatter', color='blue',
+    ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(L_scatter[0]), label='top_scatter',
+                 color='purple', marker='*', markersize=12)
+    ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(L_scatter[1]), label='bot_scatter', color='blue',
                  marker='^', markersize=12)
 
     x_axis_label = r'$\Phi$'
@@ -298,12 +298,12 @@ def plot_scatter_L_nu(L_nu_surfs, L_nu_scatter, save_dir=None):
         fig, ax = plt.subplot_mosaic('a', figsize=(21, 10))
 
         for j, L_nu in enumerate(L_nu_scatter):
-            ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(L_nu[i]), label=legend_labels_arr[j],
+            ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(L_nu[i]), label=legend_labels_arr[j],
                          color=colors_arr[j])
 
-        ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(L_nu_surfs_total[i]), label='without scatter',
-                     color='green')
-        ax['a'].plot(config.phi_for_plot, newService.extend_arr_for_plot(L_nu_total[i]), label='sum', color='black')
+        ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(L_nu_surfs_total[i]),
+                     label='without scatter', color='green')
+        ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(L_nu_total[i]), label='sum', color='black')
 
         x_axis_label = r'$\Phi$'
         y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
