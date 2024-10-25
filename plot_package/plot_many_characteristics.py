@@ -342,6 +342,59 @@ def plot_L_iso_to_m(mu, theta_obs, beta_mu, a_portion, mc2_arr, phi_0):
     save.save_figure(fig, save_dir, file_name)
 
 
+def plot_pf_to_chi_theta(a_portion, mc2, phi_0):
+    theta_obs_arr = np.linspace(10, 90, 9)
+    beta_mu_arr = np.linspace(10, 90, 9)
+
+    final_final_array = np.zeros((len(theta_obs_arr), len(beta_mu_arr)))
+
+    dict_chi_plus_theta = {}
+    dict_chi_minus_theta = {}
+
+    for i, theta_obs in enumerate(theta_obs_arr):
+        for j, beta_mu in enumerate(beta_mu_arr):
+            L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+            final_final_array[i][j] = newService.get_PF(L_total)
+
+            plus = theta_obs_arr[i] + beta_mu_arr[j]
+            dict_chi_plus_theta.setdefault(plus, []).append(final_final_array[i][j])
+
+            minus = beta_mu_arr[j] - theta_obs_arr[i]
+            dict_chi_minus_theta.setdefault(minus, []).append(final_final_array[i][j])
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+    for plus in dict_chi_plus_theta:
+        arr = [plus] * len(dict_chi_plus_theta[plus])
+        ax['a'].scatter(arr, dict_chi_plus_theta[plus], color='black')
+
+    x_axis_label = r'$\chi + \theta_{obs}$'
+    y_axis_label = r'$PF$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    prefix_folder = 'PF_to_plus/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'a={a_portion}' + ' ' + f'mc2={mc2}' + ' ' + f'phi_0={phi_0}'
+    save.save_figure(fig, save_dir, file_name)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+    for minus in dict_chi_minus_theta:
+        arr = [minus] * len(dict_chi_minus_theta[minus])
+        ax.scatter(arr, dict_chi_minus_theta[minus], color='black')
+
+    x_axis_label = r'$\chi - \theta_{obs}$'
+    y_axis_label = r'$PF$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    prefix_folder = 'PF_to_minus/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'a={a_portion}' + ' ' + f'mc2={mc2}' + ' ' + f'phi_0={phi_0}'
+    save.save_figure(fig, save_dir, file_name)
+
+
 if __name__ == '__main__':
     mu = 0.1e31
     beta_mu = 40
@@ -378,3 +431,9 @@ if __name__ == '__main__':
 
     '''нужен тест!!!'''
     # plot_PF_contour(mu, mc2, a_portion, phi_0)
+
+    '''нужен тест!!!'''
+    # plot_L_iso_to_m
+
+    '''нужен тест!!!'''
+    # plot_pf_to_chi_theta
