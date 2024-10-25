@@ -321,6 +321,27 @@ def plot_PF_contour(mu, mc2, a_portion, phi_0):
     save.save_figure(fig, save_dir, file_name)
 
 
+def plot_L_iso_to_m(mu, theta_obs, beta_mu, a_portion, mc2_arr, phi_0):
+    L_iso_arr = np.empty((len(mc2_arr), config.N_phase))
+    for i, mc2 in enumerate(mc2_arr):
+        L_iso_arr[i] = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+    ax['a'].scatter(mc2_arr, L_iso_arr, s=30, facecolors='none', edgecolors='black')
+    ax['a'].plot(mc2_arr, L_iso_arr, color='black', alpha=0.2, linestyle='-')
+
+    x_axis_label = r'$\dot{m}$'
+    y_axis_label = r'$L_{\rm iso}$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    prefix_folder = 'L_iso_to_m/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'a={a_portion} phi_0={phi_0}'
+    save.save_figure(fig, save_dir, file_name)
+
+
 if __name__ == '__main__':
     mu = 0.1e31
     beta_mu = 40
@@ -353,4 +374,7 @@ if __name__ == '__main__':
     a_portion = 0.66
     phi_0 = 0
     theta_obs = 20
-    plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr)
+    # plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr)
+
+    '''нужен тест!!!'''
+    # plot_PF_contour(mu, mc2, a_portion, phi_0)
