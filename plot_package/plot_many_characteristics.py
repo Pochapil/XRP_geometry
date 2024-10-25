@@ -14,6 +14,65 @@ mpl.rcParams['mathtext.fontset'] = 'cm'
 mpl.rcParams['font.family'] = 'STIXGeneral'
 
 
+def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
+    # try_sky_map(obs_i_angle_arr)
+    # obs_i_angle = np.linspace(0, 180, 19)
+    L_x = save.load_L_x(mu, 10, beta_mu, mc2, a_portion, phi_0)
+
+    theta_obs_arr = np.linspace(10, 90, 9)
+    data_array = np.empty((len(theta_obs_arr) * 2 - 1, config.N_phase))
+    # roll -- циклическая перестановка - делаем так как симметрическая задача и для угла 180 - theta будет симметрично
+    # для сдвига на полфазы -- можно расчитать только до 90 а потом для других переставить и получить для до 180
+    for i, theta_obs in enumerate(theta_obs_arr):
+        L_total = save.load_L_total(mu, int(theta_obs), beta_mu, mc2, a_portion, phi_0)
+        data_array[i] = L_total
+        if i != len(theta_obs_arr) - 1:
+            data_array[-i - 1] = np.roll(data_array[i], len(data_array[i]) // 2)
+
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_array / L_x)
+    theta_obs_arr_to_plot = np.linspace(0, 180, 17)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
+    im = ax['a'].pcolormesh(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot)
+    ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='white', marker='*', s=300)
+    ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='white', marker='*', s=300)
+    ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='black', marker='*', s=100)
+    ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='black', marker='*', s=100)
+
+    x_axis_label = r'$\Phi$'
+    y_axis_label = r'$\theta_{obs} \, [^{\circ}]$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+    clb = plt.colorbar(im)
+    clb.set_label(r'$L_{iso} \cdot L_{x}^{-1}$', fontsize=24)
+
+    prefix_folder = 'sky_map/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion, phi_0=phi_0,
+                                   prefix_folder=prefix_folder)
+    file_name = 'try_map'
+    save.save_figure(fig, save_dir, file_name)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
+    im = ax['a'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot, levels=30)
+    ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='white', marker='*', s=300)
+    ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='white', marker='*', s=300)
+    ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='black', marker='*', s=100)
+    ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='black', marker='*', s=100)
+
+    x_axis_label = r'$\Phi$'
+    y_axis_label = r'$\theta_{obs} \, [^{\circ}]$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+    clb = plt.colorbar(im)
+    clb.set_label(r'$L_{iso} \cdot L_{x}^{-1}$', fontsize=24)
+
+    prefix_folder = 'sky_map/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion, phi_0=phi_0,
+                                   prefix_folder=prefix_folder)
+    file_name = 'try_map_contour'
+    save.save_figure(fig, save_dir, file_name)
+
+
 def plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
     # plot_L_to_accr_rate
 
@@ -47,9 +106,9 @@ def plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
     clb = plt.colorbar(im, pad=0.15, format="{x:.2}")
     clb.set_label(r'$L_{iso} \cdot max(L_{iso})^{-1}$', fontsize=24)
 
-    folder = 'L_to_mass/'
+    prefix_folder = 'L_to_mass/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=a_portion,
-                                   phi_0=phi_0, folder=folder)
+                                   phi_0=phi_0, prefix_folder=prefix_folder)
     file_name = 'map_contour'
     save.save_figure(fig, save_dir, file_name)
 
@@ -76,9 +135,9 @@ def plot_L_to_a_portion(theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
     clb = plt.colorbar(im, pad=0.01)
     clb.set_label(r'$L_{iso} \cdot max(L_{iso})^{-1}$', fontsize=24)
 
-    folder = 'L_to_a/'
+    prefix_folder = 'L_to_a/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=mc2, a_portion=None,
-                                   phi_0=phi_0, folder=folder)
+                                   phi_0=phi_0, prefix_folder=prefix_folder)
     file_name = 'map_contour'
     save.save_figure(fig, save_dir, file_name)
 
@@ -161,9 +220,9 @@ def plot_masses_PF_L_nu(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr, e
     fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', label=r'$\phi_0$',
                  pad=0.01)
 
-    folder = 'PF_to_L_nu/'
+    prefix_folder = 'PF_to_L_nu/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
-                                   phi_0=None, folder=folder)
+                                   phi_0=None, prefix_folder=prefix_folder)
 
     file_name = f'theta={theta_obs} beta_mu={beta_mu} All_PF_to_L_nu.png'
     save.save_figure(fig, save_dir, file_name)
@@ -178,12 +237,14 @@ if __name__ == '__main__':
     theta_obs = 20
 
     mc2_arr = [30, 60, 100]
-    plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+    # plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
     a_portion_arr = [0.22, 0.44, 0.66]
-    plot_L_to_a_portion(theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+    # plot_L_to_a_portion(theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
 
     mc2_arr = [30, 100]
     a_portion_arr = [0.22, 0.66]
     phi_0_arr = [0, 20, 40, 60, 80, 120, 140, 160, 180]
-    plot_masses_PF_L_nu(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    # plot_masses_PF_L_nu(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+
+    plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)

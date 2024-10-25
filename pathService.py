@@ -31,11 +31,14 @@ def get_args_dir(mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None, phi
     return args_dir
 
 
-def get_dir(mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None, phi_0=None, folder=None):
+def get_dir(mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None, phi_0=None, prefix_folder=None,
+            suffix_folder=None):
     prefix_dir = get_prefix_dir()
-    if folder is not None:
-        prefix_dir = prefix_dir / folder
+    if prefix_folder is not None:
+        prefix_dir = prefix_dir / prefix_folder
     args_dir = get_args_dir(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    if suffix_folder is not None:
+        args_dir = args_dir / suffix_folder
     return prefix_dir / args_dir
 
 

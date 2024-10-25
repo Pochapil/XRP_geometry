@@ -22,6 +22,10 @@ def calculate_total_luminosity(surface, T_eff):
     tensor = np.ones((config.N_phi_accretion, config.N_theta_accretion))
     return calc_L(surface, T_eff, tensor)
 
+    # emission_intensity_inner = calc_L(emission_column.inner_surface, T_eff, tensor)
+    # emission_intensity_outer = calc_L(emission_column.outer_surface, T_eff, tensor)
+    # emission_intensity = 1 / 2 * (emission_intensity_outer + emission_intensity_inner)
+
     # tilda_s = create_ds_for_integral(surface)
     # emission_power = (4 * config.sigm_Stf_Bolc * scipy.integrate.simps(
     #     scipy.integrate.simps(T_eff ** 4 * tensor * tilda_s, surface.theta_range), surface.phi_range))
@@ -31,6 +35,7 @@ def calculate_total_luminosity(surface, T_eff):
 
 def calc_L(surface, T_eff, cos_tensor):
     tilda_s = create_ds_for_integral(surface)
+    # (пи входит в сигма) sigm_Stf_Bolc = integral pi B_nu
     L = np.abs(4 * config.sigm_Stf_Bolc * scipy.integrate.simps(
         scipy.integrate.simps(T_eff ** 4 * cos_tensor * tilda_s, surface.theta_range), surface.phi_range))
     return L
@@ -74,8 +79,13 @@ def calc_scatter_L_nu(magnet_surface, emission_surface, T_eff, cos_tensor, tau_s
 
     поток, который должен быть отражен на самом деле в 2 раза меньше, так как излучает только в полуплоскость,
     а мы считаем L_nu как изотропное и поэтому умножали на 4 pi. надо на 2 pi'''
+
     tensor = np.ones((config.N_phi_accretion, config.N_theta_accretion))
     emission_intensity = calc_L_nu(emission_surface, T_eff, tensor)
+
+    # emission_intensity_inner = calc_L_nu(emission_column.inner_surface, T_eff, tensor)
+    # emission_intensity_outer = calc_L_nu(emission_column.outer_surface, T_eff, tensor)
+    # emission_intensity = 1 / 2 * (emission_intensity_outer + emission_intensity_inner)
 
     tilda_s = create_ds_for_integral(magnet_surface)
     d = magnet_surface.surf_R_e * np.sin(magnet_surface.theta_range) ** 2  # distance to area
@@ -88,5 +98,3 @@ def calc_scatter_L_nu(magnet_surface, emission_surface, T_eff, cos_tensor, tau_s
         scipy.integrate.simps(scipy.integrate.simps(cos_tensor * tilda_s * coeff, magnet_surface.theta_range),
                               magnet_surface.phi_range))
     return L_nu
-
-
