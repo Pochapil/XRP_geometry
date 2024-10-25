@@ -274,6 +274,53 @@ def plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr):
     save.save_figure(fig, save_dir, file_name)
 
 
+def plot_PF_contour(mu, mc2, a_portion, phi_0):
+    # PF(L_nu) много точек, берутся линии по mc, a
+
+    theta_obs_arr = np.linspace(10, 90, 9)
+    beta_mu_arr = np.linspace(10, 90, 9)
+
+    final_final_array = np.empty((len(theta_obs_arr), len(beta_mu_arr)))
+
+    for i, theta_obs in enumerate(theta_obs_arr):
+        for j, beta_mu in enumerate(beta_mu_arr):
+            L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+            final_final_array[i][j] = newService.get_PF(L_total)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+    x, y = np.meshgrid(beta_mu_arr, theta_obs_arr)
+    z = final_final_array
+
+    cs = ax['a'].contourf(x, y, z, 90)
+    cbar = fig.colorbar(cs, pad=0.01)
+    cbar.ax.set_ylabel('PF')
+
+    x_axis_label = r'$\chi$'
+    y_axis_label = r'$\theta_{obs}$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    prefix_folder = 'PF_contour/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=mc2, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'a={a_portion}' + ' ' + f'fi_0={phi_0}'
+    save.save_figure(fig, save_dir, file_name)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+    cs = ax['a'].pcolormesh(x, y, z)
+    cbar = fig.colorbar(cs, pad=0.01)
+    cbar.ax.set_ylabel('PF')
+
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    prefix_folder = 'PF_contour/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=mc2, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'a={a_portion}' + ' ' + f'fi_0={phi_0} colormesh'
+    save.save_figure(fig, save_dir, file_name)
+
+
 if __name__ == '__main__':
     mu = 0.1e31
     beta_mu = 40
