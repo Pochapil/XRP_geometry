@@ -348,7 +348,7 @@ if __name__ == '__main__':
         # cos_alpha_matrix - это также матрица необходимая для расчета tau - как накрест лежащие
         cos_alpha_matrix = np.einsum('ijl,ijl->ij', magnet_surface.array_normal, -xyz_magnet_line)
         # cos_alpha_1_matrix = np.einsum('ijl,ijl->ij', -surface.array_normal, xyz_magnet_line)
-        new_cos_psi_range *= cos_alpha_matrix
+        new_cos_psi_range *= cos_alpha_matrix  # учитываю угол падения от центра в отражаемой точке!!!!!!!!!
 
         # УЧЕСТЬ tau в отражаемой точке!!!!!!!!!
         # tau_scatter_matrix = np.ones_like(cos_alpha_matrix)

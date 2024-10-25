@@ -85,6 +85,7 @@ def load_L_scatter(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
 
 
 def load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
+    '''returns array len config.N_phase'''
     # sum of surfs
     L_surfs = load_L_surfs(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     # if not np.isnan(buf).any():

@@ -228,6 +228,52 @@ def plot_masses_PF_L_nu(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr, e
     save.save_figure(fig, save_dir, file_name)
 
 
+def plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr):
+    # plot_L_to_new_fi_0
+    # ожидаем что phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+
+    L_data = np.empty(((len(phi_0_arr) - 1) * 2, config.N_phase))
+    for i, phi_0 in enumerate(phi_0_arr):
+        L_data[i] = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+
+    for i in range(8):
+        # симметрично для 180 - fi_0
+        L_data[9 + i + 1] = L_data[9 - i - 1][::-1]
+
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=L_data)
+    phi_0_arr_for_plot = [20 * i for i in range(18)]
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    im = ax['a'].pcolormesh(config.phase_for_plot, phi_0_arr_for_plot, data_to_plot)
+    clb = plt.colorbar(im, pad=0.01)
+    clb.set_label(r'$L_{iso}$' + ' [erg/s]', fontsize=26)
+
+    x_axis_label = r'$\Phi$'
+    y_axis_label = r'$\phi_0$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    prefix_folder = 'L_to_phi_0/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = 'map_contour_L_iso'
+    save.save_figure(fig, save_dir, file_name)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    im = ax['a'].contourf(config.phase_for_plot, phi_0_arr_for_plot, data_to_plot, linewidths=0.5)
+    clb = plt.colorbar(im, pad=0.01)
+    clb.set_label(r'$L_{iso}$' + ' [erg/s]', fontsize=26)
+
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    prefix_folder = 'L_to_phi_0/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = 'map_contour_L_iso_c'
+    save.save_figure(fig, save_dir, file_name)
+
+
 if __name__ == '__main__':
     mu = 0.1e31
     beta_mu = 40
@@ -244,7 +290,20 @@ if __name__ == '__main__':
 
     mc2_arr = [30, 100]
     a_portion_arr = [0.22, 0.66]
-    phi_0_arr = [0, 20, 40, 60, 80, 120, 140, 160, 180]
+    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
     # plot_masses_PF_L_nu(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
 
-    plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+    mu = 0.1e31
+    beta_mu = 80
+    mc2 = 30
+    a_portion = 1
+    phi_0 = 0
+    # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+
+    mu = 0.1e31
+    beta_mu = 40
+    mc2 = 100
+    a_portion = 0.66
+    phi_0 = 0
+    theta_obs = 20
+    plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr)
