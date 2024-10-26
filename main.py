@@ -88,7 +88,7 @@ def calc_number_pow(num):
     return num, pow
 
 
-def make_save_values_file():
+def make_save_values_file(curr_configuration, L_surfs, L_scatter, cur_path_data, cur_dir_saved):
     file_name = 'save_values.txt'
 
     if config.old_path_flag:
@@ -121,7 +121,8 @@ def make_save_values_file():
         d0 = newService.get_delta_distance(curr_configuration.top_column.inner_surface.theta_range[0],
                                            curr_configuration.top_column.inner_surface.surf_R_e)
         l0 = newService.get_A_normal(curr_configuration.top_column.inner_surface.theta_range[0],
-                                     curr_configuration.top_column.inner_surface.surf_R_e, a_portion) / d0
+                                     curr_configuration.top_column.inner_surface.surf_R_e,
+                                     curr_configuration.a_portion) / d0
 
         f.write(f'width / length = {(d0 / l0):.6}\n')
         f.write(f'A_perp / 2 d0**2 = {(l0 / (2 * d0)):.6}\n')
@@ -134,7 +135,8 @@ def make_save_values_file():
         f.write(f'avg L with scatter / L_x = {number:.6f}\n')
 
 
-def save_some_files():
+def save_some_files(curr_configuration, obs_matrix, L_surfs, L_scatter, L_nu_surfs, L_nu_scatter, PF_L_nu_surfs,
+                    cur_path_data, cur_dir_saved):
     if config.old_path_flag:
         cur_path = cur_dir_saved.get_old_path()
     else:
@@ -199,7 +201,7 @@ def save_some_files():
         save.save_arr_as_txt(L_nu_scatter[1], old_path / ('scattered_on_magnet_lines/' + 'L_nu/'), file_name)
 
 
-def save_new_way():
+def save_new_way(L_surfs, L_scatter, L_nu_surfs, L_nu_scatter, cur_path_data):
     cur_path = cur_path_data
     file_name = "L_surfs.txt"
     save.save_arr_as_txt(L_surfs, cur_path / 'surfs/', file_name)
@@ -215,7 +217,7 @@ def save_new_way():
         save.save_arr_as_txt(L_nu_scatter[:, i], cur_path / 'scatter/', file_name)
 
 
-def calc_async_with_split(surfs_arr, mask_flag):
+def calc_async_with_split(curr_configuration, obs_matrix, surfs_arr, mask_flag):
     '''для возможности распаралелить еще больше чем на 4 поверхности
     тут мы разбиваем массив наблюдателя на чанки и передаем на расчет, потом сливаем их вместе
     '''
@@ -245,12 +247,12 @@ def calc_async_with_split(surfs_arr, mask_flag):
     return new_cos_psi_range_async
 
 
-def calc_cos_psi(surfs_arr, mask_flag):
+def calc_cos_psi(curr_configuration, obs_matrix, surfs_arr, mask_flag):
     '''объединил все методы расчета в 1 функцию'''
     # 4 или 8 процессов будет запущено
     if config.ASYNC_FLAG:
         if config.N_cpus == 8:
-            new_cos_psi_range = calc_async_with_split(surfs_arr, mask_flag)
+            new_cos_psi_range = calc_async_with_split(curr_configuration, obs_matrix, surfs_arr, mask_flag)
         else:
             t1 = time.perf_counter()
             with mp.Pool(processes=len(surfs_arr)) as pool:
@@ -261,23 +263,13 @@ def calc_cos_psi(surfs_arr, mask_flag):
             print(f'{t2 - t1} seconds')
     else:
         new_cos_psi_range = np.empty(4, dtype=object)
-        for i, surface in enumerate(accr_col_surfs):
+        for i, surface in enumerate(surfs_arr):
             new_cos_psi_range[i] = calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag)
 
     return new_cos_psi_range
 
 
-if __name__ == '__main__':
-
-    # ------------------------------------------------- start -------------------------------------------------------
-    mu = 0.1e31
-    beta_mu = 40
-    mc2 = 100
-    a_portion = 0.44
-    phi_0 = 0
-
-    theta_obs = 60
-
+def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, figs_flag=False):
     curr_configuration = accretingNS.AccretingPulsarConfiguration(mu, beta_mu, mc2, a_portion, phi_0)
 
     cur_dir_saved = pathService.PathSaver(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
@@ -314,7 +306,8 @@ if __name__ == '__main__':
     # surfaces = {0: top_column.outer_surface, 1: top_column.inner_surface,
     #             2: bot_column.outer_surface, 3: bot_column.inner_surface}
 
-    new_cos_psi_range_surfs = calc_cos_psi(accr_col_surfs, False)
+    print('start calc surfs')
+    new_cos_psi_range_surfs = calc_cos_psi(curr_configuration, obs_matrix, accr_col_surfs, False)
 
     L_surfs = np.empty((4, config.N_phase))
     L_nu_surfs = np.empty((4, config.N_energy, config.N_phase))
@@ -327,13 +320,14 @@ if __name__ == '__main__':
 
     PF_L_surfs = newService.get_PF(np.sum(L_surfs, axis=0))
     PF_L_nu_surfs = newService.get_PF(np.sum(L_nu_surfs, axis=0))
-
+    print('finish calc surfs')
     # plot_package.plot_scripts.plot_L(L_surfs)
 
     # ----------------------------------------------- Scatter -----------------------------------------------------
+    print('start calc scatter')
     magnet_line_surfs = [curr_configuration.top_magnet_lines, curr_configuration.bot_magnet_lines]
 
-    new_cos_psi_range_surfs = calc_cos_psi(magnet_line_surfs, True)
+    new_cos_psi_range_surfs = calc_cos_psi(curr_configuration, obs_matrix, magnet_line_surfs, True)
 
     L_scatter = np.empty((2, config.N_phase))
     L_nu_scatter = np.empty((2, config.N_energy, config.N_phase))
@@ -370,36 +364,56 @@ if __name__ == '__main__':
 
     PF_L_scatter = newService.get_PF(np.sum(L_scatter, axis=0))
     PF_L_nu_scatter = newService.get_PF(np.sum(L_nu_scatter, axis=0))
-
+    print('finish calc scatter')
     # ------------------------------------------------- save txt -----------------------------------------------------
-    make_save_values_file()
-    save_some_files()
-    save_new_way()
+    make_save_values_file(curr_configuration, L_surfs, L_scatter, cur_path_data, cur_dir_saved)
+    print('save_values')
+    save_some_files(curr_configuration, obs_matrix, L_surfs, L_scatter, L_nu_surfs, L_nu_scatter, PF_L_nu_surfs,
+                    cur_path_data, cur_dir_saved)
+    print('some_files')
+    save_new_way(L_surfs, L_scatter, L_nu_surfs, L_nu_scatter, cur_path_data)
+    print('save_new_way')
+    if figs_flag:
+        print('start plot')
+        t1 = time.perf_counter()
+        # ------------------------------------------------- save figs -------------------------------------------------
+        cur_path_fig = cur_path / 'fig'
+        save.create_file_path(cur_path_fig)
+        plot_package.plot_scripts.plot_total_luminosity_of_surfaces(L_surfs, cur_path_fig)
 
-    t1 = time.perf_counter()
-    # ------------------------------------------------- save figs -------------------------------------------------
-    cur_path_fig = cur_path / 'fig'
-    save.create_file_path(cur_path_fig)
-    plot_package.plot_scripts.plot_total_luminosity_of_surfaces(L_surfs, cur_path_fig)
+        ans = np.apply_along_axis(matrix.vec_to_angles, axis=1, arr=obs_matrix)
+        observer_phi = ans[:, 0]
+        observer_theta = ans[:, 1]
+        plot_package.plot_scripts.plot_observer_angles(observer_phi, observer_theta, cur_path_fig)
+        plot_package.plot_scripts.plot_Teff_to_ksi(curr_configuration.R_e, curr_configuration.top_column.T_eff,
+                                                   curr_configuration.top_column.inner_surface.theta_range,
+                                                   cur_path_fig)
 
-    ans = np.apply_along_axis(matrix.vec_to_angles, axis=1, arr=obs_matrix)
-    observer_phi = ans[:, 0]
-    observer_theta = ans[:, 1]
-    plot_package.plot_scripts.plot_observer_angles(observer_phi, observer_theta, cur_path_fig)
-    plot_package.plot_scripts.plot_Teff_to_ksi(curr_configuration.R_e, curr_configuration.top_column.T_eff,
-                                               curr_configuration.top_column.inner_surface.theta_range, cur_path_fig)
+        # -------------------------------------------------- L_nu --------------------------------------------------
+        plot_package.plot_scripts.plot_PF_to_energy(L_nu_surfs, cur_path_fig)
+        plot_package.plot_scripts.plot_L_nu(L_nu_surfs, cur_path_fig)
+        plot_package.plot_scripts.plot_L_nu_all_in_one(L_nu_surfs, cur_path_fig)
+        plot_package.plot_scripts.plot_L_nu_on_phase(L_nu_surfs, cur_path_fig)
+        plot_package.plot_scripts.plot_L_nu_avg(L_nu_surfs, cur_path_fig)
+        plot_package.plot_scripts.plot_L_nu_with_bb(L_nu_surfs, curr_configuration.top_column.T_eff, cur_path_fig)
+        # ------------------------------------------------- L_scatter -------------------------------------------------
+        plot_package.plot_scripts.plot_scatter_L(L_surfs, L_scatter, cur_path_fig)
+        plot_package.plot_scripts.plot_PF_to_energy_with_scatter(L_nu_surfs, L_nu_scatter, cur_path_fig)
+        plot_package.plot_scripts.plot_scatter_L_nu(L_nu_surfs, L_nu_scatter, cur_path_fig)
+        # -------------------------------------------------------------------------------------------------------------
+        t2 = time.perf_counter()
+        print(f'{t2 - t1} seconds')
+        print('finish plot')
 
-    # -------------------------------------------------- L_nu --------------------------------------------------
-    plot_package.plot_scripts.plot_PF_to_energy(L_nu_surfs, cur_path_fig)
-    plot_package.plot_scripts.plot_L_nu(L_nu_surfs, cur_path_fig)
-    plot_package.plot_scripts.plot_L_nu_all_in_one(L_nu_surfs, cur_path_fig)
-    plot_package.plot_scripts.plot_L_nu_on_phase(L_nu_surfs, cur_path_fig)
-    plot_package.plot_scripts.plot_L_nu_avg(L_nu_surfs, cur_path_fig)
-    plot_package.plot_scripts.plot_L_nu_with_bb(L_nu_surfs, curr_configuration.top_column.T_eff, cur_path_fig)
-    # ------------------------------------------------- L_scatter -------------------------------------------------
-    plot_package.plot_scripts.plot_scatter_L(L_surfs, L_scatter, cur_path_fig)
-    plot_package.plot_scripts.plot_PF_to_energy_with_scatter(L_nu_surfs, L_nu_scatter, cur_path_fig)
-    plot_package.plot_scripts.plot_scatter_L_nu(L_nu_surfs, L_nu_scatter, cur_path_fig)
-    # -------------------------------------------------------------------------------------------------------------
-    t2 = time.perf_counter()
-    print(f'{t2 - t1} seconds')
+
+if __name__ == '__main__':
+    # ------------------------------------------------- start -------------------------------------------------------
+    mu = 0.1e31
+    beta_mu = 40
+    mc2 = 100
+    a_portion = 0.44
+    phi_0 = 0
+
+    theta_obs = 60
+
+    calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, True)
