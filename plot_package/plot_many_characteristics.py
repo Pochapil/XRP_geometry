@@ -321,28 +321,7 @@ def plot_PF_contour(mu, mc2, a_portion, phi_0):
     save.save_figure(fig, save_dir, file_name)
 
 
-def plot_L_iso_to_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
-    L_iso_arr = np.empty(len(mc2_arr))
-    for i, mc2 in enumerate(mc2_arr):
-        L_iso_arr[i] = np.mean(save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0), axis=-1)
-
-    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
-    ax['a'].scatter(mc2_arr, L_iso_arr, s=30, facecolors='none', edgecolors='black')
-    ax['a'].plot(mc2_arr, L_iso_arr, color='black', alpha=0.2, linestyle='-')
-
-    x_axis_label = r'$\dot{m}$'
-    y_axis_label = r'$L_{\rm iso}$'
-    ax['a'].set_xlabel(x_axis_label, fontsize=26)
-    ax['a'].set_ylabel(y_axis_label, fontsize=26)
-
-    prefix_folder = 'L_iso_to_m/'
-    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
-                                   phi_0=None, prefix_folder=prefix_folder)
-    file_name = f'a={a_portion} phi_0={phi_0}'
-    save.save_figure(fig, save_dir, file_name)
-
-
-def plot_pf_to_chi_theta(mu, mc2, a_portion, phi_0):
+def plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0):
     theta_obs_arr = np.linspace(10, 90, 9).astype(int)
     beta_mu_arr = np.linspace(10, 90, 9).astype(int)
 
@@ -395,6 +374,113 @@ def plot_pf_to_chi_theta(mu, mc2, a_portion, phi_0):
     save.save_figure(fig, save_dir, file_name)
 
 
+def plot_L_iso_to_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
+    L_iso_arr = np.empty(len(mc2_arr))
+    for i, mc2 in enumerate(mc2_arr):
+        L_iso_arr[i] = np.mean(save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0), axis=-1)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+    ax['a'].scatter(mc2_arr, L_iso_arr, s=30, facecolors='none', edgecolors='black')
+    ax['a'].plot(mc2_arr, L_iso_arr, color='black', alpha=0.2, linestyle='-')
+
+    x_axis_label = r'$\dot{m}$'
+    y_axis_label = r'$L_{\rm iso}$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    prefix_folder = 'L_iso_to_m/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'a={a_portion} phi_0={phi_0}'
+    save.save_figure(fig, save_dir, file_name)
+
+
+def plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
+    R_e_arr = np.empty(len(mc2_arr))
+    ksi_shock_arr = np.empty(len(mc2_arr))
+    L_x_arr = np.empty(len(mc2_arr))
+
+    for i, mc2 in enumerate(mc2_arr):
+        R_e_arr[i] = save.load_R_e(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+        ksi_shock_arr[i] = save.load_ksi_shock(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+        L_x_arr[i] = save.load_L_x(mu, theta_obs, beta_mu, mc2, a_portion, phi_0) * 1e-38
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+
+    ax['a'].scatter(mc2_arr, R_e_arr, s=30, facecolors='none', edgecolors='red', label=r'$\frac{R_e}{R_*}$')
+    ax['a'].plot(mc2_arr, R_e_arr, color='black', alpha=0.2, linestyle='-')
+
+    ax['a'].scatter(mc2_arr, ksi_shock_arr, s=30, facecolors='none', edgecolors='blue', label=r'$\xi_{s}$')
+    ax['a'].plot(mc2_arr, ksi_shock_arr, color='black', alpha=0.2, linestyle='-')
+
+    ax['a'].scatter(mc2_arr, L_x_arr, s=30, facecolors='none', edgecolors='green', label=r'$\frac{L_x}{10^{38}}$')
+    ax['a'].plot(mc2_arr, L_x_arr, color='black', alpha=0.2, linestyle='-')
+
+    x_axis_label = r'$\dot{m}$'
+    y_axis_label = r'$\xi$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+    ax['a'].legend()
+
+    prefix_folder = 'table/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'a={a_portion}'
+    save.save_figure(fig, save_dir, file_name)
+
+
+def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+
+    fig1, ax1 = plt.subplot_mosaic('a', figsize=(9, 6))
+
+    color_arr = ['red', 'green', 'blue', 'purple']
+
+    for i, a_portion in enumerate(a_portion_arr):
+        R_e_arr = np.empty(len(mc2_arr))
+        ksi_shock_arr = np.empty(len(mc2_arr))
+        L_x_arr = np.empty(len(mc2_arr))
+        for j, mc2 in enumerate(mc2_arr):
+            R_e_arr[j] = save.load_R_e(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+            ksi_shock_arr[j] = save.load_ksi_shock(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+            L_x_arr[j] = save.load_L_x(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+
+        ax['a'].scatter(mc2_arr, ksi_shock_arr, s=30, facecolors='none', edgecolors=color_arr[i],
+                        label=r'$\xi_{s}$' + ' for ' + f'a={a_portion}')
+        ax['a'].plot(mc2_arr, ksi_shock_arr, color='black', alpha=0.2, linestyle='-')
+
+        ax1['a'].scatter(mc2_arr, L_x_arr, s=30, facecolors='none', edgecolors=color_arr[i],
+                         label=r'$L_x$' + ' for ' + f'a={a_portion}')
+        ax1['a'].plot(mc2_arr, L_x_arr, color='black', alpha=0.2, linestyle='-')
+
+    ax['a'].scatter(mc2_arr, R_e_arr, s=30, facecolors='none', edgecolors='black', label=r'$\frac{R_e}{R_*}$')
+    ax['a'].plot(mc2_arr, R_e_arr, color='black', alpha=0.2, linestyle='-')
+
+    x_axis_label = r'$\dot{m}$'
+    y_axis_label = r'$\xi$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+    ax['a'].legend()
+
+    prefix_folder = 'table/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'together_a'
+    save.save_figure(fig, save_dir, file_name)
+
+    x_axis_label = r'$\dot{m}$'
+    y_axis_label = r'$L_x$'
+    ax1['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax1['a'].set_ylabel(y_axis_label, fontsize=26)
+    ax1['a'].legend()
+
+    prefix_folder = 'table/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'together_a_L_x'
+    save.save_figure(fig1, save_dir, file_name)
+
+
 if __name__ == '__main__':
     mu = 0.1e31
     beta_mu = 40
@@ -441,7 +527,7 @@ if __name__ == '__main__':
     mc2 = 100
     a_portion = 1
     phi_0 = 0
-    # plot_pf_to_chi_theta(mu, mc2, a_portion, phi_0)
+    # plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0)
 
     theta_obs = 40
     beta_mu = 60
@@ -449,3 +535,12 @@ if __name__ == '__main__':
     a_portion = 0.44
     phi_0 = 0
     # plot_L_iso_to_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+
+    theta_obs = 40
+    beta_mu = 60
+    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+    a_portion = 0.66
+    phi_0 = 0
+    # plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+    a_portion_arr = [0.44, 0.66]
+    # plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)

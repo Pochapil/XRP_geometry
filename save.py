@@ -71,6 +71,20 @@ def load_L_x(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     return float(lines[3][12:20]) * 10 ** float(lines[3][27:29])
 
 
+def load_R_e(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
+    data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    with open(data_folder / 'save_values.txt') as f:
+        lines = f.readlines()
+    return float(lines[0][6:-1])
+
+
+def load_ksi_shock(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
+    data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    with open(data_folder / 'save_values.txt') as f:
+        lines = f.readlines()
+    return float(lines[1][12:-1])
+
+
 def load_L_surfs(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     folder = 'surfs/'
