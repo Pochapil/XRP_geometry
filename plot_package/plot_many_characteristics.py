@@ -19,12 +19,12 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
     # obs_i_angle = np.linspace(0, 180, 19)
     L_x = save.load_L_x(mu, 10, beta_mu, mc2, a_portion, phi_0)
 
-    theta_obs_arr = np.linspace(10, 90, 9)
+    theta_obs_arr = np.linspace(10, 90, 9).astype(int)
     data_array = np.empty((len(theta_obs_arr) * 2 - 1, config.N_phase))
     # roll -- циклическая перестановка - делаем так как симметрическая задача и для угла 180 - theta будет симметрично
     # для сдвига на полфазы -- можно расчитать только до 90 а потом для других переставить и получить для до 180
     for i, theta_obs in enumerate(theta_obs_arr):
-        L_total = save.load_L_total(mu, int(theta_obs), beta_mu, mc2, a_portion, phi_0)
+        L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
         data_array[i] = L_total
         if i != len(theta_obs_arr) - 1:
             data_array[-i - 1] = np.roll(data_array[i], len(data_array[i]) // 2)
@@ -277,8 +277,8 @@ def plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr):
 def plot_PF_contour(mu, mc2, a_portion, phi_0):
     # PF(L_nu) много точек, берутся линии по mc, a
 
-    theta_obs_arr = np.linspace(10, 90, 9)
-    beta_mu_arr = np.linspace(10, 90, 9)
+    theta_obs_arr = np.linspace(10, 90, 9).astype(int)
+    beta_mu_arr = np.linspace(10, 90, 9).astype(int)
 
     final_final_array = np.empty((len(theta_obs_arr), len(beta_mu_arr)))
 
@@ -303,7 +303,7 @@ def plot_PF_contour(mu, mc2, a_portion, phi_0):
     prefix_folder = 'PF_contour/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=mc2, a_portion=None,
                                    phi_0=None, prefix_folder=prefix_folder)
-    file_name = f'a={a_portion}' + ' ' + f'fi_0={phi_0}'
+    file_name = f'a={a_portion}' + ' ' + f'phi_0={phi_0}'
     save.save_figure(fig, save_dir, file_name)
 
     fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
@@ -317,14 +317,14 @@ def plot_PF_contour(mu, mc2, a_portion, phi_0):
     prefix_folder = 'PF_contour/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=mc2, a_portion=None,
                                    phi_0=None, prefix_folder=prefix_folder)
-    file_name = f'a={a_portion}' + ' ' + f'fi_0={phi_0} colormesh'
+    file_name = f'a={a_portion}' + ' ' + f'phi_0={phi_0} colormesh'
     save.save_figure(fig, save_dir, file_name)
 
 
-def plot_L_iso_to_m(mu, theta_obs, beta_mu, a_portion, mc2_arr, phi_0):
-    L_iso_arr = np.empty((len(mc2_arr), config.N_phase))
+def plot_L_iso_to_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
+    L_iso_arr = np.empty(len(mc2_arr))
     for i, mc2 in enumerate(mc2_arr):
-        L_iso_arr[i] = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+        L_iso_arr[i] = np.mean(save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0), axis=-1)
 
     fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
     ax['a'].scatter(mc2_arr, L_iso_arr, s=30, facecolors='none', edgecolors='black')
@@ -342,9 +342,9 @@ def plot_L_iso_to_m(mu, theta_obs, beta_mu, a_portion, mc2_arr, phi_0):
     save.save_figure(fig, save_dir, file_name)
 
 
-def plot_pf_to_chi_theta(a_portion, mc2, phi_0):
-    theta_obs_arr = np.linspace(10, 90, 9)
-    beta_mu_arr = np.linspace(10, 90, 9)
+def plot_pf_to_chi_theta(mu, mc2, a_portion, phi_0):
+    theta_obs_arr = np.linspace(10, 90, 9).astype(int)
+    beta_mu_arr = np.linspace(10, 90, 9).astype(int)
 
     final_final_array = np.zeros((len(theta_obs_arr), len(beta_mu_arr)))
 
@@ -381,7 +381,7 @@ def plot_pf_to_chi_theta(a_portion, mc2, phi_0):
     fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
     for minus in dict_chi_minus_theta:
         arr = [minus] * len(dict_chi_minus_theta[minus])
-        ax.scatter(arr, dict_chi_minus_theta[minus], color='black')
+        ax['a'].scatter(arr, dict_chi_minus_theta[minus], color='black')
 
     x_axis_label = r'$\chi - \theta_{obs}$'
     y_axis_label = r'$PF$'
@@ -403,7 +403,11 @@ if __name__ == '__main__':
     phi_0 = 0
     theta_obs = 20
 
-    mc2_arr = [30, 60, 100]
+    theta_obs = 40
+    beta_mu = 60
+    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+    a_portion = 0.66
+    phi_0 = 0
     # plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
     a_portion_arr = [0.22, 0.44, 0.66]
@@ -429,11 +433,19 @@ if __name__ == '__main__':
     theta_obs = 20
     # plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr)
 
-    '''нужен тест!!!'''
+    mc2 = 30
+    a_portion = 1
+    phi_0 = 0
     # plot_PF_contour(mu, mc2, a_portion, phi_0)
 
-    '''нужен тест!!!'''
-    # plot_L_iso_to_m
+    mc2 = 100
+    a_portion = 1
+    phi_0 = 0
+    # plot_pf_to_chi_theta(mu, mc2, a_portion, phi_0)
 
-    '''нужен тест!!!'''
-    # plot_pf_to_chi_theta
+    theta_obs = 40
+    beta_mu = 60
+    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+    a_portion = 0.44
+    phi_0 = 0
+    # plot_L_iso_to_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)

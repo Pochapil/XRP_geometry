@@ -47,6 +47,7 @@ def save_figure(fig, file_path, file_name):
     full_file_name = file_path / (file_name + '.png')
     fig.savefig(full_file_name, dpi=fig.dpi)
     # fig.savefig(full_file_name, dpi=200)
+    # plt.clf()
     plt.close(fig)
 
 
