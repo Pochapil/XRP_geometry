@@ -164,3 +164,4 @@ cython_debug/
 # DataFolder
 new_magnet_lines/
 data/
+/mayavi_plots/mayavi_figs/

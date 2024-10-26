@@ -10,12 +10,15 @@ def get_prefix_dir():
     return prefix_dir
 
 
-def get_args_dir(mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None, phi_0=None):
-    buf = mu
-    count = 1
-    while buf > 1:
-        count += 1
-        buf //= 10
+def get_args_dir(mu=None, theta_obs=None, beta_mu=None, mc2=None, a_portion=None, phi_0=None):
+    if mu is not None:
+        buf = mu
+        count = 1
+        while buf > 1:
+            count += 1
+            buf //= 10
+    else:
+        count = 31
 
     args_dir = pathlib.Path(f'mu=0.1e{count}')
     if theta_obs is not None:
