@@ -14,8 +14,9 @@ surface_surf_types = {'outer': 'outer', 'inner': 'inner'}
 
 class AccretingPulsarConfiguration:
 
-    def __init__(self, mu, beta_mu, mc2, a_portion, phi_0):
+    def __init__(self, mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
         self.mu = mu
+        self.theta_obs = theta_obs
         self.beta_mu = beta_mu
         self.mc2 = mc2
         self.a_portion = a_portion

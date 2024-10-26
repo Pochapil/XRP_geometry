@@ -270,7 +270,7 @@ def calc_cos_psi(curr_configuration, obs_matrix, surfs_arr, mask_flag):
 
 
 def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, figs_flag=False):
-    curr_configuration = accretingNS.AccretingPulsarConfiguration(mu, beta_mu, mc2, a_portion, phi_0)
+    curr_configuration = accretingNS.AccretingPulsarConfiguration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
 
     cur_dir_saved = pathService.PathSaver(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     folder = 'txt/'
