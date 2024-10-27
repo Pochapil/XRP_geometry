@@ -149,7 +149,8 @@ def get_tau_for_opacity(phi, theta, R_e_of_atenuation_surf, M_accretion_rate, a_
     # print(f'{tau=}')
     tau /= cos_alpha
     # print(f'{cos_alpha=}')
-    return tau
+    # мы уже поняли что будет пересечение. отрицательный угол может получиться поэтому берем модуль
+    return np.abs(tau)
 
 
 def get_tau_for_scatter_with_cos(theta_range, R_e_emission_surf, M_accretion_rate, a_portion, cos_alpha):
