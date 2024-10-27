@@ -62,7 +62,7 @@ def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=Fals
                                                              curr_configuration.top_column.inner_surface,
                                                              curr_configuration.bot_column.inner_surface)
                         if tensor_shadows_columns[phase_index, phi_index, theta_index] > 0:
-                            # если затмения нет то считаем ослабление тау
+                            # если затмения нет то считаем ослабление тау с внутренними магнитными линиями!!
                             tensor_tau[phase_index, phi_index, theta_index] = \
                                 shadows.get_tau_with_dipole(surface, phi_index, theta_index, obs_matrix[phase_index],
                                                             solutions, curr_configuration.top_column.R_e,
@@ -71,6 +71,10 @@ def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=Fals
                                                             curr_configuration.top_column.inner_surface,
                                                             curr_configuration.bot_column.inner_surface,
                                                             curr_configuration.a_portion)
+                            # доп проверка с верхними - пока не считаю - надеюсь что слабо влияют ?? или они учтены но криво
+                            # if tensor_tau[phase_index, phi_index, theta_index] == 1:
+                            #     if surface.surf_R_e != curr_configuration.R_e:
+                            #         ...
                 else:
                     # если косинус < 0 -> поверхность излучает от наблюдателя и мы не получим вклад в интеграл
                     new_cos_psi_range[phase_index, phi_index, theta_index] = 0
@@ -222,6 +226,7 @@ def calc_async_with_split(curr_configuration, obs_matrix, surfs_arr, mask_flag):
     тут мы разбиваем массив наблюдателя на чанки и передаем на расчет, потом сливаем их вместе
     '''
 
+    # для возможности распараллелить еще больше чем на 4 поверхности (разрезая наблюдателя на чанки)
     obs_matrix_new = np.split(obs_matrix, [obs_matrix.shape[0] // 2])
     obs_matrix_new_to_func = []
     for i in range(len(surfs_arr)):

@@ -216,7 +216,7 @@ class Visualization(HasTraits):
     button_check_data = Button('check_data')
     button_animate = Button('animate')
 
-    scene = Instance(MlabSceneModel, ())  # wtf ??
+    scene = Instance(MlabSceneModel, ())  # wtf ?? - так было в гайде
 
     color_accretion_column_top = (1, 0, 0)
     color_accretion_column_bot = (0, 1, 0)
@@ -584,39 +584,13 @@ class Visualization(HasTraits):
         phase = 360 * self.slider_phase
         self.view_phase(phase)
 
-    # @on_trait_change('button_magnet_line')
-    # def func_change_button_magnet_line(self):
-    #     self.flag_draw_magnet_lines = not self.flag_draw_magnet_lines
-    #     if self.flag_draw_magnet_lines:
-    #         x, y, z = get_data_for_magnet_lines(theta_range_column, phi_range_column, self.slider_phi_0,
-    #                                             self.flag_cut_magnet_lines)
-    #         self.magnet_lines_top.mlab_source.trait_set(x=x, y=y, z=z, color=self.color_magnet_lines_top)
-    #         self.magnet_lines_bot.mlab_source.trait_set(x=-x, y=-y, z=-z, color=self.color_magnet_lines_bot)
-    #     else:
-    #         self.magnet_lines_top.mlab_source.trait_set(x=[0], y=[0], z=[0], color=self.color_magnet_lines_top)
-    #         self.magnet_lines_bot.mlab_source.trait_set(x=[0], y=[0], z=[0], color=self.color_magnet_lines_bot)
-
-    @on_trait_change('button_cut_magnet_lines')
-    def func_change_button_cut_magnet_lines(self):
-        self.flag_cut_magnet_lines = not self.flag_cut_magnet_lines
-        # if self.flag_draw_magnet_lines:
-        #     x, y, z = get_data_for_magnet_lines(theta_range_column, phi_range_column, self.slider_phi_0,
-        #                                         self.flag_cut_magnet_lines)
-        #     self.magnet_lines_top.mlab_source.trait_set(x=x, y=y, z=z, color=(0, 0, 1))
-        #     self.magnet_lines_bot.mlab_source.trait_set(x=-x, y=-y, z=-z, color=(0, 0, 1))
-        # else:
-        #     self.magnet_lines_top.mlab_source.trait_set(x=[0], y=[0], z=[0], color=(0, 0, 1))
-        #     self.magnet_lines_bot.mlab_source.trait_set(x=[0], y=[0], z=[0], color=(0, 0, 1))
-
-        theta = np.pi / 2 - np.deg2rad(self.curr_configuration.beta_mu)
-
-        r, phi = np.mgrid[np.sin(theta) ** 2:4:100j, 0:2 * np.pi:100j]
-        x = r * np.cos(phi)
-        y = r * np.sin(phi)
-        z, z1 = np.mgrid[-0.003:0.003:100j, -0.003:0.003:100j]
-
-        # сначала отрисовали в beta_mu
-        self.accretion_disc_top.mlab_source.trait_set(x=x, y=y)
+    @on_trait_change('button_magnet_line')
+    def func_change_button_magnet_line(self):
+        self.flag_draw_magnet_lines = not self.flag_draw_magnet_lines
+        self.magnet_lines_top.visible = not self.magnet_lines_top.visible
+        self.magnet_lines_top_outer.visible = not self.magnet_lines_top_outer.visible
+        self.magnet_lines_bot.visible = not self.magnet_lines_bot.visible
+        self.magnet_lines_bot_outer.visible = not self.magnet_lines_bot_outer.visible
 
     @on_trait_change('button_accr_disc')
     def func_change_button_accr_disc(self):
@@ -628,17 +602,10 @@ class Visualization(HasTraits):
 
     @on_trait_change('button_hide_accr_disc')
     def func_change_button_hide_accr_disc(self):
-        if self.flag_accretion_disc_hide:
-            # self.draw_accretion_disc()
-            self.flag_accretion_disc_hide = not self.flag_accretion_disc_hide
-            self.accretion_disc_top.visible = True
-            self.accretion_disc_bot.visible = True
-            self.accretion_disc_side_surface.visible = True
-        else:
-            self.flag_accretion_disc_hide = not self.flag_accretion_disc_hide
-            self.accretion_disc_top.visible = False
-            self.accretion_disc_bot.visible = False
-            self.accretion_disc_side_surface.visible = False
+        self.flag_accretion_disc_hide = not self.flag_accretion_disc_hide
+        self.accretion_disc_top.visible = not self.accretion_disc_top.visible
+        self.accretion_disc_bot.visible = not self.accretion_disc_bot.visible
+        self.accretion_disc_side_surface.visible = not self.accretion_disc_side_surface.visible
 
     @on_trait_change('button_check_data')
     def func_change_button_check_data(self):
@@ -686,17 +653,13 @@ class Visualization(HasTraits):
     #         yield
 
     # the layout of the dialog created
-    view = View(Item('scene', editor=SceneEditor(scene_class=MayaviScene),
-                     height=250, width=300, show_label=False),
+    view = View(Item('scene', editor=SceneEditor(scene_class=MayaviScene), height=250, width=300, show_label=False),
                 VGroup(
                     HGroup(
                         '_', 'slider_theta_obs', 'slider_beta_mu', 'slider_mc2', 'slider_a_portion', 'slider_phi_0'
                     ),
-                    HGroup(
-                        '_', 'slider_phase', 'slider_distance'
-                    ),
-                    HGroup('button_magnet_line', 'button_accr_disc', 'button_cut_magnet_lines',
-                           'button_hide_accr_disc', 'button_animate')
+                    HGroup('_', 'slider_phase', 'slider_distance'),
+                    HGroup('button_magnet_line', 'button_hide_accr_disc', 'button_accr_disc', 'button_animate')
                 )
                 )
 
