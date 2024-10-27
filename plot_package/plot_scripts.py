@@ -10,6 +10,7 @@ import save
 plt.style.use(['science', 'notebook', 'grid'])
 mpl.rcParams['mathtext.fontset'] = 'cm'
 mpl.rcParams['font.family'] = 'STIXGeneral'
+mpl.use('Agg')
 
 
 def plot_total_luminosity_of_surfaces(L_surfs, save_dir=None):
@@ -118,6 +119,7 @@ def plot_PF_to_energy(L_nu_surfs, save_dir=None):
 
 
 def plot_L_nu(L_nu_surfs, save_dir=None):
+    '''попробовать распараллелить'''
     # sum L_nu
     L_nu_to_plot = newService.extend_arr_for_plot(L_nu_surfs)
 

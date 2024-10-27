@@ -39,6 +39,8 @@ outer_R_e_ksi_flag = False  # if true = обрезаем по ksi; False - по 
 ASYNC_FLAG = True
 old_path_flag = False
 
+L_nu_flag = False
+
 tau_cutoff = 0
 opacity_above_shock = 0  # непрозрачность вещества над ударной волной: 0 - полностью прозрачное, 1 - непрозрачное
 # L_ed = M_ns / MSun * 10 ** 38

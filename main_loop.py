@@ -16,10 +16,16 @@ if __name__ == '__main__':
     a_portion_arr = [0.44, 0.66]
     phi_0_arr = [0]
 
+    beta_mu_arr = [10 * i for i in range(1, 10)]
+    theta_obs_arr = [10 * i for i in range(1, 10)]
+    mc2_arr = [30]
+    a_portion_arr = [1]
+    phi_0_arr = [0]
+
     flag = False
     # ------------------------------------------------- start -------------------------------------------------------
     N_big = len(theta_obs_arr) * len(beta_mu_arr) * len(mc2_arr) * len(a_portion_arr) * len(phi_0_arr)
-    print(f'to calculate {N_big} loops need about {30 * N_big / 3600} hours')
+    print(f'to calculate {N_big} loops need about {20 * N_big / 3600} hours')
     for theta_obs in theta_obs_arr:
         for beta_mu in beta_mu_arr:
             for mc2 in mc2_arr:
