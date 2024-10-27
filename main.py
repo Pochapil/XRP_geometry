@@ -15,75 +15,6 @@ import plot_package.plot_scripts
 import save
 
 
-def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=False):
-    '''
-    функция расчитывает матрицу косинусов на каждой фазе для направлений наблюдателя
-
-    mask_flag --- для расчета по магнитным линиям - их надо обрезать
-    '''
-    # тензор косинусов между нормалью на площадке и направлением на наблюдателя. размер phase x phi x theta
-    # умножаем скалярно phi x theta x 3 на phase x 3 (по последнему индексу) и делаем reshape.
-    cos_psi_rotation_matrix = np.einsum('ijl,tl->tij', surface.array_normal, obs_matrix)
-
-    # print(f'obs_matrix = {np.max(np.linalg.norm(obs_matrix, axis=1))}')
-    # print(f'array_normal_max = {np.max(np.linalg.norm(surface.array_normal, axis=2))}')
-
-    # возможно хранить будем все матрицы.
-    # для разных матриц можем посчитать L и посмотреть какой вклад будет.
-    tensor_shadows_NS = np.ones_like(cos_psi_rotation_matrix)
-    tensor_shadows_columns = np.ones_like(cos_psi_rotation_matrix)
-    tensor_tau = np.ones_like(cos_psi_rotation_matrix)
-    new_cos_psi_range = cos_psi_rotation_matrix.copy()
-
-    if mask_flag:
-        mask = np.zeros_like(new_cos_psi_range).astype(bool)
-        mask += surface.mask_array  # происходит broadcast в матрицу размера phase x phi x theta
-        new_cos_psi_range[mask] = 0
-    # print(surface)
-    # for phase_index in range(config.N_phase):
-    # для возможности распараллелить еще больше чем на 4 поверхности (разрезая наблюдателя на чанки)
-    for phase_index in range(obs_matrix.shape[0]):
-        for phi_index in range(config.N_phi_accretion):
-            for theta_index in range(config.N_theta_accretion):
-                if new_cos_psi_range[phase_index, phi_index, theta_index] > 0:
-                    origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
-                    # сначала проверяем на затмение НЗ
-                    if shadows.intersection_with_sphere(surface, origin_phi, origin_theta, obs_matrix[phase_index]):
-                        tensor_shadows_NS[phase_index, phi_index, theta_index] = 0
-                    # иначе тяжелые вычисления
-                    else:
-                        # расчет для полинома - находим корни для пересечения с внутр поверхностью на магн линии!
-                        solutions = shadows.get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta,
-                                                                                  obs_matrix[phase_index])
-                        # расчитываем затмение колонкой
-                        tensor_shadows_columns[phase_index, phi_index, theta_index] = \
-                            shadows.check_shadow_with_dipole(surface, phi_index, theta_index,
-                                                             obs_matrix[phase_index], solutions,
-                                                             curr_configuration.top_column.inner_surface,
-                                                             curr_configuration.bot_column.inner_surface)
-                        if tensor_shadows_columns[phase_index, phi_index, theta_index] > 0:
-                            # если затмения нет то считаем ослабление тау с внутренними магнитными линиями!!
-                            tensor_tau[phase_index, phi_index, theta_index] = \
-                                shadows.get_tau_with_dipole(surface, phi_index, theta_index, obs_matrix[phase_index],
-                                                            solutions, curr_configuration.top_column.R_e,
-                                                            curr_configuration.beta_mu,
-                                                            curr_configuration.M_accretion_rate,
-                                                            curr_configuration.top_column.inner_surface,
-                                                            curr_configuration.bot_column.inner_surface,
-                                                            curr_configuration.a_portion)
-                            # доп проверка с верхними - пока не считаю - надеюсь что слабо влияют ?? или они учтены но криво
-                            # if tensor_tau[phase_index, phi_index, theta_index] == 1:
-                            #     if surface.surf_R_e != curr_configuration.R_e:
-                            #         ...
-                else:
-                    # если косинус < 0 -> поверхность излучает от наблюдателя и мы не получим вклад в интеграл
-                    new_cos_psi_range[phase_index, phi_index, theta_index] = 0
-    new_cos_psi_range = new_cos_psi_range * tensor_shadows_NS * tensor_shadows_columns * tensor_tau
-    # if tensor_tau[tensor_tau != 1].shape[0] > 0:
-    #     print(np.max(tensor_tau[tensor_tau != 1]))
-    return new_cos_psi_range
-
-
 def calc_number_pow(num):
     pow = 0
     while num > 10:
@@ -221,6 +152,156 @@ def save_new_way(L_surfs, L_scatter, L_nu_surfs, L_nu_scatter, cur_path_data):
         save.save_arr_as_txt(L_nu_scatter[:, i], cur_path / 'scatter/', file_name)
 
 
+def calc_shadows_and_tau_one_dim(curr_configuration, surface, obs_mu, mask_flag=False):
+    obs_mu = obs_mu.ravel()
+    cos_psi_rotation_matrix = np.einsum('ijl,l->ij', surface.array_normal, obs_mu)
+
+    tensor_shadows_NS = np.ones_like(cos_psi_rotation_matrix)
+    tensor_shadows_columns = np.ones_like(cos_psi_rotation_matrix)
+    tensor_tau = np.ones_like(cos_psi_rotation_matrix)
+    new_cos_psi_range = cos_psi_rotation_matrix.copy()
+
+    if mask_flag:
+        mask = np.zeros_like(new_cos_psi_range).astype(bool)
+        mask += surface.mask_array  # происходит broadcast в матрицу размера phase x phi x theta
+        new_cos_psi_range[mask] = 0
+
+    for phi_index in range(config.N_phi_accretion):
+        for theta_index in range(config.N_theta_accretion):
+            if new_cos_psi_range[phi_index, theta_index] > 0:
+                origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
+                # сначала проверяем на затмение НЗ
+                if shadows.intersection_with_sphere(surface, origin_phi, origin_theta, obs_mu):
+                    tensor_shadows_NS[phi_index, theta_index] = 0
+                # иначе тяжелые вычисления
+                else:
+                    # расчет для полинома - находим корни для пересечения с внутр поверхностью на магн линии!
+                    solutions = shadows.get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, obs_mu)
+                    # сортируем по действительной части
+                    solutions = sorted(list(solutions), key=lambda x: x.real)
+                    # расчитываем затмение колонкой
+                    tensor_shadows_columns[phi_index, theta_index] = \
+                        shadows.check_shadow_with_dipole(surface, phi_index, theta_index,
+                                                         obs_mu, solutions,
+                                                         curr_configuration.top_column.inner_surface,
+                                                         curr_configuration.bot_column.inner_surface)
+                    if tensor_shadows_columns[phi_index, theta_index] > 0:
+                        # если затмения нет то считаем ослабление тау с внутренними магнитными линиями!!
+                        tensor_tau[phi_index, theta_index] = \
+                            shadows.get_tau_with_dipole(surface, phi_index, theta_index, obs_mu,
+                                                        solutions, curr_configuration.top_column.R_e,
+                                                        curr_configuration.beta_mu,
+                                                        curr_configuration.M_accretion_rate,
+                                                        curr_configuration.top_column.inner_surface,
+                                                        curr_configuration.bot_column.inner_surface,
+                                                        curr_configuration.a_portion)
+            else:
+                # если косинус < 0 -> поверхность излучает от наблюдателя и мы не получим вклад в интеграл
+                new_cos_psi_range[phi_index, theta_index] = 0
+    new_cos_psi_range = new_cos_psi_range * tensor_shadows_NS * tensor_shadows_columns * tensor_tau
+    # if tensor_tau[tensor_tau != 1].shape[0] > 0:
+    #     print(np.max(tensor_tau[tensor_tau != 1]))
+    return new_cos_psi_range
+
+
+def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=False):
+    '''
+    функция расчитывает матрицу косинусов на каждой фазе для направлений наблюдателя
+
+    mask_flag --- для расчета по магнитным линиям - их надо обрезать
+    '''
+    # тензор косинусов между нормалью на площадке и направлением на наблюдателя. размер phase x phi x theta
+    # умножаем скалярно phi x theta x 3 на phase x 3 (по последнему индексу) и делаем reshape.
+    # phase x phi x theta
+    cos_psi_rotation_matrix = np.einsum('ijl,tl->tij', surface.array_normal, obs_matrix)
+    # print(f'obs_matrix = {np.max(np.linalg.norm(obs_matrix, axis=1))}')
+    # print(f'array_normal_max = {np.max(np.linalg.norm(surface.array_normal, axis=2))}')
+
+    # возможно хранить будем все матрицы.
+    # для разных матриц можем посчитать L и посмотреть какой вклад будет.
+    tensor_shadows_NS = np.ones_like(cos_psi_rotation_matrix)
+    tensor_shadows_columns = np.ones_like(cos_psi_rotation_matrix)
+    tensor_tau = np.ones_like(cos_psi_rotation_matrix)
+    new_cos_psi_range = cos_psi_rotation_matrix.copy()
+
+    if mask_flag:
+        mask = np.zeros_like(new_cos_psi_range).astype(bool)
+        mask += surface.mask_array  # происходит broadcast в матрицу размера phase x phi x theta
+        new_cos_psi_range[mask] = 0
+    # print(surface)
+    # for phase_index in range(config.N_phase):
+    # для возможности распараллелить еще больше чем на 4 поверхности (разрезая наблюдателя на чанки)
+    for phase_index in range(obs_matrix.shape[0]):
+        for phi_index in range(config.N_phi_accretion):
+            for theta_index in range(config.N_theta_accretion):
+                if new_cos_psi_range[phase_index, phi_index, theta_index] > 0:
+                    origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
+                    # сначала проверяем на затмение НЗ
+                    if shadows.intersection_with_sphere(surface, origin_phi, origin_theta, obs_matrix[phase_index]):
+                        tensor_shadows_NS[phase_index, phi_index, theta_index] = 0
+                    # иначе тяжелые вычисления
+                    else:
+                        # расчет для полинома - находим корни для пересечения с внутр поверхностью на магн линии!
+                        solutions = shadows.get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta,
+                                                                                  obs_matrix[phase_index])
+                        # сортируем по действительной части
+                        solutions = sorted(list(solutions), key=lambda x: x.real)
+                        # расчитываем затмение колонкой
+                        tensor_shadows_columns[phase_index, phi_index, theta_index] = \
+                            shadows.check_shadow_with_dipole(surface, phi_index, theta_index,
+                                                             obs_matrix[phase_index], solutions,
+                                                             curr_configuration.top_column.inner_surface,
+                                                             curr_configuration.bot_column.inner_surface)
+                        if tensor_shadows_columns[phase_index, phi_index, theta_index] > 0:
+                            # если затмения нет то считаем ослабление тау с внутренними магнитными линиями!!
+                            tensor_tau[phase_index, phi_index, theta_index] = \
+                                shadows.get_tau_with_dipole(surface, phi_index, theta_index, obs_matrix[phase_index],
+                                                            solutions, curr_configuration.top_column.R_e,
+                                                            curr_configuration.beta_mu,
+                                                            curr_configuration.M_accretion_rate,
+                                                            curr_configuration.top_column.inner_surface,
+                                                            curr_configuration.bot_column.inner_surface,
+                                                            curr_configuration.a_portion)
+                            # доп проверка с верхними - пока не считаю - надеюсь что слабо влияют ?? или они учтены но криво
+                            # if tensor_tau[phase_index, phi_index, theta_index] == 1:
+                            #     if surface.surf_R_e != curr_configuration.R_e:
+                            #         ...
+                else:
+                    # если косинус < 0 -> поверхность излучает от наблюдателя и мы не получим вклад в интеграл
+                    new_cos_psi_range[phase_index, phi_index, theta_index] = 0
+    new_cos_psi_range = new_cos_psi_range * tensor_shadows_NS * tensor_shadows_columns * tensor_tau
+    # if tensor_tau[tensor_tau != 1].shape[0] > 0:
+    #     print(np.max(tensor_tau[tensor_tau != 1]))
+    return new_cos_psi_range
+
+
+def calc_async_with_split_at_each(curr_configuration, obs_matrix, surfs_arr, mask_flag):
+    '''
+        распаралеллил на максимум потоков - для каждого направления на наблюдателя свой цикл
+    '''
+
+    # чтобы работал map нужно для каждой поверхности повторить obs_mu
+    obs_matrix_new = np.empty((obs_matrix.shape[0] * len(surfs_arr), obs_matrix.shape[1]))
+    for i, obs_mu in enumerate(obs_matrix):
+        obs_matrix_new[i * len(surfs_arr): (i + 1) * len(surfs_arr)] = obs_mu
+
+    t1 = time.perf_counter()
+    with mp.Pool(processes=config.N_cpus) as pool:
+        new_cos_psi_range_async = pool.starmap(calc_shadows_and_tau_one_dim,
+                                               zip(repeat(curr_configuration), cycle(surfs_arr),
+                                                   obs_matrix_new, repeat(mask_flag)))
+    t2 = time.perf_counter()
+    print(f'{t2 - t1} seconds')
+
+    # теперь необходимо склеить все чтобы каждый cos[] принадлежал своей поверхности - с помощью slice step [::x]
+    # map возвращает 1 общий массив по порядку вызова.
+    cos_psi_range = np.empty((len(surfs_arr), config.N_phase, config.N_phi_accretion, config.N_theta_accretion))
+    for i in range(len(surfs_arr)):
+        surf_cos_psi_range = new_cos_psi_range_async[i::len(surfs_arr)]
+        cos_psi_range[i] = surf_cos_psi_range
+    return cos_psi_range
+
+
 def calc_async_with_split(curr_configuration, obs_matrix, surfs_arr, mask_flag):
     '''для возможности распаралелить еще больше чем на 4 поверхности
     тут мы разбиваем массив наблюдателя на чанки и передаем на расчет, потом сливаем их вместе
@@ -256,8 +337,8 @@ def calc_cos_psi(curr_configuration, obs_matrix, surfs_arr, mask_flag):
     '''объединил все методы расчета в 1 функцию'''
     # 4 или 8 процессов будет запущено
     if config.ASYNC_FLAG:
-        if config.N_cpus == 8:
-            new_cos_psi_range = calc_async_with_split(curr_configuration, obs_matrix, surfs_arr, mask_flag)
+        if config.N_cpus >= 8:
+            new_cos_psi_range = calc_async_with_split_at_each(curr_configuration, obs_matrix, surfs_arr, mask_flag)
         else:
             t1 = time.perf_counter()
             with mp.Pool(processes=len(surfs_arr)) as pool:
@@ -267,7 +348,7 @@ def calc_cos_psi(curr_configuration, obs_matrix, surfs_arr, mask_flag):
             t2 = time.perf_counter()
             print(f'{t2 - t1} seconds')
     else:
-        new_cos_psi_range = np.empty(4, dtype=object)
+        new_cos_psi_range = np.empty((len(surfs_arr), config.N_phase, config.N_phi_accretion, config.N_theta_accretion))
         for i, surface in enumerate(surfs_arr):
             new_cos_psi_range[i] = calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag)
 
@@ -414,11 +495,12 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
 if __name__ == '__main__':
     # ------------------------------------------------- start -------------------------------------------------------
     mu = 0.1e31
-    beta_mu = 40
-    mc2 = 100
-    a_portion = 0.44
-    phi_0 = 0
 
-    theta_obs = 60
+    theta_obs = 80
+    beta_mu = 10
+
+    mc2 = 100
+    a_portion = 1
+    phi_0 = 0
 
     calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, True)
