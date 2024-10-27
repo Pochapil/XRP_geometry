@@ -48,6 +48,9 @@ def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_ve
         находим уравнение в сферических координатах.
 
         достаем корни, ищем положительные
+
+        по идее для пересечений верхней колонки с верхними линиями тоже пойдет
+
     '''
     # вывод формулы был для 0 угла наблюдателя по фи (его смещали в выводе). поэтому находим phi_delta
     direction_phi, direction_theta = matrix.vec_to_angles(direction_vector)
