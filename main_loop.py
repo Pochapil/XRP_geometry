@@ -76,6 +76,7 @@ if __name__ == '__main__':
     # ------------------------------------------------- start -------------------------------------------------------
     N_big = len(theta_obs_arr) * len(beta_mu_arr) * len(mc2_arr) * len(a_portion_arr) * len(phi_0_arr)
     if config.flag_calc_clever:
+
         print(f'to calculate {N_big} loops need about {100 * N_big / 3600 / config.N_cpus} hours')
         t1 = time.perf_counter()
 
@@ -85,7 +86,8 @@ if __name__ == '__main__':
         '''чтобы пройти по сетке берем product от массивов значений аргументов - получим декартово произведение'''
         with mp.Pool(processes=config.N_cpus) as pool:
             pool.starmap(main.calc_and_save_for_configuration,
-                         (product([mu], theta_obs_arr, beta_mu_arr, mc2_arr, a_portion_arr, phi_0_arr, [plot_flag])))
+                         (product([mu], theta_obs_arr, beta_mu_arr, mc2_arr, a_portion_arr, phi_0_arr, [plot_flag],
+                                  [False])))  # False - чтобы считал на 1 процессоре каждый вызов
 
         #     pool.starmap(main.calc_and_save_for_configuration,
         #                  zip(repeat(mu, N_big), cycle(theta_obs_arr), cycle(beta_mu_arr), cycle(mc2_arr),

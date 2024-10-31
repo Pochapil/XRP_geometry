@@ -329,19 +329,20 @@ def calc_async_with_split_at_each_phase(curr_configuration, obs_matrix, surfs_ar
     return cos_psi_range
 
 
-def calc_cos_psi(curr_configuration, obs_matrix, surfs_arr, mask_flag):
+def calc_cos_psi(curr_configuration, obs_matrix, surfs_arr, mask_flag, async_flag=True):
     '''объединил все методы расчета в 1 функцию'''
     # 4 или 8 процессов будет запущено
     t1 = time.perf_counter()
-    if config.ASYNC_FLAG:
-        if config.N_cpus >= 8:
-            new_cos_psi_range = calc_async_with_split_at_each_phase(curr_configuration, obs_matrix, surfs_arr,
-                                                                    mask_flag)
-        else:
-            with mp.Pool(processes=len(surfs_arr)) as pool:
-                new_cos_psi_range = pool.starmap(calc_shadows_and_tau,
-                                                 zip(repeat(curr_configuration), surfs_arr,
-                                                     repeat(obs_matrix), repeat(mask_flag)))
+    if async_flag:
+        if config.ASYNC_FLAG:
+            if config.N_cpus >= 8:
+                new_cos_psi_range = calc_async_with_split_at_each_phase(curr_configuration, obs_matrix, surfs_arr,
+                                                                        mask_flag)
+            else:
+                with mp.Pool(processes=len(surfs_arr)) as pool:
+                    new_cos_psi_range = pool.starmap(calc_shadows_and_tau,
+                                                     zip(repeat(curr_configuration), surfs_arr,
+                                                         repeat(obs_matrix), repeat(mask_flag)))
     else:
         new_cos_psi_range = np.empty((len(surfs_arr), config.N_phase, config.N_phi_accretion, config.N_theta_accretion))
         for i, surface in enumerate(surfs_arr):
@@ -351,7 +352,7 @@ def calc_cos_psi(curr_configuration, obs_matrix, surfs_arr, mask_flag):
     return new_cos_psi_range
 
 
-def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, figs_flag=False):
+def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, figs_flag=False, async_flag=True):
     curr_configuration = accretingNS.AccretingPulsarConfiguration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
 
     cur_dir_saved = pathService.PathSaver(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
@@ -389,7 +390,7 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
     #             2: bot_column.outer_surface, 3: bot_column.inner_surface}
 
     print('start calc surfs')
-    new_cos_psi_range_surfs = calc_cos_psi(curr_configuration, obs_matrix, accr_col_surfs, False)
+    new_cos_psi_range_surfs = calc_cos_psi(curr_configuration, obs_matrix, accr_col_surfs, False, async_flag)
 
     L_surfs = np.empty((4, config.N_phase))
     L_nu_surfs = np.empty((4, config.N_energy, config.N_phase))
@@ -409,7 +410,7 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
     print('start calc scatter')
     magnet_line_surfs = [curr_configuration.top_magnet_lines, curr_configuration.bot_magnet_lines]
 
-    new_cos_psi_range_surfs = calc_cos_psi(curr_configuration, obs_matrix, magnet_line_surfs, True)
+    new_cos_psi_range_surfs = calc_cos_psi(curr_configuration, obs_matrix, magnet_line_surfs, True, async_flag)
 
     L_scatter = np.empty((2, config.N_phase))
     L_nu_scatter = np.empty((2, config.N_energy, config.N_phase))
@@ -502,4 +503,4 @@ if __name__ == '__main__':
     a_portion = 0.66
     phi_0 = 0
 
-    calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, True)
+    calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, True, config.ASYNC_FLAG)

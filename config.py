@@ -38,10 +38,7 @@ FLAG_R_E_OLD = False
 outer_R_e_ksi_flag = False  # if true = обрезаем по ksi; False - по тета (тета iner == тета outer)
 
 flag_calc_clever = True
-if flag_calc_clever:
-    ASYNC_FLAG = False
-else:
-    ASYNC_FLAG = True
+ASYNC_FLAG = True
 
 old_path_flag = False
 
