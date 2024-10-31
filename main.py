@@ -316,14 +316,10 @@ def calc_async_with_split_at_each_phase(curr_configuration, obs_matrix, surfs_ar
     for i, obs_mu in enumerate(obs_matrix):
         obs_matrix_new[i * len(surfs_arr): (i + 1) * len(surfs_arr)] = obs_mu
 
-    t1 = time.perf_counter()
     with mp.Pool(processes=config.N_cpus) as pool:
         new_cos_psi_range_async = pool.starmap(calc_shadows_and_tau_one_dim,
                                                zip(repeat(curr_configuration), cycle(surfs_arr),
                                                    obs_matrix_new, repeat(mask_flag)))
-    t2 = time.perf_counter()
-    print(f'{t2 - t1} seconds')
-
     # теперь необходимо склеить все чтобы каждый cos[] принадлежал своей поверхности - с помощью slice step [::x]
     # map возвращает 1 общий массив по порядку вызова.
     cos_psi_range = np.empty((len(surfs_arr), config.N_phase, config.N_phi_accretion, config.N_theta_accretion))
@@ -336,23 +332,22 @@ def calc_async_with_split_at_each_phase(curr_configuration, obs_matrix, surfs_ar
 def calc_cos_psi(curr_configuration, obs_matrix, surfs_arr, mask_flag):
     '''объединил все методы расчета в 1 функцию'''
     # 4 или 8 процессов будет запущено
+    t1 = time.perf_counter()
     if config.ASYNC_FLAG:
         if config.N_cpus >= 8:
             new_cos_psi_range = calc_async_with_split_at_each_phase(curr_configuration, obs_matrix, surfs_arr,
                                                                     mask_flag)
         else:
-            t1 = time.perf_counter()
             with mp.Pool(processes=len(surfs_arr)) as pool:
                 new_cos_psi_range = pool.starmap(calc_shadows_and_tau,
                                                  zip(repeat(curr_configuration), surfs_arr,
                                                      repeat(obs_matrix), repeat(mask_flag)))
-            t2 = time.perf_counter()
-            print(f'{t2 - t1} seconds')
     else:
         new_cos_psi_range = np.empty((len(surfs_arr), config.N_phase, config.N_phi_accretion, config.N_theta_accretion))
         for i, surface in enumerate(surfs_arr):
             new_cos_psi_range[i] = calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag)
-
+    t2 = time.perf_counter()
+    print(f'{t2 - t1} seconds')
     return new_cos_psi_range
 
 
@@ -366,7 +361,7 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
     cur_path_data = cur_path / folder
     print(cur_path_data)
     save.create_file_path(cur_path_data)
-    print(cur_dir_saved.save_dir)
+    # print(cur_dir_saved.save_dir)
     theta_obs_rad = np.deg2rad(theta_obs)
     beta_mu_rad = np.deg2rad(beta_mu)
 
@@ -493,14 +488,15 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
         t2 = time.perf_counter()
         print(f'{t2 - t1} seconds')
         print('finish plot')
+        print(f'finished for {cur_path_data}')
 
 
 if __name__ == '__main__':
     # ------------------------------------------------- start -------------------------------------------------------
     mu = 0.1e31
 
-    theta_obs = 80
-    beta_mu = 10
+    theta_obs = 10
+    beta_mu = 90
 
     mc2 = 100
     a_portion = 0.66
