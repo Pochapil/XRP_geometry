@@ -319,7 +319,7 @@ class Visualization(HasTraits):
         # mu_vector
         # mlab.plot3d([0, 0], [0, 0], [0, 1.0], color=self.mu_vector_color, tube_radius=self.mu_vector_tube_radius,
         #             tube_sides=6)
-
+        # --------------------------------------------- рисуем вектора ------------------------------------------
         self.mu_vector = mlab.quiver3d(0, 0, 1, mode='2ddash', scale_factor=1, color=self.mu_vector_color)
         self.mu_vector_1 = mlab.quiver3d(0, 0, -1, mode='2ddash', scale_factor=1, color=self.mu_vector_color)
 
@@ -334,7 +334,7 @@ class Visualization(HasTraits):
         self.omega_vector_1 = mlab.quiver3d(-omega_vector[0], -omega_vector[1], -omega_vector[2], mode='2ddash',
                                             scale_factor=1, color=self.omega_vector_color)
 
-        # рисуем аккреционный диск
+        # ------------------------------------------ рисуем аккреционный диск ------------------------------------------
         self.draw_accretion_disc()
 
         # self.check_data()
@@ -673,11 +673,12 @@ def plot_main(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
 
 if __name__ == "__main__":
     mu = 0.1e31
-    beta_mu = 20
-    mc2 = 100
-    a_portion = 0.44
-    phi_0 = 0
 
     theta_obs = 80
+    beta_mu = 10
+
+    mc2 = 100
+    a_portion = 0.66
+    phi_0 = 0
 
     plot_main(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)

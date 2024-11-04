@@ -7,6 +7,9 @@ import newService
 
 
 def create_ds_for_integral(surface):
+    '''создает сетку по площадкам из сетки по углам через формулу для площадки в дипольной геометрии
+    учитываем что разные радиусы у поверхностей
+    '''
     # это dl phi * dl theta но без d theta d phi !!! S с волной ~S в моем дипломе
     # для интеграла по simpson
     # dS единичная площадка при интегрировании
@@ -19,6 +22,11 @@ def create_ds_for_integral(surface):
 
 def calculate_total_luminosity(surface, T_eff):
     # emission power = integral without cos
+    '''расчитать мощность излучения колонок. по идее равно тому чтобы расчитать без учета косинусов. но возможно нет
+    по формулам получается тот же 4 sigma ... но 4 берется из того что у нас 4 излучающие поверхности
+
+    также проблемы - если учитывать что внешние магнитные линии на большем радиусе, то сильно различаются
+    '''
     tensor = np.ones((config.N_phi_accretion, config.N_theta_accretion))
     return calc_L(surface, T_eff, tensor)
 
@@ -34,6 +42,7 @@ def calculate_total_luminosity(surface, T_eff):
 
 
 def calc_L(surface, T_eff, cos_tensor):
+    '''расчитать L от фазы от поверхности, зная распределение Т'''
     tilda_s = create_ds_for_integral(surface)
     # (пи входит в сигма) sigm_Stf_Bolc = integral pi B_nu
     L = np.abs(4 * config.sigm_Stf_Bolc * scipy.integrate.simps(
@@ -58,7 +67,8 @@ def calc_L_nu(surface, T_eff, cos_tensor):
 
 
 def calc_scatter_L(surface, L_x, cos_tensor, tau_scatter_matrix=None):
-    # расчет отраженной светимости
+    '''расчет отраженной светимости. берем источник с мощностью L_x (полная мощность колонок)
+    помещаем в центр и считаем рассяенное излучение'''
     tilda_s = create_ds_for_integral(surface)
     d = surface.surf_R_e * np.sin(surface.theta_range) ** 2  # distance to area
     coeff = 1 / (4 * np.pi * d ** 2)

@@ -13,6 +13,15 @@ surface_surf_types = {'outer': 'outer', 'inner': 'inner'}
 
 
 class AccretingPulsarConfiguration:
+    '''решил сделать класс который хранит текущую конфигурацию.
+    некоторые поля также являются классами
+
+    top_column - верхняя колонка
+    bot_column - нижняя колонка
+
+    top_magnet_lines - верхние магнитные линии
+    bot_magnet_lines - нижние
+    '''
 
     def __init__(self, mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
         self.mu = mu
@@ -42,6 +51,11 @@ class AccretingPulsarConfiguration:
 
 
 class AccretionColumn:
+    '''класс колонки. хранит  себе значния конфигурации + знает свои поверхности
+
+    outer_surface - внешняя поверхность/полярная ?
+    inner_surface - внутрення поверхность/экваториальная
+    '''
 
     def __init__(self, R_e, mu, mc2, a_portion, phi_0, column_type):
         self.R_e = R_e
@@ -50,12 +64,13 @@ class AccretionColumn:
         self.phi_0 = phi_0
 
         # попробую что
-        # R_e_outer_surface, R_e_inner_surface = self.R_e, self.R_e
         self.R_e_outer_surface, self.R_e_inner_surface = (1 + config.dRe_div_Re) * R_e, R_e
         if config.FLAG_R_E_OLD:
-            self.R_e_outer_surface, self.R_e_inner_surface = R_e, R_e  # допущение что толщина = 0
+            # если допущение что толщина = 0
+            self.R_e_outer_surface, self.R_e_inner_surface = R_e, R_e
 
         M_accretion_rate = mc2 * config.L_edd / config.c ** 2
+        # вызов БС чтобы расчитать все распределения. МБ стоит поднять выше так как расчет только 1 раз нужен
         self.T_eff, self.ksi_shock, self.L_x, self.beta = get_T_eff.get_Teff_distribution(
             newService.get_delta_distance_at_surface_NS(self.R_e),
             newService.get_A_normal_at_surface_NS(self.R_e, self.a_portion),
@@ -66,7 +81,7 @@ class AccretionColumn:
                                      self.column_type, surface_type=surface_surf_types['outer'])
         self.inner_surface = Surface(self.R_e_inner_surface, self.R_e, self.a_portion, self.phi_0, self.ksi_shock,
                                      self.column_type, surface_type=surface_surf_types['inner'])
-
+        # вызов подправки распределения Т
         self.correct_T_eff()
 
     def correct_T_eff(self):
@@ -93,6 +108,12 @@ class AccretionColumn:
 
 
 class Surface:
+    '''класс поверхности. можно сказать основной - будет участвовать во всех расчетах.
+    знает распределение сетки по theta phi
+
+    наверно стоит добавить промежуточный слой между поверхностью и магнитными линиями чтобы учесть обрезание колонки
+    '''
+
     def __init__(self, surf_R_e, col_R_e, a_portion, phi_0, ksi_shock, column_type, surface_type):
         self.surf_R_e = surf_R_e  # R_e на котором сидит - R_e либо R_e + \delta R_e
         self.surface_type = surface_type
@@ -109,7 +130,7 @@ class Surface:
             # беру col_R_e - чтобы обрезать большую колонку по тета а не кси.
             if (config.R_ns * ksi_shock / col_R_e) >= 1:
                 # есть набор параметров при которых модель не работает и ударная волна дальше магнитосферы, берем 90
-                '''вопрос - мб нужна формула с arctan...'''
+                '''вопрос - мб нужна формула с arctan... скорее всего нужно сначала phi потом расчитывать тета'''
                 self.theta_accretion_end = np.pi / 2
             else:
                 # из усл силовой линии МП : r = R_e sin**2; end: ksi_shock = R_e sin**2
@@ -123,8 +144,8 @@ class Surface:
 
         phi_0_rad = np.deg2rad(phi_0)
         phi_delta = 0
+        # для нижней сместить углы
         if column_type == column_surf_types['bot']:
-            # для нижней сместить углы
             phi_delta = np.pi
         # phi_0 - центр колонки!!!!!!!!!!!!
         self.phi_range = np.linspace(-np.pi * a_portion, np.pi * a_portion, config.N_phi_accretion)
@@ -137,16 +158,19 @@ class Surface:
         self.array_normal = self.create_array_normal(self.phi_range, self.theta_range, self.surface_type)
 
     def create_array_normal(self, phi_range, theta_range, surface_type):
-        '''работало раньше, когда R_e были одинаковые!!!!!!!!!
-        мол outer surf (pol) - стреляет наружу
-            iner (eq) - внутрь
-        по факту нужно переделать:
-        для всех углов считать
-        array_normal = matrix.newE_n_n(phi_range, theta_range)
-        а потом разбираться с пересечениями и ослаблениями
         '''
-        # array_normal - матрица нормалей
-        # тензор размером phi x theta x 3 (x,y,z)
+        array_normal - матрица нормалей ==== тензор размером phi x theta x 3 (x,y,z)
+
+        работало раньше, когда R_e были одинаковые!!!!!!!!!
+        мол outer surf (pol) - стреляет наружу; iner (eq) - внутрь
+        по факту нужно переделать:
+        для всех углов считать array_normal = matrix.newE_n_n(phi_range, theta_range)
+        а потом разбираться с пересечениями и ослаблениями
+
+        хотя вроде ок. так как внешняя наружу, а внутрення внутрь
+        (погрешности если и есть то лишь на небольшом наборе углов и причем небольшие)
+        '''
+        # coefficient = -1 значит вектор смотрит вовнутрь (посмотри на векторное умножение)! - для внутренней поверхности
         coefficient = -1
         if surface_type == surface_surf_types['outer']:  # True - внешняя поверхность, False - внутренняя
             coefficient = 1
@@ -155,9 +179,25 @@ class Surface:
 
 
 class MagnetLine:
+    '''класс магнитных поверхностей (вещество над ударной волной) для рассеяния.
+        знает распределение сетки по theta phi. начинается над колонкой.'''
+
     def __init__(self, R_e, beta_mu, top_column_phi_range, top_column_theta_end, column_type):
+
+        '''
+        top_column_theta_end = для ВНУТРЕННЕЙ поверхности пока что!!!!
+
+        смог реализовать только с помощью маски
+
+        маска - чтобы не портить сетку по teta и phi и оставить ее регулярной
+        мы просто смотрим что ячейки сетки лежат над диском (для верхних магнитных линий)
+        для нижней колонки mask_array будет такой же
+
+        в маске значение Ture значит не надо использовать эту площадку в расчетах - она ниже диска (для верхней колонки)
+        '''
         self.column_type = column_type
         self.surf_R_e = R_e
+        # так как диск связан с осью вращения максимальный угол = np.pi / 2 + beta_mu - угол на котором диск от оси омега
         theta_range_end = np.pi / 2 + beta_mu
         # ограничиваю колонкой
         theta_range_end = min((np.pi - top_column_theta_end), theta_range_end)
@@ -166,13 +206,8 @@ class MagnetLine:
         self.theta_range = np.linspace(theta_range_begin, theta_range_end, config.N_theta_accretion)
         self.phi_range = top_column_phi_range
 
-        '''смог реализовать только с помощью маски'''
-        # маска - чтобы не портить сетку по teta и phi и оставить ее регулярной
-        # мы просто смотрим что ячейки сетки лежат над диском (для верхних магнитных линий)
-        # для нижней колонки mask_array будет такой же
         self.mask_array = np.zeros((config.N_phi_accretion, config.N_theta_accretion)).astype(bool)
         # mask = np.zeros_like(x).astype(bool)
-
         for i, phi in enumerate(self.phi_range):
             for j, theta in enumerate(self.theta_range):
                 theta_end = np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(phi))

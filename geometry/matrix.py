@@ -119,7 +119,7 @@ def newE_fi_n(fi_sphere):
 
 def newE_l_n(phi_sphere, theta_sphere):
     # тензор размером phi x theta x 3 (x,y,z)
-    # вместо np.cross(newE_l(fi_sphere, theta_sphere), newE_fi(fi_sphere)) беру формулу для n (есть в дипломе)
+    # 4.4 формула
     res = 2 * np.cos(theta_sphere)[np.newaxis, :, np.newaxis] * newE_r_n(phi_sphere, theta_sphere)
     res += np.sin(theta_sphere)[np.newaxis, :, np.newaxis] * newE_theta_n(phi_sphere, theta_sphere)
     res /= ((3 * np.cos(theta_sphere)[np.newaxis, :, np.newaxis] ** 2 + 1) ** (1 / 2))
@@ -128,6 +128,8 @@ def newE_l_n(phi_sphere, theta_sphere):
 
 def newE_n_n(phi_sphere, theta_sphere):
     # тензор размером phi x theta x 3 (x,y,z)
+    # вместо np.cross(newE_l(fi_sphere, theta_sphere), newE_fi(fi_sphere)) беру формулу для n
+    # был вывод в дипломе 4.12 формула
     res = -2 * np.cos(theta_sphere)[np.newaxis, :, np.newaxis] * newE_theta_n(phi_sphere, theta_sphere)
     res += np.sin(theta_sphere)[np.newaxis, :, np.newaxis] * newE_r_n(phi_sphere, theta_sphere)
     res /= ((3 * np.cos(theta_sphere)[np.newaxis, :, np.newaxis] ** 2 + 1) ** (1 / 2))

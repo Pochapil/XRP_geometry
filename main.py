@@ -16,6 +16,7 @@ import save
 
 
 def calc_number_pow(num):
+    # считает степень и основание
     pow = 0
     while num > 10:
         num = num / 10
@@ -24,6 +25,8 @@ def calc_number_pow(num):
 
 
 def make_save_values_file(curr_configuration, L_surfs, L_scatter, cur_path_data, cur_dir_saved):
+    # сохраняет значения в save_values
+    '''R_e, ksi_shock, beta, total L_x ...'''
     file_name = 'save_values.txt'
 
     if config.old_path_flag:
@@ -72,6 +75,7 @@ def make_save_values_file(curr_configuration, L_surfs, L_scatter, cur_path_data,
 
 def save_some_files(curr_configuration, obs_matrix, L_surfs, L_scatter, L_nu_surfs, L_nu_scatter, PF_L_nu_surfs,
                     cur_path_data, cur_dir_saved):
+    '''сохраняет разные распределения. понятно из названий файлов'''
     if config.old_path_flag:
         cur_path = cur_dir_saved.get_old_path()
     else:
@@ -108,7 +112,7 @@ def save_some_files(curr_configuration, obs_matrix, L_surfs, L_scatter, L_nu_sur
     # --------------------------------------------folders------------------------------------------------
 
     if config.old_path_flag:
-
+        '''сохранить по старому. по старым методам расчета пути? думаю никогда не использую это'''
         old_path = cur_dir_saved.get_old_path()
 
         for i, energy in enumerate(config.energy_arr):
@@ -137,6 +141,7 @@ def save_some_files(curr_configuration, obs_matrix, L_surfs, L_scatter, L_nu_sur
 
 
 def save_new_way(L_surfs, L_scatter, L_nu_surfs, L_nu_scatter, cur_path_data):
+    '''сохранить по новому - лучший порядок в папках + имена'''
     cur_path = cur_path_data
     file_name = "L_surfs.txt"
     save.save_arr_as_txt(L_surfs, cur_path / 'surfs/', file_name)
@@ -165,7 +170,7 @@ def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=Fals
     # print(f'obs_matrix = {np.max(np.linalg.norm(obs_matrix, axis=1))}')
     # print(f'array_normal_max = {np.max(np.linalg.norm(surface.array_normal, axis=2))}')
 
-    # возможно хранить будем все матрицы.
+    # возможно хранить будем все матрицы. чтобы расчитывать вклады
     # для разных матриц можем посчитать L и посмотреть какой вклад будет.
     tensor_shadows_NS = np.ones_like(cos_psi_rotation_matrix)
     tensor_shadows_columns = np.ones_like(cos_psi_rotation_matrix)
@@ -255,9 +260,16 @@ def calc_async_with_split(curr_configuration, obs_matrix, surfs_arr, mask_flag):
 
 
 def calc_shadows_and_tau_one_dim(curr_configuration, surface, obs_mu, mask_flag=False):
+    '''распараллелил чтобы каждый считал своего наблюдателя. возможность параллелить на большее число
+
+    obs_mu - на конкретной фазе
+    mask_flag --- для расчета по магнитным линиям - их надо обрезать
+    '''
+
     obs_mu = obs_mu.ravel()
     cos_psi_rotation_matrix = np.einsum('ijl,l->ij', surface.array_normal, obs_mu)
 
+    # инициализация тензоров учета геометрических фичей
     tensor_shadows_NS = np.ones_like(cos_psi_rotation_matrix)
     tensor_shadows_columns = np.ones_like(cos_psi_rotation_matrix)
     tensor_tau = np.ones_like(cos_psi_rotation_matrix)
@@ -310,7 +322,7 @@ def calc_async_with_split_at_each_phase(curr_configuration, obs_matrix, surfs_ar
     '''
         распаралеллил на максимум потоков - для каждого направления на наблюдателя свой цикл
     '''
-
+    # можно попробовать повторять поверхности и в цикле ходить по наблюдателю
     # чтобы работал map нужно для каждой поверхности повторить obs_mu
     obs_matrix_new = np.empty((obs_matrix.shape[0] * len(surfs_arr), obs_matrix.shape[1]))
     for i, obs_mu in enumerate(obs_matrix):
@@ -331,10 +343,11 @@ def calc_async_with_split_at_each_phase(curr_configuration, obs_matrix, surfs_ar
 
 def calc_cos_psi(curr_configuration, obs_matrix, surfs_arr, mask_flag, async_flag=True):
     '''объединил все методы расчета в 1 функцию'''
-    # 4 или 8 процессов будет запущено
+    # в 1 потоке или многопоточность async_flag. убрал из конфиг так как если буду параллелить могут быть ошибки
+    # при импорте
     t1 = time.perf_counter()
     if async_flag:
-        if config.N_cpus >= 8:
+        if config.N_cpus >= 1:
             new_cos_psi_range = calc_async_with_split_at_each_phase(curr_configuration, obs_matrix, surfs_arr,
                                                                     mask_flag)
         else:
@@ -343,15 +356,25 @@ def calc_cos_psi(curr_configuration, obs_matrix, surfs_arr, mask_flag, async_fla
                                                  zip(repeat(curr_configuration), surfs_arr,
                                                      repeat(obs_matrix), repeat(mask_flag)))
     else:
+        # в 1 потоке посчитать по каждой поверхности честно в цикле
         new_cos_psi_range = np.empty((len(surfs_arr), config.N_phase, config.N_phi_accretion, config.N_theta_accretion))
         for i, surface in enumerate(surfs_arr):
             new_cos_psi_range[i] = calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag)
     t2 = time.perf_counter()
-    print(f'{t2 - t1} seconds')
+    if config.print_time_flag:
+        print(f'{t2 - t1} seconds')
     return new_cos_psi_range
 
 
 def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, figs_flag=False, async_flag=True):
+    '''основная функция расчета
+
+    figs_flag - отрисовывать ли графики
+    async_flag - параллелить или нет
+    '''
+
+    t1_one_loop = time.perf_counter()
+
     curr_configuration = accretingNS.AccretingPulsarConfiguration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
 
     cur_dir_saved = pathService.PathSaver(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
@@ -387,7 +410,7 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
     # чтобы соответствовать порядку в старом
     # surfaces = {0: top_column.outer_surface, 1: top_column.inner_surface,
     #             2: bot_column.outer_surface, 3: bot_column.inner_surface}
-    if async_flag:
+    if config.print_time_flag:
         print('start calc surfs')
     new_cos_psi_range_surfs = calc_cos_psi(curr_configuration, obs_matrix, accr_col_surfs, False, async_flag)
 
@@ -400,14 +423,17 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
         L_surfs[i] = integralsService.calc_L(surface, curr_configuration.top_column.T_eff, new_cos_psi_range)
         L_nu_surfs[i] = integralsService.calc_L_nu(surface, curr_configuration.top_column.T_eff, new_cos_psi_range)
 
+    L_surfs[np.isnan(L_surfs)] = 0
+    L_nu_surfs[np.isnan(L_nu_surfs)] = 0
+
     PF_L_surfs = newService.get_PF(np.sum(L_surfs, axis=0))
     PF_L_nu_surfs = newService.get_PF(np.sum(L_nu_surfs, axis=0))
-    if async_flag:
+    if config.print_time_flag:
         print('finish calc surfs')
     # plot_package.plot_scripts.plot_L(L_surfs)
 
     # ----------------------------------------------- Scatter -----------------------------------------------------
-    if async_flag:
+    if config.print_time_flag:
         print('start calc scatter')
     magnet_line_surfs = [curr_configuration.top_magnet_lines, curr_configuration.bot_magnet_lines]
 
@@ -446,23 +472,26 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
 
     # plot_package.plot_scripts.plot_L(L_scatter)
 
+    L_scatter[np.isnan(L_scatter)] = 0
+    L_nu_scatter[np.isnan(L_nu_scatter)] = 0
+
     PF_L_scatter = newService.get_PF(np.sum(L_scatter, axis=0))
     PF_L_nu_scatter = newService.get_PF(np.sum(L_nu_scatter, axis=0))
-    if async_flag:
+    if config.print_time_flag:
         print('finish calc scatter')
     # ------------------------------------------------- save txt -----------------------------------------------------
     make_save_values_file(curr_configuration, L_surfs, L_scatter, cur_path_data, cur_dir_saved)
-    if async_flag:
+    if config.print_time_flag:
         print('save_values')
     save_some_files(curr_configuration, obs_matrix, L_surfs, L_scatter, L_nu_surfs, L_nu_scatter, PF_L_nu_surfs,
                     cur_path_data, cur_dir_saved)
-    if async_flag:
+    if config.print_time_flag:
         print('some_files')
     save_new_way(L_surfs, L_scatter, L_nu_surfs, L_nu_scatter, cur_path_data)
-    if async_flag:
+    if config.print_time_flag:
         print('save_new_way')
     if figs_flag:
-        if async_flag:
+        if config.print_time_flag:
             print('start plot')
         t1 = time.perf_counter()
         # ------------------------------------------------- save figs -------------------------------------------------
@@ -493,10 +522,12 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
             plot_package.plot_scripts.plot_scatter_L_nu(L_nu_surfs, L_nu_scatter, cur_path_fig)
         # -------------------------------------------------------------------------------------------------------------
         t2 = time.perf_counter()
-        print(f'{t2 - t1} seconds')
-        if async_flag:
+        if config.print_time_flag:
+            print(f'{t2 - t1} seconds')
             print('finish plot')
-        print(f'finished for {cur_path_data}')
+    print(f'finished for {cur_path_data}')
+    t2_one_loop = time.perf_counter()
+    print(f'{(t2_one_loop - t1_one_loop):.2f}s for one loop')
 
 
 if __name__ == '__main__':

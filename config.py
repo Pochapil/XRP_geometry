@@ -33,9 +33,9 @@ new_magnet_lines_flag = True
 tau_flag = True
 NS_shadow_flag = True
 
-FLAG_PHI_0_OLD = False
-FLAG_R_E_OLD = False
-outer_R_e_ksi_flag = False  # if true = обрезаем по ksi; False - по тета (тета iner == тета outer)
+FLAG_PHI_0_OLD = False  # False - чтобы phi = центр (новый метод). True - в терминах старого phi; начало
+FLAG_R_E_OLD = False  # False - новый способ - учет толщины. True = допущение что толщина = 0
+outer_R_e_ksi_flag = False  # False - обрезаем поверхности по тета (тета iner == тета outer). True = обрезаем по ksi
 
 flag_calc_clever = True
 ASYNC_FLAG = True
@@ -43,6 +43,7 @@ ASYNC_FLAG = True
 old_path_flag = False
 
 L_nu_flag = False
+print_time_flag = False
 
 tau_cutoff = 0
 opacity_above_shock = 0  # непрозрачность вещества над ударной волной: 0 - полностью прозрачное, 1 - непрозрачное
@@ -59,7 +60,7 @@ L_edd = 4 * pi * G * M_ns * c / k
 
 # цикл для поворотов, сколько точек на графике интегралов - для фазы от 0 до 2 - с перекрытием чтобы форму макс
 
-N_cpus = 10
+N_cpus = 10  # сколько ядер буде использовано
 
 N_phase = 45  # цикл для поворотов, сколько точек для фазы от 0 до 1 (полного поворота)
 omega_ns_deg = 360 / 45  # скорость вращения НЗ - будет меняться только угол phi_mu!

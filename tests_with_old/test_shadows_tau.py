@@ -2,7 +2,7 @@ import numpy as np
 
 import accretingNS
 import config
-from geometricTask import matrix
+from geometry import matrix
 import pathService
 import shadows
 

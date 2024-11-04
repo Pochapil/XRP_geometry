@@ -1,6 +1,7 @@
 import numpy as np
 
-from geometricTask import matrix
+from geometry import matrix
+import integralsService
 
 # phi x theta x 3
 #
@@ -25,5 +26,20 @@ for i in range(phi_arr.shape[0]):
         print(array_normal[i, j] - z[i, j, :])
         print(count)
         count += 1
+
+print(np.pi - 1.382)
+print(np.pi + 1.382)
+
+# x = np.
+
+z1 = matrix.get_xyz_coord_angles(1, phi_arr, theta_arr)
+
+print(z1)
+print(z1.shape)
+
+L = np.array([[1, 2, 4, 12], [4, 2, 9, 13]])
+print(L.shape)
+z = integralsService.get_PF(L)
+
 # print(array_normal)
 # print(array_normal

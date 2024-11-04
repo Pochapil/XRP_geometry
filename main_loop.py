@@ -39,19 +39,6 @@ if __name__ == '__main__':
     a_portion_arr = [0.22, 0.44, 0.66, 1]
     phi_0_arr = [0]
 
-    theta_obs_arr = [40]
-    beta_mu_arr = [60]
-    # [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
-    mc2_arr = [10, 20, 40, 50, 60, 70, 80, 90, 110, 120, 130]
-    a_portion_arr = [0.44, 0.66]
-    phi_0_arr = [0]
-
-    beta_mu_arr = [10 * i for i in range(1, 10)]
-    theta_obs_arr = [10 * i for i in range(1, 10)]
-    mc2_arr = [30]
-    a_portion_arr = [1]
-    phi_0_arr = [0]
-
     theta_obs_arr = [10 * i for i in range(1, 10)]
     beta_mu_arr = [10 * i for i in range(1, 10)]
     mc2_arr = [30, 100]
@@ -90,19 +77,22 @@ if __name__ == '__main__':
     phi_0_arr = [0]
 
     # -------cur
-    theta_obs_arr = [10 * i for i in range(0, 10)]
-    beta_mu_arr = [0]
+    theta_obs_arr = [0]
+    beta_mu_arr = [10 * i for i in range(0, 10)]
     mc2_arr = [30, 60, 100]
-    a_portion_arr = [0.22, 0.44, 0.66, 1]
-    phi_0_arr = [0]
+    a_portion_arr = [0.22, 0.44, 0.66]
+    phi_0_arr = [20]
 
     plot_flag = True
     # ------------------------------------------------- start -------------------------------------------------------
     N_big = len(theta_obs_arr) * len(beta_mu_arr) * len(mc2_arr) * len(a_portion_arr) * len(phi_0_arr)
     if config.flag_calc_clever:
 
-        print(f'{N_big} loops about {200 * N_big / 60 / config.N_cpus:.2f} mins '
-              + f'or {200 * N_big / 3600 / config.N_cpus:.2f} hours')
+        sec_one_loop = 200
+        print(
+            f'{N_big} loops about {sec_one_loop * N_big / config.N_cpus:.2f} seconds or '
+            + f'{sec_one_loop * N_big / 60 / config.N_cpus:.2f} mins or '
+            + f'{sec_one_loop * N_big / 3600 / config.N_cpus:.2f} hours')
         t1 = time.perf_counter()
 
         # print(*product([mu], theta_obs_arr, beta_mu_arr, mc2_arr, a_portion_arr, phi_0_arr, [plot_flag]))
@@ -120,7 +110,7 @@ if __name__ == '__main__':
         #                      cycle(a_portion_arr), cycle(phi_0_arr), repeat(plot_flag)))
 
         t2 = time.perf_counter()
-        print(f'{t2 - t1} seconds')
+        print(f'{(t2 - t1):.2f} seconds')
 
     else:
         print(f'to calculate {N_big} loops need about {20 * N_big / 3600} hours')
