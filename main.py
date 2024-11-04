@@ -334,15 +334,14 @@ def calc_cos_psi(curr_configuration, obs_matrix, surfs_arr, mask_flag, async_fla
     # 4 или 8 процессов будет запущено
     t1 = time.perf_counter()
     if async_flag:
-        if config.ASYNC_FLAG:
-            if config.N_cpus >= 8:
-                new_cos_psi_range = calc_async_with_split_at_each_phase(curr_configuration, obs_matrix, surfs_arr,
-                                                                        mask_flag)
-            else:
-                with mp.Pool(processes=len(surfs_arr)) as pool:
-                    new_cos_psi_range = pool.starmap(calc_shadows_and_tau,
-                                                     zip(repeat(curr_configuration), surfs_arr,
-                                                         repeat(obs_matrix), repeat(mask_flag)))
+        if config.N_cpus >= 8:
+            new_cos_psi_range = calc_async_with_split_at_each_phase(curr_configuration, obs_matrix, surfs_arr,
+                                                                    mask_flag)
+        else:
+            with mp.Pool(processes=len(surfs_arr)) as pool:
+                new_cos_psi_range = pool.starmap(calc_shadows_and_tau,
+                                                 zip(repeat(curr_configuration), surfs_arr,
+                                                     repeat(obs_matrix), repeat(mask_flag)))
     else:
         new_cos_psi_range = np.empty((len(surfs_arr), config.N_phase, config.N_phi_accretion, config.N_theta_accretion))
         for i, surface in enumerate(surfs_arr):
@@ -388,8 +387,8 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
     # чтобы соответствовать порядку в старом
     # surfaces = {0: top_column.outer_surface, 1: top_column.inner_surface,
     #             2: bot_column.outer_surface, 3: bot_column.inner_surface}
-
-    print('start calc surfs')
+    if async_flag:
+        print('start calc surfs')
     new_cos_psi_range_surfs = calc_cos_psi(curr_configuration, obs_matrix, accr_col_surfs, False, async_flag)
 
     L_surfs = np.empty((4, config.N_phase))
@@ -403,11 +402,13 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
 
     PF_L_surfs = newService.get_PF(np.sum(L_surfs, axis=0))
     PF_L_nu_surfs = newService.get_PF(np.sum(L_nu_surfs, axis=0))
-    print('finish calc surfs')
+    if async_flag:
+        print('finish calc surfs')
     # plot_package.plot_scripts.plot_L(L_surfs)
 
     # ----------------------------------------------- Scatter -----------------------------------------------------
-    print('start calc scatter')
+    if async_flag:
+        print('start calc scatter')
     magnet_line_surfs = [curr_configuration.top_magnet_lines, curr_configuration.bot_magnet_lines]
 
     new_cos_psi_range_surfs = calc_cos_psi(curr_configuration, obs_matrix, magnet_line_surfs, True, async_flag)
@@ -447,17 +448,22 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
 
     PF_L_scatter = newService.get_PF(np.sum(L_scatter, axis=0))
     PF_L_nu_scatter = newService.get_PF(np.sum(L_nu_scatter, axis=0))
-    print('finish calc scatter')
+    if async_flag:
+        print('finish calc scatter')
     # ------------------------------------------------- save txt -----------------------------------------------------
     make_save_values_file(curr_configuration, L_surfs, L_scatter, cur_path_data, cur_dir_saved)
-    print('save_values')
+    if async_flag:
+        print('save_values')
     save_some_files(curr_configuration, obs_matrix, L_surfs, L_scatter, L_nu_surfs, L_nu_scatter, PF_L_nu_surfs,
                     cur_path_data, cur_dir_saved)
-    print('some_files')
+    if async_flag:
+        print('some_files')
     save_new_way(L_surfs, L_scatter, L_nu_surfs, L_nu_scatter, cur_path_data)
-    print('save_new_way')
+    if async_flag:
+        print('save_new_way')
     if figs_flag:
-        print('start plot')
+        if async_flag:
+            print('start plot')
         t1 = time.perf_counter()
         # ------------------------------------------------- save figs -------------------------------------------------
         cur_path_fig = cur_path / 'fig'
@@ -488,7 +494,8 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
         # -------------------------------------------------------------------------------------------------------------
         t2 = time.perf_counter()
         print(f'{t2 - t1} seconds')
-        print('finish plot')
+        if async_flag:
+            print('finish plot')
         print(f'finished for {cur_path_data}')
 
 

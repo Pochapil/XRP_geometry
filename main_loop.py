@@ -52,24 +52,48 @@ if __name__ == '__main__':
     a_portion_arr = [1]
     phi_0_arr = [0]
 
-    theta_obs_arr = [10 * i for i in range(6, 10)]
+    theta_obs_arr = [10 * i for i in range(1, 10)]
     beta_mu_arr = [10 * i for i in range(1, 10)]
-    mc2_arr = [30, 60, 100]
+    mc2_arr = [30, 100]
     a_portion_arr = [0.22, 0.44, 0.66]
-    phi_0_arr = [0, 40, 90]
+    phi_0_arr = [120]
 
+    # -----L_to_phi_0-------
+    theta_obs_arr = [40]
+    beta_mu_arr = [60]
+    mc2_arr = [30]
+    a_portion_arr = [0.66]
+    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    phi_0_arr = [20, 60, 80, 100, 120, 160]
+
+    # -----------L_to_m-----
     theta_obs_arr = [20]
     beta_mu_arr = [60]
     # [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
-    mc2_arr = [10, 20, 40, 50, 60, 70, 80, 90, 110, 120, 130]
+    mc2_arr = [10, 20, 40, 50, 70, 80, 90, 110, 120, 130]
     a_portion_arr = [0.44, 0.66]
     phi_0_arr = [0]
 
+    # ----- L_nu_to_phi_0 / PF_to_L_nu-----
     theta_obs_arr = [20]
-    beta_mu_arr = [60]
-    # [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
-    mc2_arr = [160, 180]
-    a_portion_arr = [0.44, 0.66]
+    beta_mu_arr = [40, 60]
+    mc2_arr = [30, 100]
+    a_portion_arr = [0.22, 0.66]
+    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    phi_0_arr = [20, 60, 80, 100, 120, 160]
+
+    # ------L_to_a------
+    theta_obs_arr = [20]
+    beta_mu_arr = [40]
+    mc2_arr = [100]
+    a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825]
+    phi_0_arr = [0]
+
+    # -------cur
+    theta_obs_arr = [10 * i for i in range(0, 10)]
+    beta_mu_arr = [0]
+    mc2_arr = [30, 60, 100]
+    a_portion_arr = [0.22, 0.44, 0.66, 1]
     phi_0_arr = [0]
 
     plot_flag = True
@@ -77,7 +101,8 @@ if __name__ == '__main__':
     N_big = len(theta_obs_arr) * len(beta_mu_arr) * len(mc2_arr) * len(a_portion_arr) * len(phi_0_arr)
     if config.flag_calc_clever:
 
-        print(f'to calculate {N_big} loops need about {100 * N_big / 3600 / config.N_cpus} hours')
+        print(f'{N_big} loops about {200 * N_big / 60 / config.N_cpus:.2f} mins '
+              + f'or {200 * N_big / 3600 / config.N_cpus:.2f} hours')
         t1 = time.perf_counter()
 
         # print(*product([mu], theta_obs_arr, beta_mu_arr, mc2_arr, a_portion_arr, phi_0_arr, [plot_flag]))
@@ -85,9 +110,10 @@ if __name__ == '__main__':
         #     print(i)
         '''чтобы пройти по сетке берем product от массивов значений аргументов - получим декартово произведение'''
         with mp.Pool(processes=config.N_cpus) as pool:
+            # ставим chunksize = 1 чтобы все считал по порядку и можно будет в случае сбоя понять где остановился
             pool.starmap(main.calc_and_save_for_configuration,
                          (product([mu], theta_obs_arr, beta_mu_arr, mc2_arr, a_portion_arr, phi_0_arr, [plot_flag],
-                                  [False])))  # False - чтобы считал на 1 процессоре каждый вызов
+                                  [False])), 1)  # False - чтобы считал на 1 процессоре каждый вызов
 
         #     pool.starmap(main.calc_and_save_for_configuration,
         #                  zip(repeat(mu, N_big), cycle(theta_obs_arr), cycle(beta_mu_arr), cycle(mc2_arr),
