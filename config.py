@@ -42,7 +42,7 @@ ASYNC_FLAG = True
 
 old_path_flag = False
 
-L_nu_flag = False
+L_nu_flag = False  # флаг для сохранения массивов графиков на каждой энергии. довольно долго (порядка 20 секунд). пока отключил
 print_time_flag = False
 
 tau_cutoff = 0

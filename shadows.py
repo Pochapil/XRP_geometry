@@ -46,20 +46,24 @@ def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_ve
 
         есть аналитическое уравнение для пересечения с дипольной линией - полином 5 степени
         находим уравнение в сферических координатах.
-
         достаем корни, ищем положительные
 
-        по идее для пересечений верхней колонки с верхними линиями тоже пойдет
+        вывод - диплом 4.3.2 Затмения, вызванные аккреционной колонкой
 
+        по идее для пересечений верхней колонки с верхними линиями тоже пойдет.
+        так как сокращается в расчете Re или Re+delta
+
+        НО если искать пересечения между внешней и внутр или внутр и внеш то нужно менять !!!!
     '''
-    # вывод формулы был для 0 угла наблюдателя по фи (его смещали в выводе). поэтому находим phi_delta
     direction_phi, direction_theta = matrix.vec_to_angles(direction_vector)
     # вспомогательные переменные, были введены для упрощения аналитического вывода
+    # вывод формулы был для 0 угла наблюдателя по фи (его смещали в выводе). поэтому находим phi_delta
     phi_delta = origin_phi - direction_phi
     eta = np.sin(direction_theta) / np.sin(origin_theta)
     cos_alpha = np.sin(origin_theta) * np.cos(phi_delta) * np.sin(direction_theta) + np.cos(origin_theta) * np.cos(
         direction_theta)
 
+    # коэффициенты в полиноме
     c_x_5 = 1
     c_x_4 = 6 * cos_alpha
     c_x_3 = 3 + 12 * cos_alpha ** 2 - eta ** 4
@@ -67,6 +71,7 @@ def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_ve
     c_x_1 = 3 + 12 * cos_alpha ** 2 - 2 * eta ** 2 - 4 * np.cos(phi_delta) ** 2 * eta ** 2
     c_x_0 = 6 * cos_alpha - 4 * np.cos(phi_delta) * eta
 
+    # теперь коэффициенты надо укзывать в порядке с 0 до 5 степени
     coefficients = [c_x_0, c_x_1, c_x_2, c_x_3, c_x_4, c_x_5]
     solutions = np.polynomial.polynomial.polyroots(coefficients)
     # coefficients = [c_x_5, c_x_4, c_x_3, c_x_2, c_x_1, c_x_0]
@@ -75,8 +80,11 @@ def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_ve
 
 
 def get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector, solution):
+    # ищем положительные корни и при этом вещественные
     if solution.real > 0 and solution.imag == 0:
+        # direction - направление на наблюдателя
         direction_x, direction_y, direction_z = matrix.vec_to_coord(obs_vector)
+        # origin - откуда бьет луч. площадка на поверхности
         origin_x, origin_y, origin_z = matrix.get_cartesian_from_spherical(r, origin_theta, origin_phi)
 
         direction_t = solution.real * r  # ???? wtf = это был вывод (4.2 в дипломе) t = R_0 * x
@@ -92,6 +100,8 @@ def get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector, solu
 def get_intersection_phi_with_column(surface, intersect_phi):
     # top_column_intersect_phi_correct = (top_column_phi_range[0] <= intersect_phi <= top_column_phi_range[
     #     -1]) or (top_column_phi_range[0] <= intersect_phi + 2 * np.pi <= top_column_phi_range[-1])
+
+    # смотрим чтобы intersect_phi лежал внутри диапазона по фи. + двигаем на +- 2pi
     column_phi_range_begin, column_phi_range_end = surface.phi_range[0], surface.phi_range[-1]
     return (column_phi_range_begin <= intersect_phi <= column_phi_range_end) \
            or (column_phi_range_begin <= intersect_phi + 2 * np.pi <= column_phi_range_end) \
@@ -102,33 +112,40 @@ def check_shadow_with_dipole(surface, phi_index, theta_index, obs_vector, soluti
     # checks for 1 element area!
     # obs_vector = direction_vector
     '''
-       есть аналитическое уравнение для полинома дипольной линии 5 степени
-       находим уравнение в сферических координатах.
 
-       достаем корни
-       ищем положительные
+        принимает на вход массив решений для затмений с колонкой
+
+
+
        находим пересечение с колонками
            если пересекается то истина
            если нет то ложь
 
        корни в магнитной СК - betta_mu
        '''
+
+    # origin - откуда бьет луч. площадка на поверхности
     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
+    # работаем в нормировке на радиус звезды
     r = surface.surf_R_e / config.R_ns * np.sin(origin_theta) ** 2
 
+    # ищем положительные корни и при этом вещественные
     for solution in solutions:
+        # ищем корни которые нам подходят, значит произошло затмение
         intersect_phi, intersect_theta = get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector,
                                                                         solution)
         if intersect_phi is not None:
-            # для верхней колонки:
+            # условие по phi для верхней колонки:
             top_column_intersect_phi = get_intersection_phi_with_column(top_column, intersect_phi)
 
-            # для нижней колонки:
+            # условие по phi для нижней колонки:
             bot_column_intersect_phi = get_intersection_phi_with_column(bot_column, intersect_phi)
 
+            # если есть пересечение то вернем 0 так как затмение
             if (intersect_theta < top_column.theta_range[-1] and top_column_intersect_phi) \
                     or (intersect_theta > bot_column.theta_range[-1] and bot_column_intersect_phi):
                 return 0
+    # не нашли затмений - вернем 1
     return 1
 
 
@@ -139,10 +156,22 @@ def get_tau_for_opacity_old(theta, R_e, M_accretion_rate, a_portion):
 
 
 def get_tau_for_opacity(phi, theta, R_e_of_atenuation_surf, M_accretion_rate, a_portion, obs_vector):
-    '''очень маленькие cos = 0.005??'''
+    '''
+    считаем коэффициент ослабления
+
+    + теперь учитываем угол alpha - угол между нормалью в точке пересечения и направлением на наблюдателя.
+    так как нормаль != пути вдоль вещества. примерно это прямоугольный треугольник. надо делить на косинус.
+
+    мы уже поняли что будет пересечение. отрицательный угол может получиться поэтому вернем модуль
+
+    сейчас почти всегда >>1 и ослабление сразу в 0. почти как затмение
+
+    очень маленькие cos = 0.005?? - хз вроде уже норм
+    '''
     # phi, theta - в точке пересечения; R_e =
     normal = matrix.newE_n(phi, theta)
     cos_alpha = np.dot(normal, obs_vector) / (np.linalg.norm(normal) * np.linalg.norm(obs_vector))
+    # формула в статье есть
     tau = config.k * M_accretion_rate * newService.get_delta_distance(theta, R_e_of_atenuation_surf)
     tau /= (newService.get_A_normal(theta, R_e_of_atenuation_surf, a_portion)
             * newService.get_free_fall_velocity(theta, R_e_of_atenuation_surf))
@@ -165,27 +194,36 @@ def get_tau_for_scatter_with_cos(theta_range, R_e_emission_surf, M_accretion_rat
 
 def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, R_e_of_atenuation_surf, beta_mu,
                         M_accretion_rate, top_column, bot_column, a_portion):
-    '''R_e_of_atenuation_surf = inner surf!!!!! я беру пересечения только с внутренней (пока что)'''
+    '''
+    считаем коэффициент ослабления tau
+    R_e_of_atenuation_surf = inner surf!!!!!
+    я беру пересечения только с внутренней (пока что)
+    '''
     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
     # здесь радиус основания, радиус излучающей так как r = для положения излучающей
     r = surface.surf_R_e / config.R_ns * np.sin(origin_theta) ** 2
 
     for solution in solutions:
+        # смотрим по тем же решениям что и для колонки. так как они для дипольной линии
         intersect_phi, intersect_theta = get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector,
                                                                         solution)
         if intersect_phi is not None:
-            # из геометрических выводов = конец магнитосферной линии
+            # из геометрических выводов = конец магнитосферной линии. был вывод в тетрадке этой формулы
             theta_end = np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(intersect_phi))
 
+            # условия пересечений тета
             top_column_intersect_theta_correct = intersect_theta < theta_end
             bot_column_intersect_theta_correct = intersect_theta > theta_end
 
+            # условия пересечений фи
             top_column_intersect_phi = get_intersection_phi_with_column(top_column, intersect_phi)
             bot_column_intersect_phi = get_intersection_phi_with_column(bot_column, intersect_phi)
 
+            # условия пересечений с верхней или нижней линией магнитной
             intersection_condition = (top_column_intersect_phi and top_column_intersect_theta_correct) or (
                     bot_column_intersect_phi and bot_column_intersect_theta_correct)
 
+            # если есть пересечение считаем коэффициент ослабления
             if intersection_condition:
                 tau = get_tau_for_opacity(intersect_phi, intersect_theta, R_e_of_atenuation_surf, M_accretion_rate,
                                           a_portion, obs_vector)
@@ -193,6 +231,7 @@ def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, 
                     return np.exp(-1 * tau)
                 else:
                     return 1
+    # если не нашли пересечений то ослабления нет
     return 1
 
 

@@ -197,7 +197,7 @@ def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=Fals
                         # расчет для полинома - находим корни для пересечения с внутр поверхностью на магн линии!
                         solutions = shadows.get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta,
                                                                                   obs_matrix[phase_index])
-                        # сортируем по действительной части
+                        # сортируем по действительной части, чтобы
                         solutions = sorted(list(solutions), key=lambda x: x.real)
                         # расчитываем затмение колонкой
                         tensor_shadows_columns[phase_index, phi_index, theta_index] = \
@@ -282,6 +282,7 @@ def calc_shadows_and_tau_one_dim(curr_configuration, surface, obs_mu, mask_flag=
 
     for phi_index in range(config.N_phi_accretion):
         for theta_index in range(config.N_theta_accretion):
+            # если излучение в нашу сторону (>0), то считаем дальше (иначе просто берем 0)
             if new_cos_psi_range[phi_index, theta_index] > 0:
                 origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
                 # сначала проверяем на затмение НЗ
@@ -291,7 +292,7 @@ def calc_shadows_and_tau_one_dim(curr_configuration, surface, obs_mu, mask_flag=
                 else:
                     # расчет для полинома - находим корни для пересечения с внутр поверхностью на магн линии!
                     solutions = shadows.get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, obs_mu)
-                    # сортируем по действительной части
+                    # сортируем по действительной части, чтобы найти первое пересечение если их несколько. мб и не надо
                     solutions = sorted(list(solutions), key=lambda x: x.real)
                     # расчитываем затмение колонкой
                     tensor_shadows_columns[phi_index, theta_index] = \
@@ -300,7 +301,7 @@ def calc_shadows_and_tau_one_dim(curr_configuration, surface, obs_mu, mask_flag=
                                                          curr_configuration.top_column.inner_surface,
                                                          curr_configuration.bot_column.inner_surface)
                     if tensor_shadows_columns[phi_index, theta_index] > 0:
-                        # если затмения нет то считаем ослабление тау с внутренними магнитными линиями!!
+                        # если затмения нет, то считаем ослабление тау с ВНУТРЕННИМИ (r=R_e) магнитными линиями!!
                         tensor_tau[phi_index, theta_index] = \
                             shadows.get_tau_with_dipole(surface, phi_index, theta_index, obs_mu,
                                                         solutions, curr_configuration.top_column.R_e,
@@ -375,8 +376,9 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
 
     t1_one_loop = time.perf_counter()
 
+    # задаем текущую конфигурацию
     curr_configuration = accretingNS.AccretingPulsarConfiguration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
-
+    # cur_dir_saved - папка куда будем сохранять распределения
     cur_dir_saved = pathService.PathSaver(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     folder = 'txt/'
     # cur_path = path to save txt !!!
@@ -412,6 +414,7 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
     #             2: bot_column.outer_surface, 3: bot_column.inner_surface}
     if config.print_time_flag:
         print('start calc surfs')
+    # расчет матрицы косинусов на каждой фазе
     new_cos_psi_range_surfs = calc_cos_psi(curr_configuration, obs_matrix, accr_col_surfs, False, async_flag)
 
     L_surfs = np.empty((4, config.N_phase))
@@ -527,7 +530,7 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
             print('finish plot')
     print(f'finished for {cur_path_data}')
     t2_one_loop = time.perf_counter()
-    print(f'{(t2_one_loop - t1_one_loop):.2f}s for one loop')
+    print(f'{(t2_one_loop - t1_one_loop):.2f} s for one loop')
 
 
 if __name__ == '__main__':

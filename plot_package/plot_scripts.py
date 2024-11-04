@@ -14,6 +14,8 @@ mpl.use('Agg')
 
 
 def plot_total_luminosity_of_surfaces(L_surfs, save_dir=None):
+    '''рисует вклады от поверхностей + сумму. без учета рассеяния'''
+
     legend_labels_arr = [r'$top_{pol}$', r'$top_{eq}$', r'$bottom_{pol}$', r'$bottom_{eq}$', 'sum']
 
     colors_arr = ['red', 'red', 'green', 'green']
@@ -46,6 +48,8 @@ def plot_total_luminosity_of_surfaces(L_surfs, save_dir=None):
 
 
 def plot_observer_angles(observer_phi, observer_theta, save_dir=None):
+    '''рисует углы наблюдателя от фазы'''
+
     # file_name = 'observer_angles.txt'
     # data_array = main_service.load_arr_from_txt(working_folder, file_name)
     # observer_phi = data_array[0]
@@ -72,6 +76,7 @@ def plot_observer_angles(observer_phi, observer_theta, save_dir=None):
 
 
 def plot_Teff_to_ksi(R_e, T_eff, theta_range, save_dir=None):
+    '''рисует Т от кси'''
     # file_name = 'surfaces_T_eff.txt'
     # data_array = main_service.load_arr_from_txt(working_folder, file_name)
     #
@@ -97,6 +102,7 @@ def plot_Teff_to_ksi(R_e, T_eff, theta_range, save_dir=None):
 
 
 def plot_PF_to_energy(L_nu_surfs, save_dir=None):
+    '''рисует PF на кажой энергии. без учета рассеянного'''
     # sum(L_nu_surfs + L_nu_scatter)
 
     L_nu = np.sum(L_nu_surfs, axis=0)
@@ -119,7 +125,10 @@ def plot_PF_to_energy(L_nu_surfs, save_dir=None):
 
 
 def plot_L_nu(L_nu_surfs, save_dir=None):
-    '''попробовать распараллелить'''
+    '''
+    отрисовка массивов графиков L_nu на каждой энергии
+    попробовать распараллелить
+    '''
     # sum L_nu
     L_nu_to_plot = newService.extend_arr_for_plot(L_nu_surfs)
 
@@ -146,6 +155,7 @@ def plot_L_nu(L_nu_surfs, save_dir=None):
 
 
 def plot_L_nu_all_in_one(L_nu_surfs, save_dir=None):
+    '''отрисовка графиков L_nu на каждой энергии на 1 графике'''
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
     for i, energy in enumerate(config.energy_arr):
         L_nu_to_plot = newService.extend_arr_for_plot(np.sum(L_nu_surfs[:, i, :], axis=0))
@@ -163,6 +173,7 @@ def plot_L_nu_all_in_one(L_nu_surfs, save_dir=None):
 
 
 def plot_L_nu_on_phase(L_nu_surfs, save_dir=None, phase_index=0):
+    '''рисует L_nu от энергии на заданной фазе'''
     # phase_index - индекс фазы для L_nu(nu)
 
     L_nu_on_phase = np.sum(L_nu_surfs[:, :, phase_index], axis=0)
@@ -182,6 +193,7 @@ def plot_L_nu_on_phase(L_nu_surfs, save_dir=None, phase_index=0):
 
 
 def plot_L_nu_avg(L_nu_surfs, save_dir=None):
+    '''рисует среднее L_nu от энергии'''
     L_nu_avg_on_phase = np.mean(np.sum(L_nu_surfs, axis=0), axis=1)
 
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
@@ -203,6 +215,7 @@ def plot_L_nu_avg(L_nu_surfs, save_dir=None):
 
 
 def plot_L_nu_with_bb(L_nu_surfs, T_eff, save_dir=None):
+    '''рисует среднее L_nu от энергии + черное тело с максимальной Т и минимальной Т по колонке'''
     freq_arr = newService.get_frequency_from_energy(np.array(config.energy_arr))
 
     # file_name = "surfaces_T_eff.txt"
@@ -238,6 +251,7 @@ def plot_L_nu_with_bb(L_nu_surfs, T_eff, save_dir=None):
 
 
 def plot_scatter_L(L_surfs, L_scatter, save_dir=None):
+    '''рисует полный вклад каждой поверхности + рассеяния '''
     legend_labels_arr = [r'$top_{pol}$', r'$top_{eq}$', r'$bottom_{pol}$', r'$bottom_{eq}$', 'sum']
 
     colors_arr = ['red', 'red', 'green', 'green']
@@ -271,6 +285,7 @@ def plot_scatter_L(L_surfs, L_scatter, save_dir=None):
 
 
 def plot_PF_to_energy_with_scatter(L_nu_surfs, L_nu_scatter, save_dir=None):
+    '''рисуем PF от энергии с учетом рассеяния'''
     L_nu = np.sum(L_nu_surfs, axis=0) + np.sum(L_nu_scatter, axis=0)
     PF = newService.get_PF(L_nu)
 
@@ -291,6 +306,10 @@ def plot_PF_to_energy_with_scatter(L_nu_surfs, L_nu_scatter, save_dir=None):
 
 
 def plot_scatter_L_nu(L_nu_surfs, L_nu_scatter, save_dir=None):
+    '''
+    отрисовка массивов графиков L_nu рассеяния на каждой энергии
+    попробовать распараллелить
+    '''
     L_nu_surfs_total = np.sum(L_nu_surfs, axis=0)
     L_nu_total = L_nu_surfs_total + np.sum(L_nu_scatter, axis=0)
 

@@ -51,7 +51,7 @@ def calc_L(surface, T_eff, cos_tensor):
 
 
 def calc_L_nu(surface, T_eff, cos_tensor):
-    ''' распределение L_nu от фазы на какой-то энергии излучения '''
+    ''' распределение L_nu от фазы (на заданном в конфиге диапазоне энергий излучения (по всем энергиям))'''
 
     L_nu = np.empty((config.N_energy, config.N_phase))
 
