@@ -40,11 +40,11 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
     ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='black', marker='*', s=100)
 
     x_axis_label = r'$\Phi$'
-    y_axis_label = r'$\theta_{obs} \, [^{\circ}]$'
+    y_axis_label = r'$\theta_{\rm obs} \, [^{\circ}]$'
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
     clb = plt.colorbar(im)
-    clb.set_label(r'$L_{iso} \cdot L_{x}^{-1}$', fontsize=24)
+    clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)  # r'$L_{\rm iso} \cdot L_{x}^{-1}$'
 
     prefix_folder = 'sky_map/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion, phi_0=phi_0,
@@ -60,11 +60,11 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
     ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='black', marker='*', s=100)
 
     x_axis_label = r'$\Phi$'
-    y_axis_label = r'$\theta_{obs} \, [^{\circ}]$'
+    y_axis_label = r'$\theta_{\rm obs} \, [^{\circ}]$'
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
     clb = plt.colorbar(im)
-    clb.set_label(r'$L_{iso} \cdot L_{x}^{-1}$', fontsize=24)
+    clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
 
     prefix_folder = 'sky_map/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion, phi_0=phi_0,
@@ -92,7 +92,7 @@ def plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
     # for i, L in enumerate(buf):
     #     data_to_plot[i] = newService.extend_arr_for_plot(L)
 
-    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+    fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
 
     x_axis_label = r'$\Phi$'
     # y_axis_label = r'$mean L_{iso} [erg/s]$'
@@ -103,8 +103,8 @@ def plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
     im = ax['a'].pcolormesh(config.phase_for_plot, np.linspace(0, 1, len(mc2_arr)), data_to_plot)
     ax['a'].set_yticks(np.linspace(0, 1, len(mc2_arr)), mc2_arr)
 
-    clb = plt.colorbar(im, pad=0.15, format="{x:.2}")
-    clb.set_label(r'$L_{iso} \cdot max(L_{iso})^{-1}$', fontsize=24)
+    clb = plt.colorbar(im, pad=0.03, format="{x:.2}")  # pad=0.15
+    clb.set_label(r'$\widetilde{L}_{\rm iso}$', fontsize=24)  # \cdot max(L_{\rm iso})^{-1}
 
     prefix_folder = 'L_to_mass/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=a_portion,
@@ -114,14 +114,15 @@ def plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
 
 
 def plot_L_to_a_portion(theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
-    L_total_a_portion = np.empty((len(mc2_arr), config.N_phase))
+    L_total_a_portion = np.empty((len(a_portion_arr), config.N_phase))
     for i, a_portion in enumerate(a_portion_arr):
         L_total_a_portion[i] = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
 
     fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
 
-    # нормировка на L_nu_avg
+    # нормировка на L_max
     buf = L_total_a_portion / np.max(L_total_a_portion, axis=-1).ravel()[:, np.newaxis]
+    # buf = L_total_a_portion / np.max(np.max(L_total_a_portion, axis=-1))
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=buf)
 
     im = ax['a'].pcolormesh(config.phase_for_plot, np.linspace(0, 1, len(a_portion_arr)), data_to_plot)
@@ -133,7 +134,7 @@ def plot_L_to_a_portion(theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
 
     clb = plt.colorbar(im, pad=0.01)
-    clb.set_label(r'$L_{iso} \cdot max(L_{iso})^{-1}$', fontsize=24)
+    clb.set_label(r'$\widetilde{L}_{\rm iso}$', fontsize=24)
 
     prefix_folder = 'L_to_a/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=mc2, a_portion=None,
@@ -207,7 +208,7 @@ def plot_masses_PF_L_nu(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr, e
 
         marker_index = 3
 
-        x_axis_label = r'$\nu L_{\nu}$' + ' [erg/s]'
+        x_axis_label = r'$\nu L_{\nu}$' + r'$\rm [erg/s]$'
         y_axis_label = r'$PF_{' + f'{config.energy_arr[energy_index]:.2f}' + r'}$'
         ax['a'].set_xlabel(x_axis_label, fontsize=24)
         ax['a'].set_ylabel(y_axis_label, fontsize=24)
@@ -217,8 +218,10 @@ def plot_masses_PF_L_nu(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr, e
     bounds = phi_0_arr.copy()
     cmap = mpl.cm.jet
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
-    fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', label=r'$\phi_0$',
-                 pad=0.01)
+    cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', pad=0.01)
+    cb.set_label(label=r'$\varphi_0$', fontsize=24)
+    # cb = plt.colorbar(im, orientation="horizontal", pad=0.15)
+    # cb.set_label(label='Temperature ($^{\circ}$C)', size='large', weight='bold')
 
     prefix_folder = 'PF_to_L_nu/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
@@ -246,10 +249,10 @@ def plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr):
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
     im = ax['a'].pcolormesh(config.phase_for_plot, phi_0_arr_for_plot, data_to_plot)
     clb = plt.colorbar(im, pad=0.01)
-    clb.set_label(r'$L_{iso}$' + ' [erg/s]', fontsize=26)
+    clb.set_label(r'$L_{\rm iso}$' + r'$\rm [erg/s]$', fontsize=26)
 
     x_axis_label = r'$\Phi$'
-    y_axis_label = r'$\phi_0$'
+    y_axis_label = r'$\varphi_0$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
 
@@ -260,9 +263,9 @@ def plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr):
     save.save_figure(fig, save_dir, file_name)
 
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
-    im = ax['a'].contourf(config.phase_for_plot, phi_0_arr_for_plot, data_to_plot, linewidths=0.5)
+    im = ax['a'].contourf(config.phase_for_plot, phi_0_arr_for_plot, data_to_plot, levels=30)
     clb = plt.colorbar(im, pad=0.01)
-    clb.set_label(r'$L_{iso}$' + ' [erg/s]', fontsize=26)
+    clb.set_label(r'$L_{\rm iso}$' + r'$\rm [erg/s]$', fontsize=26)
 
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
@@ -469,7 +472,7 @@ def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
     save.save_figure(fig, save_dir, file_name)
 
     x_axis_label = r'$\dot{m}$'
-    y_axis_label = r'$L_x$'
+    y_axis_label = r'$L_x \rm [erg ~ s^{-1}]$'
     ax1['a'].set_xlabel(x_axis_label, fontsize=26)
     ax1['a'].set_ylabel(y_axis_label, fontsize=26)
     ax1['a'].legend()
@@ -489,16 +492,22 @@ if __name__ == '__main__':
     phi_0 = 0
     theta_obs = 20
 
-    theta_obs = 40
+    theta_obs = 20
     beta_mu = 60
     mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
-    a_portion = 0.66
+    a_portion = 0.44
     phi_0 = 0
     # plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
-    a_portion_arr = [0.22, 0.44, 0.66]
-    # plot_L_to_a_portion(theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+    theta_obs = 20
+    beta_mu = 40
+    mc2 = 100
+    a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
+    phi_0 = 0
+    plot_L_to_a_portion(theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
 
+    theta_obs = 40
+    beta_mu = 40
     mc2_arr = [30, 100]
     a_portion_arr = [0.22, 0.66]
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
@@ -512,14 +521,14 @@ if __name__ == '__main__':
     # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
 
     mu = 0.1e31
-    beta_mu = 40
-    mc2 = 100
+    theta_obs = 40
+    beta_mu = 60
+    mc2 = 30
     a_portion = 0.66
-    phi_0 = 0
-    theta_obs = 20
+    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
     # plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr)
 
-    mc2 = 30
+    mc2 = 130
     a_portion = 1
     phi_0 = 0
     # plot_PF_contour(mu, mc2, a_portion, phi_0)
@@ -542,5 +551,5 @@ if __name__ == '__main__':
     a_portion = 0.66
     phi_0 = 0
     # plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
-    a_portion_arr = [0.44, 0.66]
+    a_portion_arr = [0.22, 0.44, 0.66, 1]
     # plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
