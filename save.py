@@ -89,14 +89,18 @@ def load_L_surfs(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     folder = 'surfs/'
     file_name = "L_surfs.txt"
-    return load_arr_from_txt(data_folder / folder, file_name)
+    L_surfs = load_arr_from_txt(data_folder / folder, file_name)
+    L_surfs[np.isnan(L_surfs)] = 0
+    return L_surfs
 
 
 def load_L_scatter(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     folder = 'scatter/'
     file_name = "L_scatter.txt"
-    return load_arr_from_txt(data_folder / folder, file_name)
+    L_scatter = load_arr_from_txt(data_folder / folder, file_name)
+    L_scatter[np.isnan(L_scatter)] = 0
+    return L_scatter
 
 
 def load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
@@ -112,14 +116,18 @@ def load_L_nu_surfs(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, energy):
     data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     folder = 'surfs/'
     file_name = f'L_nu_surfs_of_energy_{energy:.2f}_KeV.txt'
-    return load_arr_from_txt(data_folder / folder, file_name)
+    L_nu_surfs = load_arr_from_txt(data_folder / folder, file_name)
+    L_nu_surfs[np.isnan(L_nu_surfs)] = 0
+    return L_nu_surfs
 
 
 def load_L_nu_scatter(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, energy):
     data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     folder = 'scatter/'
     file_name = f'L_nu_scatter_of_energy_{energy:.2f}_KeV.txt'
-    return load_arr_from_txt(data_folder / folder, file_name)
+    L_nu_scatter = load_arr_from_txt(data_folder / folder, file_name)
+    L_nu_scatter[np.isnan(L_nu_scatter)] = 0
+    return L_nu_scatter
 
 
 def load_L_nu_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
