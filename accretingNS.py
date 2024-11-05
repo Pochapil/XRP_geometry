@@ -198,9 +198,9 @@ class MagnetLine:
         self.column_type = column_type
         self.surf_R_e = R_e
         # так как диск связан с осью вращения максимальный угол = np.pi / 2 + beta_mu - угол на котором диск от оси омега
-        theta_range_end = np.pi / 2 + beta_mu
+        theta_range_end = np.pi / 2 + np.deg2rad(beta_mu)
         # ограничиваю колонкой
-        theta_range_end = min((np.pi - top_column_theta_end), theta_range_end)
+        # theta_range_end = min((np.pi - top_column_theta_end), theta_range_end)
         theta_range_begin = top_column_theta_end
 
         self.theta_range = np.linspace(theta_range_begin, theta_range_end, config.N_theta_accretion)
@@ -211,7 +211,7 @@ class MagnetLine:
         for i, phi in enumerate(self.phi_range):
             for j, theta in enumerate(self.theta_range):
                 theta_end = np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(phi))
-                # ограничиваю колонкой Ture - значит не надо использовать эту площадку
+                # ограничиваю диском Ture - значит не надо использовать эту площадку
                 if theta > theta_end:
                     self.mask_array[i][j] = True
 
