@@ -363,7 +363,7 @@ def calc_cos_psi(curr_configuration, obs_matrix, surfs_arr, mask_flag, async_fla
             new_cos_psi_range[i] = calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag)
     t2 = time.perf_counter()
     if config.print_time_flag:
-        print(f'{t2 - t1} seconds')
+        print(f'{t2 - t1} seconds new_cos_psi_range')
     return new_cos_psi_range
 
 
@@ -415,7 +415,7 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
     if config.print_time_flag:
         print('start calc surfs')
     # расчет матрицы косинусов на каждой фазе
-    new_cos_psi_range_surfs = calc_cos_psi(curr_configuration, obs_matrix, accr_col_surfs, False, async_flag)
+    new_cos_psi_range_surfs = calc_cos_psi(curr_configuration, obs_matrix, accr_col_surfs, True, async_flag)
 
     L_surfs = np.empty((4, config.N_phase))
     L_nu_surfs = np.empty((4, config.N_energy, config.N_phase))
@@ -538,10 +538,10 @@ if __name__ == '__main__':
     mu = 0.1e31
 
     theta_obs = 10
-    beta_mu = 90
+    beta_mu = 60
 
     mc2 = 100
-    a_portion = 0.66
+    a_portion = 0.22
     phi_0 = 0
 
     calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, True, config.ASYNC_FLAG)

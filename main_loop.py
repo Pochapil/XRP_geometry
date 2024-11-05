@@ -77,11 +77,11 @@ if __name__ == '__main__':
     phi_0_arr = [0]
 
     # -------cur
-    theta_obs_arr = [0]
+    theta_obs_arr = [10 * i for i in range(0, 10)]
     beta_mu_arr = [10 * i for i in range(0, 10)]
-    mc2_arr = [30, 60, 100]
-    a_portion_arr = [0.22, 0.44, 0.66]
-    phi_0_arr = [20]
+    mc2_arr = [30, 100]
+    a_portion_arr = [0.22, 0.44, 0.66, 1]
+    phi_0_arr = [0]
 
     plot_flag = True
     # ------------------------------------------------- start -------------------------------------------------------

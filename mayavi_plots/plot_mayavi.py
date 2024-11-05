@@ -142,6 +142,27 @@ def get_data_for_accretion_columns_outer(phi_range_column, theta_range_column):
     return x * (1 + config.dRe_div_Re), y * (1 + config.dRe_div_Re), z * (1 + config.dRe_div_Re)
 
 
+def get_data_for_accretion_columns_with_mask(accretion_surface: accretingNS.Surface):
+    '''теперь тоже с маской - чтобы сделать обрезы'''
+    # передаем углы колонок, получаем сетку xyz в 3d
+    # phi_range = np.linspace(0, 2 * np.pi, num=config.N_phi_accretion, endpoint=True)
+
+    phi_range = accretion_surface.phi_range
+    theta_range = accretion_surface.theta_range
+
+    coef = 1
+    if accretion_surface.surface_type == accretingNS.surface_surf_types['outer']:
+        coef = (1 + config.dRe_div_Re)
+
+    r, p = np.meshgrid(coef * np.sin(theta_range) ** 2, phi_range)
+    r1 = r * np.sin(theta_range)
+    x = r1 * np.cos(p)
+    y = r1 * np.sin(p)
+    z = r * np.cos(theta_range)
+
+    return x, y, z, accretion_surface.mask_array
+
+
 def get_data_for_accretion_columns_hat(phi_range_column, theta_range_column):
     # переписать так как радиусы поменялись в сравнении со старой версией
     phi_range = phi_range_column
@@ -202,7 +223,7 @@ class Visualization(HasTraits):
 
     slider_theta_obs = Range(0, 90, 0)
     slider_beta_mu = Range(0, 90, 0)
-    slider_mc2 = Range(0, 300, 0)
+    slider_mc2 = Range(1, 300, 0)
     slider_a_portion = Range(0., 1., 0)
     slider_phi_0 = Range(0, 360, 0)
 
@@ -257,21 +278,34 @@ class Visualization(HasTraits):
         x, y, z = get_data_for_NS(self.curr_configuration.top_column.inner_surface.theta_range)
         self.NS = self.scene.mlab.mesh(x, y, z, color=(0, 0, 0))
         # -----------------------------------------------рисуем колонки-----------------------------------------------
-        x, y, z = get_data_for_accretion_columns(self.curr_configuration.top_column.inner_surface.phi_range,
-                                                 self.curr_configuration.top_column.inner_surface.theta_range)
-        # верх
-        self.accretion_column_top = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top)
-        # низ
-        self.accretion_column_bot = self.scene.mlab.mesh(-x, -y, -z, color=self.color_accretion_column_bot)
+        # x, y, z = get_data_for_accretion_columns(self.curr_configuration.top_column.inner_surface.phi_range,
+        #                                          self.curr_configuration.top_column.inner_surface.theta_range)
+        # ---------верх
+        # self.accretion_column_top = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top)
+        # ---------низ
+        # self.accretion_column_bot = self.scene.mlab.mesh(-x, -y, -z, color=self.color_accretion_column_bot)
 
-        # внешние
-        x, y, z = get_data_for_accretion_columns_outer(self.curr_configuration.top_column.outer_surface.phi_range,
-                                                       self.curr_configuration.top_column.outer_surface.theta_range)
-        # верх
-        self.accretion_column_top_outer = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top_outer)
-        # низ
-        self.accretion_column_bot_outer = self.scene.mlab.mesh(-x, -y, -z,
-                                                               color=self.color_accretion_column_bot_outer)
+        x, y, z, mask = get_data_for_accretion_columns_with_mask(self.curr_configuration.top_column.inner_surface)
+
+        self.accretion_column_top = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top, mask=mask)
+        self.accretion_column_bot = self.scene.mlab.mesh(-x, -y, -z, color=self.color_accretion_column_bot, mask=mask)
+
+        # ---------внешние
+        # x, y, z = get_data_for_accretion_columns_outer(self.curr_configuration.top_column.outer_surface.phi_range,
+        #                                                self.curr_configuration.top_column.outer_surface.theta_range)
+        # # ---------верх
+        # self.accretion_column_top_outer = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top_outer)
+        # # ---------низ
+        # self.accretion_column_bot_outer = self.scene.mlab.mesh(-x, -y, -z, color=self.color_accretion_column_bot_outer)
+
+        x, y, z, mask = get_data_for_accretion_columns_with_mask(self.curr_configuration.top_column.outer_surface)
+
+        # ---------верх
+        self.accretion_column_top_outer = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top_outer,
+                                                               mask=mask)
+        # ---------низ
+        self.accretion_column_bot_outer = self.scene.mlab.mesh(-x, -y, -z, color=self.color_accretion_column_bot_outer,
+                                                               mask=mask)
 
         # попытка отрисовать боковые
         # x, y, z = get_data_for_accretion_columns_hat(theta_range_column, phi_range_column,
@@ -299,6 +333,9 @@ class Visualization(HasTraits):
             self.magnet_lines_bot = self.scene.mlab.mesh(-x, -y, -z, color=self.color_magnet_lines_bot,
                                                          opacity=self.opacity_for_magnet_line,
                                                          representation='wireframe', mask=mask)
+        else:
+            self.magnet_lines_top = self.scene.mlab.mesh([[0]], [[0]], [[0]])
+            self.magnet_lines_bot = self.scene.mlab.mesh([[0]], [[0]], [[0]])
 
         x, y, z, mask = get_data_for_magnet_lines_outer_with_mask(
             self.curr_configuration.top_magnet_lines.phi_range,
@@ -315,6 +352,9 @@ class Visualization(HasTraits):
                                                                color=self.color_magnet_lines_bot_outer,
                                                                opacity=self.opacity_for_magnet_line,
                                                                representation='wireframe', mask=mask)
+        else:
+            self.magnet_lines_top_outer = self.scene.mlab.mesh([[0]], [[0]], [[0]])
+            self.magnet_lines_bot_outer = self.scene.mlab.mesh([[0]], [[0]], [[0]])
 
         # mu_vector
         # mlab.plot3d([0, 0], [0, 0], [0, 1.0], color=self.mu_vector_color, tube_radius=self.mu_vector_tube_radius,
@@ -417,20 +457,44 @@ class Visualization(HasTraits):
 
     def update_accretion_columns(self):
         # рисуем колонки
-        x, y, z = get_data_for_accretion_columns(self.curr_configuration.top_column.inner_surface.phi_range,
-                                                 self.curr_configuration.top_column.inner_surface.theta_range)
+        # x, y, z = get_data_for_accretion_columns(self.curr_configuration.top_column.inner_surface.phi_range,
+        #                                          self.curr_configuration.top_column.inner_surface.theta_range)
 
-        self.accretion_column_top.mlab_source.trait_set(x=x, y=y, z=z, color=self.color_accretion_column_top)
-        self.accretion_column_bot.mlab_source.trait_set(x=-x, y=-y, z=-z, color=self.color_accretion_column_bot)
+        x, y, z, mask = get_data_for_accretion_columns_with_mask(self.curr_configuration.top_column.inner_surface)
 
-        x, y, z = get_data_for_accretion_columns_outer(self.curr_configuration.top_column.inner_surface.phi_range,
-                                                       self.curr_configuration.top_column.inner_surface.theta_range)
-        # верх
-        self.accretion_column_top_outer.mlab_source.trait_set(x=x, y=y, z=z,
-                                                              color=self.color_accretion_column_top_outer)
-        # низ
-        self.accretion_column_bot_outer.mlab_source.trait_set(x=-x, y=-y, z=-z,
-                                                              color=self.color_accretion_column_bot_outer)
+        self.accretion_column_top.mlab_source.trait_set(x=[0], y=[0], z=[0])
+        self.accretion_column_bot.mlab_source.trait_set(x=[0], y=[0], z=[0])
+        if not (mask == True).all():
+            self.accretion_column_top = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top, mask=mask)
+            self.accretion_column_bot = self.scene.mlab.mesh(-x, -y, -z, color=self.color_accretion_column_bot,
+                                                             mask=mask)
+
+        # self.accretion_column_top.mlab_source.trait_set(x=x, y=y, z=z, color=self.color_accretion_column_top, mask=mask)
+        # self.accretion_column_bot.mlab_source.trait_set(x=-x, y=-y, z=-z, color=self.color_accretion_column_bot,
+        #                                                 mask=mask)
+
+        # x, y, z = get_data_for_accretion_columns_outer(self.curr_configuration.top_column.inner_surface.phi_range,
+        #                                                self.curr_configuration.top_column.inner_surface.theta_range)
+
+        x, y, z, mask = get_data_for_accretion_columns_with_mask(self.curr_configuration.top_column.outer_surface)
+
+        self.accretion_column_top_outer.mlab_source.trait_set(x=[0], y=[0], z=[0])
+        self.accretion_column_bot_outer.mlab_source.trait_set(x=[0], y=[0], z=[0])
+        if not (mask == True).all():
+            # ---------верх
+            self.accretion_column_top_outer = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top_outer,
+                                                                   mask=mask)
+            # ---------низ
+            self.accretion_column_bot_outer = self.scene.mlab.mesh(-x, -y, -z,
+                                                                   color=self.color_accretion_column_bot_outer,
+                                                                   mask=mask)
+
+        # # верх
+        # self.accretion_column_top_outer.mlab_source.trait_set(x=x, y=y, z=z,
+        #                                                       color=self.color_accretion_column_top_outer, mask=mask)
+        # # низ
+        # self.accretion_column_bot_outer.mlab_source.trait_set(x=-x, y=-y, z=-z,
+        #                                                       color=self.color_accretion_column_bot_outer, mask=mask)
 
     def view_phase(self, phase=0):
         # поворот на фазу; устанавливаем конфигурацию на эту фазу
@@ -674,11 +738,11 @@ def plot_main(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
 if __name__ == "__main__":
     mu = 0.1e31
 
-    theta_obs = 80
-    beta_mu = 10
+    theta_obs = 10
+    beta_mu = 60
 
     mc2 = 100
-    a_portion = 0.66
+    a_portion = 0.22
     phi_0 = 0
 
     plot_main(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)

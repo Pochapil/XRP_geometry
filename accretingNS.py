@@ -35,10 +35,10 @@ class AccretingPulsarConfiguration:
         self.R_alfven = (mu ** 2 / (2 * self.M_accretion_rate * (2 * config.G * config.M_ns) ** (1 / 2))) ** (2 / 7)
         self.R_e = config.ksi_param * self.R_alfven
 
-        self.top_column = AccretionColumn(self.R_e, mu, mc2, self.a_portion, self.phi_0,
+        self.top_column = AccretionColumn(self.R_e, mu, self.beta_mu, mc2, self.a_portion, self.phi_0,
                                           column_type=column_surf_types['top'])
         # Accret_col : equatorial, polar surfaces
-        self.bot_column = AccretionColumn(self.R_e, mu, mc2, self.a_portion, self.phi_0,
+        self.bot_column = AccretionColumn(self.R_e, mu, self.beta_mu, mc2, self.a_portion, self.phi_0,
                                           column_type=column_surf_types['bot'])
 
         self.top_magnet_lines = MagnetLine(self.top_column.R_e_inner_surface, self.beta_mu,
@@ -57,7 +57,7 @@ class AccretionColumn:
     inner_surface - внутрення поверхность/экваториальная
     '''
 
-    def __init__(self, R_e, mu, mc2, a_portion, phi_0, column_type):
+    def __init__(self, R_e, mu, beta_mu, mc2, a_portion, phi_0, column_type):
         self.R_e = R_e
         self.column_type = column_type
         self.a_portion = a_portion
@@ -77,10 +77,10 @@ class AccretionColumn:
             mu, M_accretion_rate
         )
 
-        self.outer_surface = Surface(self.R_e_outer_surface, self.R_e, self.a_portion, self.phi_0, self.ksi_shock,
-                                     self.column_type, surface_type=surface_surf_types['outer'])
-        self.inner_surface = Surface(self.R_e_inner_surface, self.R_e, self.a_portion, self.phi_0, self.ksi_shock,
-                                     self.column_type, surface_type=surface_surf_types['inner'])
+        self.outer_surface = Surface(self.R_e_outer_surface, self.R_e, beta_mu, self.a_portion, self.phi_0,
+                                     self.ksi_shock, self.column_type, surface_type=surface_surf_types['outer'])
+        self.inner_surface = Surface(self.R_e_inner_surface, self.R_e, beta_mu, self.a_portion, self.phi_0,
+                                     self.ksi_shock, self.column_type, surface_type=surface_surf_types['inner'])
         # вызов подправки распределения Т
         self.correct_T_eff()
 
@@ -112,9 +112,14 @@ class Surface:
     знает распределение сетки по theta phi
 
     наверно стоит добавить промежуточный слой между поверхностью и магнитными линиями чтобы учесть обрезание колонки
+
+    тоже теперь через маску - для обрезания колонок. будет верно так как мы не будем учитывать магнитные линии - они
+    будут больше 90 градусов и обрезаны. а если нет обрезания колонки тогда есть шанс для магнитных линий
+
+    phi_0 - центр колонки!!!!!!!!!!!!
     '''
 
-    def __init__(self, surf_R_e, col_R_e, a_portion, phi_0, ksi_shock, column_type, surface_type):
+    def __init__(self, surf_R_e, col_R_e, beta_mu, a_portion, phi_0, ksi_shock, column_type, surface_type):
         self.surf_R_e = surf_R_e  # R_e на котором сидит - R_e либо R_e + \delta R_e
         self.surface_type = surface_type
 
@@ -136,20 +141,28 @@ class Surface:
                 # из усл силовой линии МП : r = R_e sin**2; end: ksi_shock = R_e sin**2
                 self.theta_accretion_end = np.arcsin((config.R_ns * ksi_shock / col_R_e) ** (1 / 2))
 
-        # для нижней сместить углы
-        if column_type == column_surf_types['bot']:
-            self.theta_accretion_begin = np.pi - self.theta_accretion_begin
-            self.theta_accretion_end = np.pi - self.theta_accretion_end
         self.theta_range = np.linspace(self.theta_accretion_begin, self.theta_accretion_end, config.N_theta_accretion)
 
         phi_0_rad = np.deg2rad(phi_0)
         phi_delta = 0
-        # для нижней сместить углы
+        # phi_0 - центр колонки!!!!!!!!!!!!
+        self.phi_range = np.linspace(-np.pi * a_portion, np.pi * a_portion, config.N_phi_accretion) + phi_0_rad
+
+        self.mask_array = np.zeros((config.N_phi_accretion, config.N_theta_accretion)).astype(bool)
+        # mask = np.zeros_like(x).astype(bool)
+        for i, phi in enumerate(self.phi_range):
+            for j, theta in enumerate(self.theta_range):
+                theta_end = np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(phi))
+                # ограничиваю диском Ture - значит не надо использовать эту площадку
+                if theta > theta_end:
+                    self.mask_array[i][j] = True
+
+        # для нижней сместить углы. маска будет той же
         if column_type == column_surf_types['bot']:
             phi_delta = np.pi
-        # phi_0 - центр колонки!!!!!!!!!!!!
-        self.phi_range = np.linspace(-np.pi * a_portion, np.pi * a_portion, config.N_phi_accretion)
-        self.phi_range = self.phi_range + phi_0_rad + phi_delta
+            self.phi_range = self.phi_range + phi_delta
+            self.theta_range = (np.pi - self.theta_range)
+
         if config.FLAG_PHI_0_OLD:
             # - в терминах старого phi
             fi_0_old = np.deg2rad(phi_0 + config.fi_0_dict[a_portion])
