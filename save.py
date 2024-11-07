@@ -142,6 +142,11 @@ def load_L_nu_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     return L_nu_total
 
 
-def load_PF(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
+def load_PF_nu(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     L_nu_total = load_L_nu_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     return newService.get_PF(L_nu_total)
+
+
+def load_PF(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
+    L_total = load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    return newService.get_PF(L_total)

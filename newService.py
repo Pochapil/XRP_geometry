@@ -89,3 +89,10 @@ def extend_arr_for_plot(arr):
     append_index = config.N_phase_for_plot - config.N_phase
     array_to_plot = np.append(arr, arr[0:append_index])
     return array_to_plot
+
+
+def extend_arr_twice_for_plot(arr):
+    # нужно расширить массивы, чтобы покрыть фазу [0,2]
+    append_index = len(arr)
+    array_to_plot = np.append(arr, arr[0:append_index])
+    return array_to_plot
