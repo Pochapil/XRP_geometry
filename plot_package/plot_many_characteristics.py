@@ -11,9 +11,11 @@ import newService
 import save
 
 plt.style.use(['science', 'notebook', 'grid'])
+# чтобы стиль был похож на теховский
 mpl.rcParams['mathtext.fontset'] = 'cm'
 mpl.rcParams['font.family'] = 'STIXGeneral'
 
+# стандартный размер тиков по осям
 ticks_labelsize = 20
 mpl.rcParams['xtick.labelsize'] = ticks_labelsize
 mpl.rcParams['ytick.labelsize'] = ticks_labelsize
@@ -27,12 +29,12 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
     '''рисует карты неба (излучательный коэффициент в зависимости от положения наблюдателя)
     по другому - куча профилей. для разных наблюдателей. характеризует как источник излучает в пространство
     '''
-
+    ticks_labelsize = 16
     # try_sky_map(obs_i_angle_arr)
     # obs_i_angle = np.linspace(0, 180, 19)
     L_x = save.load_L_x(mu, 10, beta_mu, mc2, a_portion, phi_0)
 
-    theta_obs_arr = np.linspace(10, 90, 9).astype(int)
+    theta_obs_arr = np.linspace(0, 90, 10).astype(int)
     data_array = np.empty((len(theta_obs_arr) * 2 - 1, config.N_phase))
     # roll -- циклическая перестановка - делаем так как симметрическая задача и для угла 180 - theta будет симметрично
     # для сдвига на полфазы -- можно расчитать только до 90 а потом для других переставить и получить для до 180
@@ -40,11 +42,11 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
         L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
         data_array[i] = L_total
         # для углов больших 90 будет симметрично относительно 90 (со сдвигом на полфазы)
-        if i != len(theta_obs_arr) - 1:  # wtf -1 ??
+        if i != len(theta_obs_arr) - 1:  # wtf -1 ?? - не будем трогать 90, его не дублируем
             data_array[-i - 1] = np.roll(data_array[i], len(data_array[i]) // 2)
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_array / L_x)
-    theta_obs_arr_to_plot = np.linspace(0, 180, 17)
+    theta_obs_arr_to_plot = np.linspace(0, 180, 19).astype(int)
 
     fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
     im = ax['a'].pcolormesh(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot)
@@ -57,8 +59,11 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
     y_axis_label = r'$\theta_{\rm obs} \, [^{\circ}]$'
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
+    ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
+
     clb = plt.colorbar(im)
     clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)  # r'$L_{\rm iso} \cdot L_{x}^{-1}$'
+    clb.ax.tick_params(labelsize=ticks_labelsize)
 
     prefix_folder = 'sky_map/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion, phi_0=phi_0,
@@ -77,8 +82,11 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
     y_axis_label = r'$\theta_{\rm obs} \, [^{\circ}]$'
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
+    ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
+
     clb = plt.colorbar(im)
     clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
+    clb.ax.tick_params(labelsize=ticks_labelsize)
 
     prefix_folder = 'sky_map/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion, phi_0=phi_0,
@@ -129,7 +137,7 @@ def plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
     save.save_figure(fig, save_dir, file_name)
 
 
-def plot_L_to_a_portion(theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
+def plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
     '''рисует 2d L от фазы и a'''
     L_total_a_portion = np.empty((len(a_portion_arr), config.N_phase))
     for i, a_portion in enumerate(a_portion_arr):
@@ -144,6 +152,8 @@ def plot_L_to_a_portion(theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
     # чтобы сделать хороший масштаб и чтобы каждый профиль имел равную толщину сначала рисуем от 0 до 1 а потом
     # заменяем надписи на значения а
     levels = 10 ** np.linspace(np.log10(np.min(data_to_plot)), np.log10(np.max(data_to_plot)), 10)
+    # norm - нужно сместить растянуть колорбар потому что в районе 0.9 есть перепады, но мы их не увидим из-за
+    # малых значений, которые появляются после добавления а=1
     im = ax['a'].pcolormesh(config.phase_for_plot, np.linspace(0, 1, len(a_portion_arr)), data_to_plot,
                             # norm=colors.LogNorm(vmin=data_to_plot.min(), vmax=data_to_plot.max())
                             norm=colors.TwoSlopeNorm(0.92, vmin=data_to_plot.min(), vmax=data_to_plot.max())
@@ -165,7 +175,7 @@ def plot_L_to_a_portion(theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
     save.save_figure(fig, save_dir, file_name)
 
 
-def plot_masses_PF_L_nu(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr, energy_index=8):
+def plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr, energy_index=8):
     # PF(L_nu) много точек, берутся линии по mc, a
     ''' рисует графики PF от nu_L_nu (nu_L_nu усреднили по фазе)
 
@@ -208,8 +218,8 @@ def plot_masses_PF_L_nu(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr, e
             # x_sort_fi_0, y_sort_fi_0 = zip(*lists)
             # y_sort_fi_0, _ = zip(*y_sort_fi_0)
 
-            # в словаере лежит среднее : (PF, phi_0). сортируем его по значению phi_0, чтобы посмотреть как зависит от
-            # фи0 - будем рисовать по возрастанию фи0
+            # в словаере лежит среднее nu_L_nu : (PF, phi_0). сортируем его по значению phi_0,
+            # чтобы посмотреть как зависит от фи0 - будем рисовать по возрастанию фи0
             list_tuples = sorted(full_dict.items(), key=lambda item: item[1][1])
             x_sort_phi_0, y_sort_phi_0 = zip(*list_tuples)
             y_sort_phi_0, colors_sort_phi_0 = zip(*y_sort_phi_0)
@@ -250,7 +260,8 @@ def plot_masses_PF_L_nu(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr, e
     save.save_figure(fig, save_dir, file_name)
 
 
-def plot_masses_PF_L(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr):
+def plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr):
+    '''то же самое что plot_masses_PF_L_nu только рисуем от L_iso'''
     marker_index = 0
     line_style = ['-', '--']
     marker_dict = {0: '.', 1: '*', 2: '+', 3: '^'}
@@ -301,6 +312,7 @@ def plot_masses_PF_L(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr):
 
 
 def plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, flag_same_res=False):
+    '''2d L от Phi phi0'''
     # plot_L_to_new_fi_0
     # ожидаем что phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
 
@@ -309,7 +321,7 @@ def plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, flag_same
         L_data[i] = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
 
     for i in range(9):
-        # симметрично для 180 - fi_0
+        # симметрично для 180 - fi_0, как будто вращаемся в другую сторону, поэтому сортировка ::-1
         L_data[9 + i + 1] = L_data[9 - i - 1][::-1]
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=L_data)
@@ -363,10 +375,12 @@ def plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, flag_same
 
 
 def plot_PF_contour(mu, mc2, a_portion, phi_0):
+    '''2d PF от theta beta_mu'''
     # PF(L_nu) много точек, берутся линии по mc, a
+    ticks_labelsize = 18
 
-    theta_obs_arr = np.linspace(10, 90, 9).astype(int)
-    beta_mu_arr = np.linspace(10, 90, 9).astype(int)
+    theta_obs_arr = np.linspace(0, 90, 10).astype(int)
+    beta_mu_arr = np.linspace(0, 90, 10).astype(int)
 
     final_final_array = np.empty((len(theta_obs_arr), len(beta_mu_arr)))
 
@@ -383,10 +397,13 @@ def plot_PF_contour(mu, mc2, a_portion, phi_0):
     cbar = fig.colorbar(cs, pad=0.01)
     cbar.ax.set_ylabel('PF')
 
-    x_axis_label = r'$\chi$'
-    y_axis_label = r'$\theta_{obs}$'
+    x_axis_label = r'$\chi [^\circ]$'
+    y_axis_label = r'$\theta_{obs} [^\circ]$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    cbar.ax.tick_params(labelsize=ticks_labelsize)
+    ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
 
     prefix_folder = 'PF_contour/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=mc2, a_portion=None,
@@ -402,6 +419,9 @@ def plot_PF_contour(mu, mc2, a_portion, phi_0):
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
 
+    cbar.ax.tick_params(labelsize=ticks_labelsize)
+    ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
+
     prefix_folder = 'PF_contour/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=mc2, a_portion=None,
                                    phi_0=None, prefix_folder=prefix_folder)
@@ -410,8 +430,9 @@ def plot_PF_contour(mu, mc2, a_portion, phi_0):
 
 
 def plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0):
-    theta_obs_arr = np.linspace(10, 90, 9).astype(int)
-    beta_mu_arr = np.linspace(10, 90, 9).astype(int)
+    '''ищем закономерности в PF_theta_beta . смотрим как зависит от theta+beta и theta-beta'''
+    theta_obs_arr = np.linspace(0, 90, 10).astype(int)
+    beta_mu_arr = np.linspace(0, 90, 10).astype(int)
 
     final_final_array = np.zeros((len(theta_obs_arr), len(beta_mu_arr)))
 
@@ -434,7 +455,7 @@ def plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0):
         arr = [plus] * len(dict_chi_plus_theta[plus])
         ax['a'].scatter(arr, dict_chi_plus_theta[plus], color='black')
 
-    x_axis_label = r'$\chi + \theta_{obs}$'
+    x_axis_label = r'$\chi + \theta_{obs} [^\circ]$'
     y_axis_label = r'$PF$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
@@ -450,7 +471,7 @@ def plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0):
         arr = [minus] * len(dict_chi_minus_theta[minus])
         ax['a'].scatter(arr, dict_chi_minus_theta[minus], color='black')
 
-    x_axis_label = r'$\chi - \theta_{obs}$'
+    x_axis_label = r'$\chi - \theta_{obs} [^\circ]$'
     y_axis_label = r'$PF$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
@@ -463,6 +484,7 @@ def plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0):
 
 
 def plot_L_iso_to_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
+    '''L от m для таблицы'''
     L_iso_arr = np.empty(len(mc2_arr))
     for i, mc2 in enumerate(mc2_arr):
         L_iso_arr[i] = np.mean(save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0), axis=-1)
@@ -484,6 +506,7 @@ def plot_L_iso_to_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
 
 
 def plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
+    '''R_e/R_ns от m + ksi_shock от m'''
     R_e_arr = np.empty(len(mc2_arr))
     ksi_shock_arr = np.empty(len(mc2_arr))
     L_x_arr = np.empty(len(mc2_arr))
@@ -518,6 +541,7 @@ def plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
 
 
 def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
+    '''R_e/R_ns от m + ksi_shock от m + L_x от m'''
     fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
 
     fig1, ax1 = plt.subplot_mosaic('a', figsize=(9, 6))
@@ -569,6 +593,23 @@ def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
     save.save_figure(fig1, save_dir, file_name)
 
 
+def plot_PF_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
+    '''по чему усреднять? по каким параметрам'''
+    L_total_a_portion = np.empty((len(a_portion_arr), config.N_phase))
+    for i, a_portion in enumerate(a_portion_arr):
+        L_total_a_portion[i] = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    PF = np.apply_along_axis(newService.get_PF, axis=-1, arr=L_total_a_portion)
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+    ax['a'].plot(a_portion_arr, PF, color='black')
+
+    x_axis_label = r'$a$'
+    y_axis_label = r'$PF$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    plt.show()
+
+
 if __name__ == '__main__':
     mu = 0.1e31
     beta_mu = 40
@@ -589,15 +630,16 @@ if __name__ == '__main__':
     mc2 = 30
     a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
     phi_0 = 0
-    # plot_L_to_a_portion(theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+    # plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+    # plot_PF_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
 
     theta_obs = 40
     beta_mu = 40
     mc2_arr = [30, 100]
     a_portion_arr = [0.22, 0.66]
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    # plot_masses_PF_L_nu(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
-    # plot_masses_PF_L(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    # plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    # plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
 
     beta_mu = 80
     mc2 = 30
@@ -612,12 +654,12 @@ if __name__ == '__main__':
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
     # plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
 
-    mc2 = 30
+    mc2 = 100
     a_portion = 1
     phi_0 = 0
     # plot_PF_contour(mu, mc2, a_portion, phi_0)
 
-    mc2 = 100
+    mc2 = 30
     a_portion = 1
     phi_0 = 0
     # plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0)
@@ -636,4 +678,4 @@ if __name__ == '__main__':
     phi_0 = 0
     # plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
     a_portion_arr = [0.22, 0.44, 0.66, 1]
-    # plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
+    plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)

@@ -139,7 +139,9 @@ class Surface:
                 '''вопрос - мб нужна формула с arctan... скорее всего нужно сначала phi потом расчитывать тета
                 с np.pi/2 есть проблема --- 
                 '''
-                self.theta_accretion_end = np.pi / 2
+                # когда наклонен от pi/2 - beta до pi/2 + beta в зависимости от phi. хотим регулярную а отрежем маской
+                # поэтому берем +
+                self.theta_accretion_end = np.pi / 2 + np.deg2rad(beta_mu)
             else:
                 # из усл силовой линии МП : r = R_e sin**2; end: ksi_shock = R_e sin**2
                 self.theta_accretion_end = np.arcsin((config.R_ns * ksi_shock / col_R_e) ** (1 / 2))
@@ -156,7 +158,7 @@ class Surface:
         for i, phi in enumerate(self.phi_range):
             for j, theta in enumerate(self.theta_range):
                 theta_end = np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(phi))
-                # ограничиваю диском Ture - значит не надо использовать эту площадку
+                # ограничиваю диском True - значит не надо использовать эту площадку
                 if theta > theta_end:
                     self.mask_array[i][j] = True
 
@@ -227,7 +229,7 @@ class MagnetLine:
         for i, phi in enumerate(self.phi_range):
             for j, theta in enumerate(self.theta_range):
                 theta_end = np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(phi))
-                # ограничиваю диском Ture - значит не надо использовать эту площадку
+                # ограничиваю диском True - значит не надо использовать эту площадку
                 if theta > theta_end:
                     self.mask_array[i][j] = True
 
