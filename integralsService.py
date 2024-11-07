@@ -28,6 +28,7 @@ def calculate_total_luminosity(surface, T_eff):
     также проблемы - если учитывать что внешние магнитные линии на большем радиусе, то сильно различаются
     '''
     tensor = np.ones((config.N_phi_accretion, config.N_theta_accretion))
+    tensor[surface.mask_array] = 0  # - учесть обрезание
     return calc_L(surface, T_eff, tensor)
 
     # emission_intensity_inner = calc_L(emission_column.inner_surface, T_eff, tensor)
@@ -91,6 +92,7 @@ def calc_scatter_L_nu(magnet_surface, emission_surface, T_eff, cos_tensor, tau_s
     а мы считаем L_nu как изотропное и поэтому умножали на 4 pi. надо на 2 pi'''
 
     tensor = np.ones((config.N_phi_accretion, config.N_theta_accretion))
+    tensor[emission_surface.mask_array] = 0  # - учесть обрезание
     emission_intensity = calc_L_nu(emission_surface, T_eff, tensor)
 
     # emission_intensity_inner = calc_L_nu(emission_column.inner_surface, T_eff, tensor)

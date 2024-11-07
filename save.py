@@ -113,6 +113,7 @@ def load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
 
 
 def load_L_nu_surfs(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, energy):
+    '''для конкретной энергии'''
     data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     folder = 'surfs/'
     file_name = f'L_nu_surfs_of_energy_{energy:.2f}_KeV.txt'
@@ -122,6 +123,7 @@ def load_L_nu_surfs(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, energy):
 
 
 def load_L_nu_scatter(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, energy):
+    '''для конкретной энергии'''
     data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     folder = 'scatter/'
     file_name = f'L_nu_scatter_of_energy_{energy:.2f}_KeV.txt'
@@ -131,6 +133,7 @@ def load_L_nu_scatter(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, energy):
 
 
 def load_L_nu_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
+    '''для массива энергий (лежат в конфиге). возвращает'''
     L_nu_total = np.empty((config.N_energy, config.N_phase))
     for i, energy in enumerate(config.energy_arr):
         L_nu_surfs = load_L_nu_surfs(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, energy)

@@ -15,6 +15,10 @@ mpl.rcParams['font.family'] = 'STIXGeneral'
 
 
 def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
+    '''рисует карты неба (излучательный коэффициент в зависимости от положения наблюдателя)
+    по другому - куча профилей. для разных наблюдателей. характеризует как источник излучает в пространство
+    '''
+
     # try_sky_map(obs_i_angle_arr)
     # obs_i_angle = np.linspace(0, 180, 19)
     L_x = save.load_L_x(mu, 10, beta_mu, mc2, a_portion, phi_0)
@@ -26,6 +30,7 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
     for i, theta_obs in enumerate(theta_obs_arr):
         L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
         data_array[i] = L_total
+        # для углов больших 90 будет симметрично относительно 90 (со сдвигом на полфазы)
         if i != len(theta_obs_arr) - 1:
             data_array[-i - 1] = np.roll(data_array[i], len(data_array[i]) // 2)
 
@@ -74,6 +79,7 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
 
 
 def plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
+    '''рисует 2d L от фазы и m '''
     # plot_L_to_accr_rate
 
     # L_x_arr = np.empty(len(mc2_arr))
@@ -174,10 +180,11 @@ def plot_masses_PF_L_nu(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr, e
                 PF = save.load_PF(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
                 PF_tensor[a_index][mc2_index][phi_0_index] = PF[energy_index]
 
-                L_nu_total = save.load_L_nu_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+                L_nu_total = save.load_L_nu_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)[energy_index]
 
-                freq_arr = newService.get_frequency_from_energy(np.array(config.energy_arr))
-                nu_L_nu_total = L_nu_total * freq_arr[:, np.newaxis]
+                # freq_arr = newService.get_frequency_from_energy(np.array(config.energy_arr))
+                freq = newService.get_frequency_from_energy(np.array(config.energy_arr[energy_index]))
+                nu_L_nu_total = L_nu_total * freq
 
                 L_nu_data_dict[np.mean(nu_L_nu_total)] = PF_tensor[a_index][mc2_index][phi_0_index]
                 color_dict[np.mean(nu_L_nu_total)] = phi_0_arr[phi_0_index]
@@ -500,11 +507,11 @@ if __name__ == '__main__':
     # plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
     theta_obs = 20
-    beta_mu = 40
-    mc2 = 100
-    a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
+    beta_mu = 60
+    mc2 = 30
+    a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825]
     phi_0 = 0
-    plot_L_to_a_portion(theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+    # plot_L_to_a_portion(theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
 
     theta_obs = 40
     beta_mu = 40
@@ -513,14 +520,12 @@ if __name__ == '__main__':
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
     # plot_masses_PF_L_nu(theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
 
-    mu = 0.1e31
     beta_mu = 80
     mc2 = 30
     a_portion = 1
     phi_0 = 0
     # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
 
-    mu = 0.1e31
     theta_obs = 40
     beta_mu = 60
     mc2 = 30
@@ -528,7 +533,7 @@ if __name__ == '__main__':
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
     # plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr)
 
-    mc2 = 130
+    mc2 = 30
     a_portion = 1
     phi_0 = 0
     # plot_PF_contour(mu, mc2, a_portion, phi_0)

@@ -126,16 +126,19 @@ class Surface:
         self.theta_accretion_begin = newService.get_theta_accretion_begin(self.surf_R_e)
 
         if config.outer_R_e_ksi_flag:
-            # обрезать большую колонку по кси.
+            # обрезать большую колонку по кси. (старый способ)
             if (config.R_ns * ksi_shock / self.surf_R_e) >= 1:
                 self.theta_accretion_end = np.pi / 2
             else:
                 self.theta_accretion_end = np.arcsin((config.R_ns * ksi_shock / self.surf_R_e) ** (1 / 2))
         else:
+            # новый способ
             # беру col_R_e - чтобы обрезать большую колонку по тета а не кси.
             if (config.R_ns * ksi_shock / col_R_e) >= 1:
                 # есть набор параметров при которых модель не работает и ударная волна дальше магнитосферы, берем 90
-                '''вопрос - мб нужна формула с arctan... скорее всего нужно сначала phi потом расчитывать тета'''
+                '''вопрос - мб нужна формула с arctan... скорее всего нужно сначала phi потом расчитывать тета
+                с np.pi/2 есть проблема --- 
+                '''
                 self.theta_accretion_end = np.pi / 2
             else:
                 # из усл силовой линии МП : r = R_e sin**2; end: ksi_shock = R_e sin**2
