@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from mayavi import mlab
 import time
 
-from traits.api import HasTraits, Range, Button, Instance, on_trait_change
+from traits.api import HasTraits, Range, Button, Instance, on_trait_change, Float
 from traitsui.api import View, Item, HGroup, VGroup
 from tvtk.pyface.scene_editor import SceneEditor
 from mayavi.tools.mlab_scene_model import MlabSceneModel
@@ -62,6 +62,7 @@ def get_data_for_NS(theta_range_column):
 
     u, v = np.meshgrid(phi_range, theta_range)
     r1 = np.sin(theta_range_column[0]) ** 2
+    # print(r1)
     x = r1 * np.sin(v) * np.cos(u)
     y = r1 * np.sin(v) * np.sin(u)
     z = r1 * np.cos(v)
@@ -227,8 +228,13 @@ class Visualization(HasTraits):
     slider_a_portion = Range(0., 1., 0)
     slider_phi_0 = Range(0, 360, 0)
 
+    R_e_val = Float(0)
+    ksi_val = Float(0)
+
+    slider_distance_init_val = 100
+
     slider_phase = Range(0., 2., 0.)
-    slider_distance = Range(0.1, 10, 1)
+    slider_distance = Range(1, 1e5, slider_distance_init_val)
 
     button_magnet_line = Button('draw_magnet_lines')
     button_accr_disc = Button('accr_disc_omega_mu')
@@ -266,8 +272,14 @@ class Visualization(HasTraits):
         self.slider_a_portion = curr_configuration.a_portion
         self.slider_phi_0 = curr_configuration.phi_0
 
+        self.R_e_val = curr_configuration.top_column.R_e / config.R_ns
+        self.ksi_val = curr_configuration.top_column.ksi_shock
+
+        self.R_e_for_distance = self.R_e_val
+
         self.curr_configuration = curr_configuration
 
+        self.slider_distance = self.ksi_val * 4
         # Do not forget to call the parent's __init__
         HasTraits.__init__(self)
 
@@ -275,37 +287,9 @@ class Visualization(HasTraits):
         # mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0., 0., 0.))
 
         # ---------------------------------------------------NS---------------------------------------------------
-        x, y, z = get_data_for_NS(self.curr_configuration.top_column.inner_surface.theta_range)
-        self.NS = self.scene.mlab.mesh(x, y, z, color=(0, 0, 0))
+        self.draw_NS()
         # -----------------------------------------------рисуем колонки-----------------------------------------------
-        # x, y, z = get_data_for_accretion_columns(self.curr_configuration.top_column.inner_surface.phi_range,
-        #                                          self.curr_configuration.top_column.inner_surface.theta_range)
-        # ---------верх
-        # self.accretion_column_top = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top)
-        # ---------низ
-        # self.accretion_column_bot = self.scene.mlab.mesh(-x, -y, -z, color=self.color_accretion_column_bot)
-
-        x, y, z, mask = get_data_for_accretion_columns_with_mask(self.curr_configuration.top_column.inner_surface)
-
-        self.accretion_column_top = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top, mask=mask)
-        self.accretion_column_bot = self.scene.mlab.mesh(-x, -y, -z, color=self.color_accretion_column_bot, mask=mask)
-
-        # ---------внешние
-        # x, y, z = get_data_for_accretion_columns_outer(self.curr_configuration.top_column.outer_surface.phi_range,
-        #                                                self.curr_configuration.top_column.outer_surface.theta_range)
-        # # ---------верх
-        # self.accretion_column_top_outer = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top_outer)
-        # # ---------низ
-        # self.accretion_column_bot_outer = self.scene.mlab.mesh(-x, -y, -z, color=self.color_accretion_column_bot_outer)
-
-        x, y, z, mask = get_data_for_accretion_columns_with_mask(self.curr_configuration.top_column.outer_surface)
-
-        # ---------верх
-        self.accretion_column_top_outer = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top_outer,
-                                                               mask=mask)
-        # ---------низ
-        self.accretion_column_bot_outer = self.scene.mlab.mesh(-x, -y, -z, color=self.color_accretion_column_bot_outer,
-                                                               mask=mask)
+        self.draw_accretion_columns()
 
         # попытка отрисовать боковые
         # x, y, z = get_data_for_accretion_columns_hat(theta_range_column, phi_range_column,
@@ -317,48 +301,8 @@ class Visualization(HasTraits):
         self.flag_draw_magnet_lines = True  # для чего ? вроде убрать меш сетку
         self.flag_cut_magnet_lines = False  # для чего ?
         # x, y, z = get_data_for_magnet_lines(theta_range_column, phi_range_column, config.phi_accretion_begin_deg)
-        x, y, z, mask = get_data_for_magnet_lines_with_mask(self.curr_configuration.top_magnet_lines.phi_range,
-                                                            self.curr_configuration.top_magnet_lines.theta_range,
-                                                            self.curr_configuration.top_magnet_lines.mask_array)
+        self.draw_magnet_lines()
 
-        # если маска для магнитных линий вся из True почему то программа падает, для этого проверяем
-        if not (mask == True).all():
-            # .visible = False - чтобы сделать невидимым
-            self.magnet_lines_top = self.scene.mlab.mesh(x, y, z, color=(0, 0, 1),
-                                                         opacity=self.opacity_for_magnet_line,
-                                                         representation='wireframe', mask=mask)
-
-            # self.magnet_lines_top = self.scene.mlab.surf(x, y, z, color=(1, 0, 0), warp_scale=0.3,
-            #                                              representation='wireframe', line_width=0.5)
-            self.magnet_lines_bot = self.scene.mlab.mesh(-x, -y, -z, color=self.color_magnet_lines_bot,
-                                                         opacity=self.opacity_for_magnet_line,
-                                                         representation='wireframe', mask=mask)
-        else:
-            self.magnet_lines_top = self.scene.mlab.mesh([[0]], [[0]], [[0]])
-            self.magnet_lines_bot = self.scene.mlab.mesh([[0]], [[0]], [[0]])
-
-        x, y, z, mask = get_data_for_magnet_lines_outer_with_mask(
-            self.curr_configuration.top_magnet_lines.phi_range,
-            self.curr_configuration.top_magnet_lines.theta_range,
-            self.curr_configuration.top_magnet_lines.mask_array)
-
-        if not (mask == True).all():
-            self.magnet_lines_top_outer = self.scene.mlab.mesh(x, y, z,
-                                                               color=self.color_magnet_lines_top_outer,
-                                                               opacity=self.opacity_for_magnet_line,
-                                                               representation='wireframe', mask=mask)
-
-            self.magnet_lines_bot_outer = self.scene.mlab.mesh(-x, -y, -z,
-                                                               color=self.color_magnet_lines_bot_outer,
-                                                               opacity=self.opacity_for_magnet_line,
-                                                               representation='wireframe', mask=mask)
-        else:
-            self.magnet_lines_top_outer = self.scene.mlab.mesh([[0]], [[0]], [[0]])
-            self.magnet_lines_bot_outer = self.scene.mlab.mesh([[0]], [[0]], [[0]])
-
-        # mu_vector
-        # mlab.plot3d([0, 0], [0, 0], [0, 1.0], color=self.mu_vector_color, tube_radius=self.mu_vector_tube_radius,
-        #             tube_sides=6)
         # --------------------------------------------- рисуем вектора ------------------------------------------
         self.mu_vector = mlab.quiver3d(0, 0, 1, mode='2ddash', scale_factor=1, color=self.mu_vector_color)
         self.mu_vector_1 = mlab.quiver3d(0, 0, -1, mode='2ddash', scale_factor=1, color=self.mu_vector_color)
@@ -368,6 +312,9 @@ class Visualization(HasTraits):
         # self.omega_vector = mlab.plot3d([0, omega_vector[0]], [0, omega_vector[1]], [0, omega_vector[2]],
         #                                 color=self.omega_vector_color, tube_radius=self.omega_vector_tube_radius,
         #                                 tube_sides=4)
+        # mu_vector
+        # mlab.plot3d([0, 0], [0, 0], [0, 1.0], color=self.mu_vector_color, tube_radius=self.mu_vector_tube_radius,
+        #             tube_sides=6)
 
         self.omega_vector = mlab.quiver3d(omega_vector[0], omega_vector[1], omega_vector[2], mode='2ddash',
                                           scale_factor=1, color=self.omega_vector_color)
@@ -379,13 +326,110 @@ class Visualization(HasTraits):
 
         # self.check_data()
 
+    def get_data_for_accretion_columns_with_mask(self, accretion_surface: accretingNS.Surface):
+        '''теперь тоже с маской - чтобы сделать обрезы'''
+        # передаем углы колонок, получаем сетку xyz в 3d
+        # phi_range = np.linspace(0, 2 * np.pi, num=config.N_phi_accretion, endpoint=True)
+
+        phi_range = accretion_surface.phi_range
+        theta_range = accretion_surface.theta_range
+
+        coef = 1
+        if accretion_surface.surface_type == accretingNS.surface_surf_types['outer']:
+            coef = (1 + config.dRe_div_Re)
+
+        radi = self.curr_configuration.top_column.R_e / config.R_ns
+
+        r, p = np.meshgrid(radi * coef * np.sin(theta_range) ** 2, phi_range)
+        r1 = r * np.sin(theta_range)
+        x = r1 * np.cos(p)
+        y = r1 * np.sin(p)
+        z = r * np.cos(theta_range)
+
+        return x, y, z, accretion_surface.mask_array
+
+    def get_data_for_magnet_lines_with_mask(self, magnet_surface: accretingNS.MagnetLine):
+        '''смог реализовать только с помощью маски'''
+
+        radi = self.curr_configuration.top_column.R_e / config.R_ns
+        r, p = np.meshgrid(radi * np.sin(magnet_surface.theta_range) ** 2, magnet_surface.phi_range)
+        r1 = r * np.sin(magnet_surface.theta_range)
+        x = r1 * np.cos(p)
+        y = r1 * np.sin(p)
+        z = r * np.cos(magnet_surface.theta_range)
+
+        return x, y, z, magnet_surface.mask_array
+
+    def get_data_for_magnet_lines_outer_with_mask(self, magnet_surface: accretingNS.MagnetLine):
+        # просто удлинить в (1 + config.dRe_div_Re)
+        x, y, z, mask_magnet_lines = self.get_data_for_magnet_lines_with_mask(magnet_surface)
+        return x * (1 + config.dRe_div_Re), y * (1 + config.dRe_div_Re), z * (1 + config.dRe_div_Re), mask_magnet_lines
+
+    def get_data_for_NS(self):
+        '''
+        рисуем в масштабах магнитосферы R_e - так проще
+        поэтому радиус звезды = np.sin(theta_range_column[0]) ** 2 то есть начало колонки
+        '''
+
+        theta_range = np.linspace(0, np.pi, num=config.N_theta_accretion, endpoint=True)
+        phi_range = np.linspace(0, 2 * np.pi, num=config.N_phi_accretion, endpoint=True)
+
+        u, v = np.meshgrid(phi_range, theta_range)
+        r1 = 1
+        # np.sin(np.pi / 2 - np.deg2rad(self.curr_configuration.beta_mu)) ** 2
+        # print(r1)
+        x = r1 * np.sin(v) * np.cos(u)
+        y = r1 * np.sin(v) * np.sin(u)
+        z = r1 * np.cos(v)
+
+        return x, y, z
+
+    def draw_NS(self):
+        # x, y, z = self.get_data_for_NS(self.curr_configuration.top_column.inner_surface.theta_range)
+        x, y, z = self.get_data_for_NS()
+        self.NS = self.scene.mlab.mesh(x, y, z, color=(0, 0, 0))
+
+    def update_NS(self):
+        self.NS.mlab_source.trait_set(x=[0], y=[0], z=[0])
+        self.NS = 0
+        self.draw_NS()
+
+    def get_data_for_accretion_disc(self, accretion_disc_con_val):
+
+        # r_min = ksi
+        # self.curr_configuration.top_column.inner_surface.theta_range
+        r_min = self.curr_configuration.top_column.R_e / config.R_ns * np.sin(
+            np.pi / 2 - np.deg2rad(self.curr_configuration.beta_mu)) ** 2
+        r_max = 4 * r_min
+        r, phi = np.mgrid[r_min:r_max:100j, 0:2 * np.pi:100j]
+        x = r * np.cos(phi)
+        y = r * np.sin(phi)
+        z = accretion_disc_con_val * (x ** 2 + y ** 2) ** (1 / 2)
+        # z, z1 = np.mgrid[-0.003:0.003:100j, -0.003:0.003:100j]
+        return x, y, z
+
+    def get_data_for_accretion_disc_side_surface(self, accretion_disc_con_val):
+        # cylinder - боковая поверхность у диска
+        # accretion_disc_con_val = насколько меняется радиус ??
+        r_min = self.curr_configuration.top_column.R_e / config.R_ns * np.sin(
+            np.pi / 2 - np.deg2rad(self.curr_configuration.beta_mu)) ** 2
+        r_max = 4 * r_min
+        radius = r_max
+        z = np.linspace(-accretion_disc_con_val * radius, accretion_disc_con_val * radius, config.N_theta_accretion)
+        phi = np.linspace(0, 2 * np.pi, config.N_phi_accretion)
+        phi_grid, z = np.meshgrid(phi, z)
+        x = radius * np.cos(phi_grid)
+        y = radius * np.sin(phi_grid)
+
+        return x, y, z
+
     def draw_accretion_disc(self):
         self.flag_accretion_disc_hide = False
         disc_color = (160, 82, 45)
         disc_color = tuple(rgb / 255 for rgb in disc_color)
 
         accretion_disc_con_val = 0.01
-        x, y, z = get_data_for_accretion_disc(accretion_disc_con_val)
+        x, y, z = self.get_data_for_accretion_disc(accretion_disc_con_val)
 
         # сначала отрисовали в СК beta_mu
         self.accretion_disc_top = mlab.mesh(x, y, z, color=disc_color)
@@ -395,13 +439,20 @@ class Visualization(HasTraits):
         self.flag_accretion_disc_omega_mu = True  # True = omega
 
         # боковая поверхность диска (как боковая поверхность цилиндра)
-        x, y, z = get_data_for_accretion_disc_side_surface(accretion_disc_con_val)
+        x, y, z = self.get_data_for_accretion_disc_side_surface(accretion_disc_con_val)
         self.accretion_disc_side_surface = mlab.mesh(x, y, z, color=disc_color)
 
         # поворачиваем диск на -beta чтобы было перпендикулярно omega -> переходим в СК omega
         # deg ?? вроде да в градусах
         self.accretion_disc_rotate_angle = self.curr_configuration.beta_mu
         self.rotate_accretion_disc(-self.accretion_disc_rotate_angle)
+
+    def update_accretion_disc(self):
+        self.accretion_disc_top.mlab_source.trait_set(x=[0], y=[0], z=[0])
+        self.accretion_disc_bot.mlab_source.trait_set(x=[0], y=[0], z=[0])
+        self.accretion_disc_side_surface.mlab_source.trait_set(x=[0], y=[0], z=[0])
+        if not self.flag_accretion_disc_hide:
+            self.draw_accretion_disc()
 
     def rotate_accretion_disc(self, rotate_angle):
         self.accretion_disc_top.actor.actor.rotate_y(rotate_angle)
@@ -416,18 +467,13 @@ class Visualization(HasTraits):
         else:
             self.accretion_disc_rotate_angle = self.curr_configuration.beta_mu
 
-    def update_magnet_lines(self):
-        # убираем старые линии
-        self.magnet_lines_top.mlab_source.trait_set(x=[0], y=[0], z=[0])
-        self.magnet_lines_bot.mlab_source.trait_set(x=[0], y=[0], z=[0])
-        # убираем старые линии
-        self.magnet_lines_top_outer.mlab_source.trait_set(x=[0], y=[0], z=[0])
-        self.magnet_lines_bot_outer.mlab_source.trait_set(x=[0], y=[0], z=[0])
-
+    def draw_magnet_lines(self):
         # new
-        x, y, z, mask = get_data_for_magnet_lines_with_mask(self.curr_configuration.top_magnet_lines.phi_range,
-                                                            self.curr_configuration.top_magnet_lines.theta_range,
-                                                            self.curr_configuration.top_magnet_lines.mask_array)
+        # x, y, z, mask = get_data_for_magnet_lines_with_mask(self.curr_configuration.top_magnet_lines.phi_range,
+        #                                                     self.curr_configuration.top_magnet_lines.theta_range,
+        #                                                     self.curr_configuration.top_magnet_lines.mask_array)
+        x, y, z, mask = self.get_data_for_magnet_lines_with_mask(self.curr_configuration.top_magnet_lines)
+        # если маска для магнитных линий вся из True почему то программа падает, для этого проверяем
         if not (mask == True).all():
             # flag_do_not_draw = True
             self.magnet_lines_top = self.scene.mlab.mesh(x, y, z, color=self.color_magnet_lines_top,
@@ -436,14 +482,14 @@ class Visualization(HasTraits):
             self.magnet_lines_bot = self.scene.mlab.mesh(-x, -y, -z, color=self.color_magnet_lines_bot,
                                                          opacity=self.opacity_for_magnet_line,
                                                          representation='wireframe', mask=mask)
+        else:
+            self.magnet_lines_top = self.scene.mlab.mesh([[0]], [[0]], [[0]])
+            self.magnet_lines_bot = self.scene.mlab.mesh([[0]], [[0]], [[0]])
 
         # self.mlab_source.trait_set(x=-x, y=-y, z=-z, color=self.color_accretion_column_bot_outer)
 
         # new
-        x, y, z, mask = get_data_for_magnet_lines_outer_with_mask(
-            self.curr_configuration.top_magnet_lines.phi_range,
-            self.curr_configuration.top_magnet_lines.theta_range,
-            self.curr_configuration.top_magnet_lines.mask_array)
+        x, y, z, mask = self.get_data_for_magnet_lines_outer_with_mask(self.curr_configuration.top_magnet_lines)
 
         if not (mask == True).all():
             self.magnet_lines_top_outer = self.scene.mlab.mesh(x, y, z,
@@ -454,32 +500,28 @@ class Visualization(HasTraits):
                                                                color=self.color_magnet_lines_bot_outer,
                                                                opacity=self.opacity_for_magnet_line,
                                                                representation='wireframe', mask=mask)
+        else:
+            self.magnet_lines_top_outer = self.scene.mlab.mesh([[0]], [[0]], [[0]])
+            self.magnet_lines_bot_outer = self.scene.mlab.mesh([[0]], [[0]], [[0]])
 
-    def update_accretion_columns(self):
-        # рисуем колонки
-        # x, y, z = get_data_for_accretion_columns(self.curr_configuration.top_column.inner_surface.phi_range,
-        #                                          self.curr_configuration.top_column.inner_surface.theta_range)
+    def update_magnet_lines(self):
+        # убираем старые линии
+        self.magnet_lines_top.mlab_source.trait_set(x=[0], y=[0], z=[0])
+        self.magnet_lines_bot.mlab_source.trait_set(x=[0], y=[0], z=[0])
+        # убираем старые линии
+        self.magnet_lines_top_outer.mlab_source.trait_set(x=[0], y=[0], z=[0])
+        self.magnet_lines_bot_outer.mlab_source.trait_set(x=[0], y=[0], z=[0])
+        self.draw_magnet_lines()
 
-        x, y, z, mask = get_data_for_accretion_columns_with_mask(self.curr_configuration.top_column.inner_surface)
-
-        self.accretion_column_top.mlab_source.trait_set(x=[0], y=[0], z=[0])
-        self.accretion_column_bot.mlab_source.trait_set(x=[0], y=[0], z=[0])
+    def draw_accretion_columns(self):
+        # внутренние
+        x, y, z, mask = self.get_data_for_accretion_columns_with_mask(self.curr_configuration.top_column.inner_surface)
         if not (mask == True).all():
             self.accretion_column_top = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top, mask=mask)
             self.accretion_column_bot = self.scene.mlab.mesh(-x, -y, -z, color=self.color_accretion_column_bot,
                                                              mask=mask)
-
-        # self.accretion_column_top.mlab_source.trait_set(x=x, y=y, z=z, color=self.color_accretion_column_top, mask=mask)
-        # self.accretion_column_bot.mlab_source.trait_set(x=-x, y=-y, z=-z, color=self.color_accretion_column_bot,
-        #                                                 mask=mask)
-
-        # x, y, z = get_data_for_accretion_columns_outer(self.curr_configuration.top_column.inner_surface.phi_range,
-        #                                                self.curr_configuration.top_column.inner_surface.theta_range)
-
-        x, y, z, mask = get_data_for_accretion_columns_with_mask(self.curr_configuration.top_column.outer_surface)
-
-        self.accretion_column_top_outer.mlab_source.trait_set(x=[0], y=[0], z=[0])
-        self.accretion_column_bot_outer.mlab_source.trait_set(x=[0], y=[0], z=[0])
+        # внешние
+        x, y, z, mask = self.get_data_for_accretion_columns_with_mask(self.curr_configuration.top_column.outer_surface)
         if not (mask == True).all():
             # ---------верх
             self.accretion_column_top_outer = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top_outer,
@@ -489,12 +531,21 @@ class Visualization(HasTraits):
                                                                    color=self.color_accretion_column_bot_outer,
                                                                    mask=mask)
 
-        # # верх
-        # self.accretion_column_top_outer.mlab_source.trait_set(x=x, y=y, z=z,
-        #                                                       color=self.color_accretion_column_top_outer, mask=mask)
-        # # низ
-        # self.accretion_column_bot_outer.mlab_source.trait_set(x=-x, y=-y, z=-z,
-        #                                                       color=self.color_accretion_column_bot_outer, mask=mask)
+    def update_accretion_columns(self):
+        # рисуем колонки
+        # x, y, z = get_data_for_accretion_columns(self.curr_configuration.top_column.inner_surface.phi_range,
+        #                                          self.curr_configuration.top_column.inner_surface.theta_range)
+        # self.accretion_column_top.mlab_source.trait_set(x=x, y=y, z=z, color=self.color_accretion_column_top, mask=mask)
+        # self.accretion_column_bot.mlab_source.trait_set(x=-x, y=-y, z=-z, color=self.color_accretion_column_bot,
+        #                                                 mask=mask)
+
+        self.accretion_column_top.mlab_source.trait_set(x=[0], y=[0], z=[0])
+        self.accretion_column_bot.mlab_source.trait_set(x=[0], y=[0], z=[0])
+
+        self.accretion_column_top_outer.mlab_source.trait_set(x=[0], y=[0], z=[0])
+        self.accretion_column_bot_outer.mlab_source.trait_set(x=[0], y=[0], z=[0])
+
+        self.draw_accretion_columns()
 
     def view_phase(self, phase=0):
         # поворот на фазу; устанавливаем конфигурацию на эту фазу
@@ -546,16 +597,30 @@ class Visualization(HasTraits):
         if theta_obs is None:
             if self.flag_draw_magnet_lines:
                 self.update_magnet_lines()
-            self.update_accretion_columns()
-
+            # upate
+            # self.update_accretion_columns()
+            self.update_all()
             omega_vector = matrix.get_cartesian_from_spherical(1, np.deg2rad(-self.curr_configuration.beta_mu), 0)
             self.omega_vector.mlab_source.vectors = np.reshape([omega_vector[0], omega_vector[1], omega_vector[2]],
                                                                (1, 3))
             self.omega_vector_1.mlab_source.vectors = np.reshape(
                 [-omega_vector[0], -omega_vector[1], -omega_vector[2]], (1, 3))
-
+        # slider_distance_init_val = 1
         phase = 360 * self.slider_phase
+        # self.slider_distance = self.R_e_for_distance / self.R_e_val * slider_distance_init_val
         self.view_phase(phase)
+
+    def update_ksi_R_e(self):
+        self.R_e_val = self.curr_configuration.top_column.R_e / config.R_ns
+        self.ksi_val = self.curr_configuration.top_column.ksi_shock
+        self.slider_distance = self.ksi_val * 4
+
+    def update_all(self):
+        self.update_accretion_columns()
+        self.update_ksi_R_e()
+        self.update_NS()
+        self.update_accretion_disc()
+        self.update_magnet_lines()
 
     '''def check_data(self):
         # columns = {0: top_column, 1: bot_column}
@@ -670,6 +735,8 @@ class Visualization(HasTraits):
         self.accretion_disc_top.visible = not self.accretion_disc_top.visible
         self.accretion_disc_bot.visible = not self.accretion_disc_bot.visible
         self.accretion_disc_side_surface.visible = not self.accretion_disc_side_surface.visible
+        if not self.flag_accretion_disc_hide:
+            self.update_accretion_disc()
 
     @on_trait_change('button_check_data')
     def func_change_button_check_data(self):
@@ -723,7 +790,8 @@ class Visualization(HasTraits):
                         '_', 'slider_theta_obs', 'slider_beta_mu', 'slider_mc2', 'slider_a_portion', 'slider_phi_0'
                     ),
                     HGroup('_', 'slider_phase', 'slider_distance'),
-                    HGroup('button_magnet_line', 'button_hide_accr_disc', 'button_accr_disc', 'button_animate')
+                    HGroup('button_magnet_line', 'button_hide_accr_disc', 'button_accr_disc', 'button_animate'),
+                    HGroup('R_e_val', 'ksi_val')
                 )
                 )
 

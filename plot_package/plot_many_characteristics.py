@@ -16,7 +16,7 @@ mpl.rcParams['mathtext.fontset'] = 'cm'
 mpl.rcParams['font.family'] = 'STIXGeneral'
 
 # стандартный размер тиков по осям
-ticks_labelsize = 20
+ticks_labelsize = 18
 mpl.rcParams['xtick.labelsize'] = ticks_labelsize
 mpl.rcParams['ytick.labelsize'] = ticks_labelsize
 
@@ -542,6 +542,7 @@ def plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
 
 def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
     '''R_e/R_ns от m + ksi_shock от m + L_x от m'''
+    ticks_labelsize = 18
     fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
 
     fig1, ax1 = plt.subplot_mosaic('a', figsize=(9, 6))
@@ -568,6 +569,8 @@ def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
     ax['a'].scatter(mc2_arr, R_e_arr, s=30, facecolors='none', edgecolors='black', label=r'$\frac{R_e}{R_*}$')
     ax['a'].plot(mc2_arr, R_e_arr, color='black', alpha=0.2, linestyle='-')
 
+    ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
+
     x_axis_label = r'$\dot{m}$'
     y_axis_label = r'$\xi$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
@@ -585,6 +588,8 @@ def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
     ax1['a'].set_xlabel(x_axis_label, fontsize=26)
     ax1['a'].set_ylabel(y_axis_label, fontsize=26)
     ax1['a'].legend()
+
+    ax1['a'].tick_params(axis='both', labelsize=ticks_labelsize)
 
     prefix_folder = 'table/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None,
