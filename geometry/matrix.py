@@ -1,4 +1,5 @@
 import numpy as np
+from numba import njit
 
 import config
 
@@ -147,7 +148,7 @@ def get_xyz_coord(surface, normalize=False):
     res = np.hstack((x, y, z)).reshape((config.N_phi_accretion, config.N_theta_accretion, 3), order='F')
     return res
 
-
+@njit
 def vec_to_angles(vector):
     x = vector[0]
     y = vector[1]

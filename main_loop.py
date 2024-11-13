@@ -67,7 +67,7 @@ if __name__ == '__main__':
     mc2_arr = [30, 100]
     a_portion_arr = [0.22, 0.66]
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    phi_0_arr = [20, 60, 80, 100, 120, 160]
+    phi_0_arr = [20, 40, 60, 80, 100, 120, 140, 160, 180]
 
     # ------L_to_a------
     theta_obs_arr = [20]
@@ -77,9 +77,9 @@ if __name__ == '__main__':
     phi_0_arr = [0]
 
     # -------cur
-    theta_obs_arr = [10 * i for i in range(0, 10)]
-    beta_mu_arr = [10 * i for i in range(0, 10)]
-    mc2_arr = [30, 100]
+    beta_mu_arr = [10 * i for i in range(8, 9)]
+    theta_obs_arr = [10 * i for i in range(9, 10)]
+    mc2_arr = [30, 60, 100]
     a_portion_arr = [0.22, 0.44, 0.66, 1]
     phi_0_arr = [0]
 
@@ -110,7 +110,7 @@ if __name__ == '__main__':
         #                      cycle(a_portion_arr), cycle(phi_0_arr), repeat(plot_flag)))
 
         t2 = time.perf_counter()
-        print(f'{(t2 - t1):.2f} seconds')
+        print(f'{(t2 - t1):.2f} seconds {(t2 - t1) / 60:.2f} mins {(t2 - t1) / 3600:.2f} hours')
 
     else:
         print(f'to calculate {N_big} loops need about {20 * N_big / 3600} hours')

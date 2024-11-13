@@ -304,10 +304,19 @@ class Visualization(HasTraits):
         self.draw_magnet_lines()
 
         # --------------------------------------------- рисуем вектора ------------------------------------------
-        self.mu_vector = mlab.quiver3d(0, 0, 1, mode='2ddash', scale_factor=1, color=self.mu_vector_color)
-        self.mu_vector_1 = mlab.quiver3d(0, 0, -1, mode='2ddash', scale_factor=1, color=self.mu_vector_color)
+        self.draw_mu_omega()
+        # ------------------------------------------ рисуем аккреционный диск ------------------------------------------
+        self.draw_accretion_disc()
 
-        omega_vector = matrix.get_cartesian_from_spherical(1, np.deg2rad(-self.curr_configuration.beta_mu), 0)
+        # self.check_data()
+
+    def draw_mu_omega(self):
+        radi = self.ksi_val * 2
+
+        self.mu_vector = mlab.quiver3d(0, 0, radi, mode='2ddash', scale_factor=1, color=self.mu_vector_color)
+        self.mu_vector_1 = mlab.quiver3d(0, 0, -radi, mode='2ddash', scale_factor=1, color=self.mu_vector_color)
+
+        omega_vector = matrix.get_cartesian_from_spherical(radi, np.deg2rad(-self.curr_configuration.beta_mu), 0)
         # omega_vector
         # self.omega_vector = mlab.plot3d([0, omega_vector[0]], [0, omega_vector[1]], [0, omega_vector[2]],
         #                                 color=self.omega_vector_color, tube_radius=self.omega_vector_tube_radius,
@@ -321,10 +330,16 @@ class Visualization(HasTraits):
         self.omega_vector_1 = mlab.quiver3d(-omega_vector[0], -omega_vector[1], -omega_vector[2], mode='2ddash',
                                             scale_factor=1, color=self.omega_vector_color)
 
-        # ------------------------------------------ рисуем аккреционный диск ------------------------------------------
-        self.draw_accretion_disc()
+    def update_mu_omega(self):
+        radi = self.ksi_val * 2
 
-        # self.check_data()
+        omega_vector = matrix.get_cartesian_from_spherical(radi, np.deg2rad(-self.curr_configuration.beta_mu), 0)
+        self.omega_vector.mlab_source.vectors = np.reshape([omega_vector[0], omega_vector[1], omega_vector[2]], (1, 3))
+        self.omega_vector_1.mlab_source.vectors = np.reshape([-omega_vector[0], -omega_vector[1], -omega_vector[2]],
+                                                             (1, 3))
+
+        self.mu_vector.mlab_source.vectors = np.reshape([0, 0, radi], (1, 3))
+        self.mu_vector_1.mlab_source.vectors = np.reshape([0, 0, -radi], (1, 3))
 
     def get_data_for_accretion_columns_with_mask(self, accretion_surface: accretingNS.Surface):
         '''теперь тоже с маской - чтобы сделать обрезы'''
@@ -585,35 +600,28 @@ class Visualization(HasTraits):
         if phi_0 is not None:
             self.curr_configuration.phi_0 = phi_0
 
-        self.curr_configuration = accretingNS.AccretingPulsarConfiguration(self.curr_configuration.mu,
-                                                                           self.curr_configuration.theta_obs,
-                                                                           self.curr_configuration.beta_mu,
-                                                                           self.curr_configuration.mc2,
-                                                                           self.curr_configuration.a_portion,
-                                                                           self.curr_configuration.phi_0)
-
         self.update_accretion_disc_rotate_angle()
 
         if theta_obs is None:
+            self.curr_configuration = accretingNS.AccretingPulsarConfiguration(self.curr_configuration.mu,
+                                                                               self.curr_configuration.theta_obs,
+                                                                               self.curr_configuration.beta_mu,
+                                                                               self.curr_configuration.mc2,
+                                                                               self.curr_configuration.a_portion,
+                                                                               self.curr_configuration.phi_0)
             if self.flag_draw_magnet_lines:
                 self.update_magnet_lines()
             # upate
             # self.update_accretion_columns()
             self.update_all()
-            omega_vector = matrix.get_cartesian_from_spherical(1, np.deg2rad(-self.curr_configuration.beta_mu), 0)
-            self.omega_vector.mlab_source.vectors = np.reshape([omega_vector[0], omega_vector[1], omega_vector[2]],
-                                                               (1, 3))
-            self.omega_vector_1.mlab_source.vectors = np.reshape(
-                [-omega_vector[0], -omega_vector[1], -omega_vector[2]], (1, 3))
-        # slider_distance_init_val = 1
+            self.update_mu_omega()
         phase = 360 * self.slider_phase
-        # self.slider_distance = self.R_e_for_distance / self.R_e_val * slider_distance_init_val
         self.view_phase(phase)
 
     def update_ksi_R_e(self):
         self.R_e_val = self.curr_configuration.top_column.R_e / config.R_ns
         self.ksi_val = self.curr_configuration.top_column.ksi_shock
-        self.slider_distance = self.ksi_val * 4
+        self.slider_distance = max(self.ksi_val * 4, self.slider_distance)
 
     def update_all(self):
         self.update_accretion_columns()

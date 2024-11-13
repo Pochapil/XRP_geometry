@@ -1,5 +1,6 @@
 import numpy as np
 import time
+from numba import njit
 
 import config
 import newService
@@ -40,6 +41,7 @@ def intersection_with_sphere(surface, origin_phi, origin_theta, direction_vector
     return False
 
 
+@njit
 def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_vector):
     '''
         очень затратная операция - необходимо параллелить
@@ -72,10 +74,12 @@ def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_ve
     c_x_0 = 6 * cos_alpha - 4 * np.cos(phi_delta) * eta
 
     # теперь коэффициенты надо укзывать в порядке с 0 до 5 степени
-    coefficients = [c_x_0, c_x_1, c_x_2, c_x_3, c_x_4, c_x_5]
-    solutions = np.polynomial.polynomial.polyroots(coefficients)
-    # coefficients = [c_x_5, c_x_4, c_x_3, c_x_2, c_x_1, c_x_0]
-    # np.roots
+    # coefficients = np.array([c_x_0, c_x_1, c_x_2, c_x_3, c_x_4, c_x_5], dtype=np.complex128)
+    # solutions = np.polynomial.polynomial.polyroots(coefficients)
+
+    # для numba
+    coefficients = np.array([c_x_5, c_x_4, c_x_3, c_x_2, c_x_1, c_x_0], dtype=np.complex128)
+    solutions = np.roots(coefficients)
     return solutions
 
 
