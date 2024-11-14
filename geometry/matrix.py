@@ -88,6 +88,7 @@ def newE_n(fi_sphere, theta_sphere):
 
 # ============================================
 # numpy way:
+#@njit
 def newE_r_n(phi_sphere, theta_sphere):
     # res = тензор размером phi x theta x 3 (x,y,z)
     # x,y,z = тензор размером  phi x theta
@@ -98,6 +99,7 @@ def newE_r_n(phi_sphere, theta_sphere):
     return res
 
 
+#@njit
 def newE_theta_n(phi_sphere, theta_sphere):
     # res = тензор размером phi x theta x 3 (x,y,z)
     # x,y,z = тензор размером  phi x theta
@@ -108,6 +110,7 @@ def newE_theta_n(phi_sphere, theta_sphere):
     return res
 
 
+#@njit
 def newE_fi_n(fi_sphere):
     # res = тензор размером phi x 3 (x,y,z)
     # x,y,z = тензор размером  phi
@@ -118,6 +121,7 @@ def newE_fi_n(fi_sphere):
     return res
 
 
+#@njit
 def newE_l_n(phi_sphere, theta_sphere):
     # тензор размером phi x theta x 3 (x,y,z)
     # 4.4 формула
@@ -127,6 +131,7 @@ def newE_l_n(phi_sphere, theta_sphere):
     return res
 
 
+#@njit
 def newE_n_n(phi_sphere, theta_sphere):
     # тензор размером phi x theta x 3 (x,y,z)
     # вместо np.cross(newE_l(fi_sphere, theta_sphere), newE_fi(fi_sphere)) беру формулу для n
@@ -138,6 +143,7 @@ def newE_n_n(phi_sphere, theta_sphere):
 
 
 # scatter_point_coord_matrix = np.dstack(np.meshgrid(x, y, z))
+#@njit
 def get_xyz_coord(surface, normalize=False):
     r = surface.surf_R_e / config.R_ns * np.sin(surface.theta_range) ** 2
     if normalize:
@@ -145,8 +151,10 @@ def get_xyz_coord(surface, normalize=False):
     x = r * np.sin(surface.theta_range)[np.newaxis, :] * np.cos(surface.phi_range)[:, np.newaxis]
     y = r * np.sin(surface.theta_range)[np.newaxis, :] * np.sin(surface.phi_range)[:, np.newaxis]
     z = r * np.cos(surface.theta_range)[np.newaxis, :] * np.ones_like(surface.phi_range)[:, np.newaxis]
+    # order='F' = чтобы было N_phi_accretion x N_theta_accretion x (xyz) иначе он бы взял x потом y потом z и решейп
     res = np.hstack((x, y, z)).reshape((config.N_phi_accretion, config.N_theta_accretion, 3), order='F')
     return res
+
 
 @njit
 def vec_to_angles(vector):
@@ -159,21 +167,21 @@ def vec_to_angles(vector):
     phi = np.arctan2(y, x)
     return phi, theta
 
-
+#@njit
 def vec_to_coord(vector):
     x = vector[0]
     y = vector[1]
     z = vector[2]
     return x, y, z
 
-
+#@njit
 def get_cartesian_from_spherical(r, theta, phi):
     x = r * np.sin(theta) * np.cos(phi)
     y = r * np.sin(theta) * np.sin(phi)
     z = r * np.cos(theta)
     return x, y, z
 
-
+#@njit
 def get_xyz_coord_angles(r, phi_arr, theta_arr):
     x = r * np.sin(theta_arr)[np.newaxis, :] * np.cos(phi_arr)[:, np.newaxis]
     y = r * np.sin(theta_arr)[np.newaxis, :] * np.sin(phi_arr)[:, np.newaxis]

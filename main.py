@@ -3,6 +3,7 @@ import multiprocessing as mp
 import pathlib
 import time
 import numpy as np
+from numba import njit
 
 import accretingNS
 import config

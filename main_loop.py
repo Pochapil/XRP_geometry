@@ -111,6 +111,7 @@ if __name__ == '__main__':
 
         t2 = time.perf_counter()
         print(f'{(t2 - t1):.2f} seconds {(t2 - t1) / 60:.2f} mins {(t2 - t1) / 3600:.2f} hours')
+        print(f'{((t2 - t1) / N_big):.2f} avg s')
 
     else:
         print(f'to calculate {N_big} loops need about {20 * N_big / 3600} hours')
