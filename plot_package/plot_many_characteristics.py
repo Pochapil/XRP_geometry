@@ -227,9 +227,11 @@ def plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_ar
             colors = (np.array(colors_sort_phi_0)) / np.max(colors_sort_phi_0)
 
             if marker_index == 0:
-                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=30, facecolors='none', edgecolors=cm.jet(colors))
+                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, color=cm.jet(colors))
+                # ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=30, facecolors='none', edgecolors=cm.jet(colors))
             else:
-                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, marker=marker_dict[marker_index % 4], color=cm.jet(colors))
+                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, marker=marker_dict[marker_index % 4],
+                                color=cm.jet(colors))
 
             ax['a'].plot(x_sort_phi_0, y_sort_phi_0, color='black', alpha=0.2, linestyle=line_style[mc2_index])
 
@@ -283,9 +285,11 @@ def plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr):
             colors = (np.array(colors_sort_phi_0)) / np.max(colors_sort_phi_0)
 
             if marker_index == 0:
-                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=30, facecolors='none', edgecolors=cm.jet(colors))
+                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, color=cm.jet(colors))
+                # ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, facecolors='none', edgecolors=cm.jet(colors))
             else:
-                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, marker=marker_dict[marker_index % 4], color=cm.jet(colors))
+                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, marker=marker_dict[marker_index % 4],
+                                color=cm.jet(colors))
 
             ax['a'].plot(x_sort_phi_0, y_sort_phi_0, color='black', alpha=0.2, linestyle=line_style[mc2_index])
 
@@ -380,7 +384,7 @@ def plot_PF_contour(mu, mc2, a_portion, phi_0):
     ticks_labelsize = 18
 
     theta_obs_arr = np.linspace(0, 90, 10).astype(int)
-    beta_mu_arr = np.linspace(0, 90, 10).astype(int)
+    beta_mu_arr = np.linspace(0, 80, 9).astype(int)
 
     final_final_array = np.empty((len(theta_obs_arr), len(beta_mu_arr)))
 
@@ -398,7 +402,7 @@ def plot_PF_contour(mu, mc2, a_portion, phi_0):
     cbar.ax.set_ylabel('PF')
 
     x_axis_label = r'$\chi [^\circ]$'
-    y_axis_label = r'$\theta_{obs} [^\circ]$'
+    y_axis_label = r'$\theta_{\rm obs} [^\circ]$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
 
@@ -432,7 +436,7 @@ def plot_PF_contour(mu, mc2, a_portion, phi_0):
 def plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0):
     '''ищем закономерности в PF_theta_beta . смотрим как зависит от theta+beta и theta-beta'''
     theta_obs_arr = np.linspace(0, 90, 10).astype(int)
-    beta_mu_arr = np.linspace(0, 90, 10).astype(int)
+    beta_mu_arr = np.linspace(0, 80, 9).astype(int)
 
     final_final_array = np.zeros((len(theta_obs_arr), len(beta_mu_arr)))
 
@@ -455,7 +459,7 @@ def plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0):
         arr = [plus] * len(dict_chi_plus_theta[plus])
         ax['a'].scatter(arr, dict_chi_plus_theta[plus], color='black')
 
-    x_axis_label = r'$\chi + \theta_{obs} [^\circ]$'
+    x_axis_label = r'$\chi + \theta_{\rm obs} [^\circ]$'
     y_axis_label = r'$PF$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
@@ -471,7 +475,7 @@ def plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0):
         arr = [minus] * len(dict_chi_minus_theta[minus])
         ax['a'].scatter(arr, dict_chi_minus_theta[minus], color='black')
 
-    x_axis_label = r'$\chi - \theta_{obs} [^\circ]$'
+    x_axis_label = r'$\chi - \theta_{\rm obs} [^\circ]$'
     y_axis_label = r'$PF$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
@@ -623,6 +627,12 @@ if __name__ == '__main__':
     phi_0 = 0
     theta_obs = 20
 
+    beta_mu = 60
+    mc2 = 30
+    a_portion = 1
+    phi_0 = 0
+    # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+
     theta_obs = 20
     beta_mu = 60
     mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
@@ -631,35 +641,29 @@ if __name__ == '__main__':
     # plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
     theta_obs = 20
-    beta_mu = 60
-    mc2 = 30
+    beta_mu = 40
+    mc2 = 100
     a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
     phi_0 = 0
     # plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
     # plot_PF_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
 
     theta_obs = 40
-    beta_mu = 40
-    mc2_arr = [30, 100]
-    a_portion_arr = [0.22, 0.66]
-    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    # plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
-    # plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
-
-    beta_mu = 80
-    mc2 = 30
-    a_portion = 1
-    phi_0 = 0
-    # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
-
-    theta_obs = 40
     beta_mu = 60
     mc2 = 30
-    a_portion = 0.66
+    a_portion = 0.22
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
     # plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
 
-    mc2 = 100
+    theta_obs = 20
+    beta_mu = 60
+    mc2_arr = [30, 100]
+    a_portion_arr = [0.22, 0.66]
+    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    # plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+
+    mc2 = 30
     a_portion = 1
     phi_0 = 0
     # plot_PF_contour(mu, mc2, a_portion, phi_0)
@@ -683,4 +687,4 @@ if __name__ == '__main__':
     phi_0 = 0
     # plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
     a_portion_arr = [0.22, 0.44, 0.66, 1]
-    plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
+    # plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
