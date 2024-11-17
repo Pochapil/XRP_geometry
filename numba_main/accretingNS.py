@@ -14,6 +14,7 @@ import geometry.matrix as matrix
 
 # surfs - polar = outer; equatorial = inner
 
+# https://github.com/numba/numba/issues/7503 - dict in numba
 
 Surface_spec = [
     ('surf_R_e', float32),
@@ -332,6 +333,5 @@ if __name__ == '__main__':
     mc2 = 100
     a_portion = 0.22
     phi_0 = 0
-
 
     curr_configuration = AccretingPulsarConfiguration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
