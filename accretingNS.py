@@ -1,11 +1,10 @@
 import numpy as np
-import scipy.integrate
 from scipy import interpolate
 
-import newService
-import config
 import BS_approach as get_T_eff
+import config
 import geometry.matrix as matrix
+import newService
 
 # surfs - polar = outer; equatorial = inner
 column_surf_types = {'bot': 'bot', 'top': 'top'}
@@ -33,14 +32,27 @@ class AccretingPulsarConfiguration:
 
         self.M_accretion_rate = mc2 * config.L_edd / config.c ** 2
         self.R_alfven = (mu ** 2 / (2 * self.M_accretion_rate * (2 * config.G * config.M_ns) ** (1 / 2))) ** (2 / 7)
-        self.R_e = config.ksi_param * self.R_alfven
+        self.R_disk = config.ksi_param * self.R_alfven
 
-        self.top_column = AccretionColumn(self.R_e, mu, self.beta_mu, mc2, self.a_portion, self.phi_0,
+        # теперь фиксируем радиус диска R_disk!!!! R_e высчитываем по нему
+        # disk_min_theta_angle = минимальный угол доступный для колонки от магнитной оси до плоскости диска
+        # зависит от азимутов колонки и магнитного угла
+        phi_range = np.linspace(-np.pi * a_portion, np.pi * a_portion, config.N_phi_accretion) + np.deg2rad(phi_0)
+        self.disk_min_theta_angle = np.min(np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(phi_range)))
+        # print(f'{self.disk_min_theta_angle =}')
+
+        # радиус на котором лежат внутренние дипольные линии
+        R_e = self.R_disk / ((np.sin(self.disk_min_theta_angle)) ** 2)
+        self.dRe_div_Re = newService.get_dRe_Re(self.disk_min_theta_angle)
+        # print(f'{self.dRe_div_Re=}')
+        # -------------------------------------------------- columns -------------------------------------------------
+        self.top_column = AccretionColumn(R_e, self.dRe_div_Re, mu, self.beta_mu, mc2, self.a_portion, self.phi_0,
                                           column_type=column_surf_types['top'])
         # Accret_col : equatorial, polar surfaces
-        self.bot_column = AccretionColumn(self.R_e, mu, self.beta_mu, mc2, self.a_portion, self.phi_0,
+        self.bot_column = AccretionColumn(R_e, self.dRe_div_Re, mu, self.beta_mu, mc2, self.a_portion, self.phi_0,
                                           column_type=column_surf_types['bot'])
 
+        # ------------------------------------------------ magnet lines ------------------------------------------------
         self.top_magnet_lines = MagnetLine(self.top_column.R_e_inner_surface, self.beta_mu,
                                            self.top_column.inner_surface.phi_range,
                                            self.top_column.inner_surface.theta_range[-1], self.top_column.column_type)
@@ -57,14 +69,14 @@ class AccretionColumn:
     inner_surface - внутрення поверхность/экваториальная
     '''
 
-    def __init__(self, R_e, mu, beta_mu, mc2, a_portion, phi_0, column_type):
+    def __init__(self, R_e, dRe_div_Re, mu, beta_mu, mc2, a_portion, phi_0, column_type):
         self.R_e = R_e
         self.column_type = column_type
         self.a_portion = a_portion
         self.phi_0 = phi_0
 
         # попробую что
-        self.R_e_outer_surface, self.R_e_inner_surface = (1 + config.dRe_div_Re) * self.R_e, self.R_e
+        self.R_e_outer_surface, self.R_e_inner_surface = (1 + dRe_div_Re) * self.R_e, self.R_e
         if config.FLAG_R_E_OLD:
             # если допущение что толщина = 0
             self.R_e_outer_surface, self.R_e_inner_surface = self.R_e, self.R_e
@@ -72,17 +84,17 @@ class AccretionColumn:
         M_accretion_rate = mc2 * config.L_edd / config.c ** 2
         # вызов БС чтобы расчитать все распределения. МБ стоит поднять выше так как расчет только 1 раз нужен
         self.T_eff, self.ksi_shock, self.L_x, self.beta = get_T_eff.get_Teff_distribution(
-            newService.get_delta_distance_at_surface_NS(self.R_e),
-            newService.get_A_normal_at_surface_NS(self.R_e, self.a_portion),
+            newService.get_delta_distance_at_surface_NS(self.R_e, dRe_div_Re),
+            newService.get_A_normal_at_surface_NS(self.R_e, self.a_portion, dRe_div_Re),
             mu, M_accretion_rate
         )
 
-        phi_range = np.linspace(-np.pi * a_portion, np.pi * a_portion, config.N_phi_accretion) + np.deg2rad(phi_0)
-        min_angle = np.min(np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(phi_range)))
-        # скорее всего здесь необходимо пересчитать чтобы было ок ?
-        if self.ksi_shock > self.R_e / config.R_ns * np.sin(min_angle)**2:
-            self.R_e = self.ksi_shock / (np.sin(min_angle) ** 2) * config.R_ns
-            self.R_e_outer_surface, self.R_e_inner_surface = (1 + config.dRe_div_Re) * self.R_e, self.R_e
+        # print(f'{self.ksi_shock=}')
+        # print(f'{self.R_e=}')
+        # # скорее всего здесь необходимо пересчитать чтобы было ок ?
+        # if self.ksi_shock > self.R_e / config.R_ns * np.sin(min_angle) ** 2:
+        #     self.R_e = self.ksi_shock / (np.sin(min_angle) ** 2) * config.R_ns
+        #     self.R_e_outer_surface, self.R_e_inner_surface = (1 + config.dRe_div_Re) * self.R_e, self.R_e
 
         self.outer_surface = Surface(self.R_e_outer_surface, self.R_e, beta_mu, self.a_portion, self.phi_0,
                                      self.ksi_shock, self.column_type, surface_type=surface_surf_types['outer'])
@@ -111,7 +123,7 @@ class AccretionColumn:
 
         # выравнивание
 
-        #print(y_new.shape)
+        # print(y_new.shape)
         self.T_eff[1:-1] = y_new
         # for i in range(0, (len(y_new))):
         #     self.T_eff[i + 1] = y_new[i]
@@ -151,7 +163,7 @@ class Surface:
                 '''
                 # когда наклонен от pi/2 - beta до pi/2 + beta в зависимости от phi. хотим регулярную а отрежем маской
                 # поэтому берем +
-                self.theta_accretion_end = np.pi / 2 + np.deg2rad(beta_mu)
+                self.theta_accretion_end = np.pi / 2  # + np.deg2rad(beta_mu)
             else:
                 # из усл силовой линии МП : r = R_e sin**2; end: ksi_shock = R_e sin**2
                 self.theta_accretion_end = np.arcsin((config.R_ns * ksi_shock / col_R_e) ** (1 / 2))
@@ -171,9 +183,7 @@ class Surface:
                 # ограничиваю диском True - значит не надо использовать эту площадку
                 if theta > theta_end:
                     pass
-                    # self.mask_array[i][j] = True
-
-
+                    self.mask_array[i][j] = True
 
         # для нижней сместить углы. маска будет той же
         if column_type == column_surf_types['bot']:
@@ -257,3 +267,17 @@ class MagnetLine:
         # беру только внутренние нормали, так как для расчета отраженного необходимо как раз нормали вовнутрь
         array_normal = -1 * matrix.newE_n_n(phi_range, theta_range)
         return array_normal
+
+
+if __name__ == '__main__':
+    # ------------------------------------------------- start -------------------------------------------------------
+    mu = 0.1e31
+
+    theta_obs = 40
+    beta_mu = 80
+
+    mc2 = 100
+    a_portion = 0.22
+    phi_0 = 0
+
+    curr_configuration = AccretingPulsarConfiguration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)

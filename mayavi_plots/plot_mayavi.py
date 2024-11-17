@@ -351,7 +351,7 @@ class Visualization(HasTraits):
 
         coef = 1
         if accretion_surface.surface_type == accretingNS.surface_surf_types['outer']:
-            coef = (1 + config.dRe_div_Re)
+            coef = (1 + self.curr_configuration.dRe_div_Re)
 
         radi = self.curr_configuration.top_column.R_e / config.R_ns
 
@@ -378,7 +378,8 @@ class Visualization(HasTraits):
     def get_data_for_magnet_lines_outer_with_mask(self, magnet_surface: accretingNS.MagnetLine):
         # просто удлинить в (1 + config.dRe_div_Re)
         x, y, z, mask_magnet_lines = self.get_data_for_magnet_lines_with_mask(magnet_surface)
-        return x * (1 + config.dRe_div_Re), y * (1 + config.dRe_div_Re), z * (1 + config.dRe_div_Re), mask_magnet_lines
+        coef = (1 + self.curr_configuration.dRe_div_Re)
+        return x * coef, y * coef, z * coef, mask_magnet_lines
 
     def get_data_for_NS(self):
         '''
@@ -413,8 +414,11 @@ class Visualization(HasTraits):
 
         # r_min = ksi
         # self.curr_configuration.top_column.inner_surface.theta_range
-        r_min = self.curr_configuration.top_column.R_e / config.R_ns * np.sin(
-            np.pi / 2 - np.deg2rad(self.curr_configuration.beta_mu)) ** 2
+        r_min = self.curr_configuration.R_disk / config.R_ns
+
+        # r_min = self.curr_configuration.top_column.R_e / config.R_ns * np.sin(
+        #     np.pi / 2 - np.deg2rad(self.curr_configuration.beta_mu)) ** 2
+
         r_max = 4 * r_min
         r, phi = np.mgrid[r_min:r_max:100j, 0:2 * np.pi:100j]
         x = r * np.cos(phi)

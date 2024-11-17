@@ -25,7 +25,8 @@ def calc_number_pow(num):
     return num, pow
 
 
-def make_save_values_file(curr_configuration, L_surfs, L_scatter, cur_path_data, cur_dir_saved):
+def make_save_values_file(curr_configuration: accretingNS.AccretingPulsarConfiguration, L_surfs, L_scatter,
+                          cur_path_data, cur_dir_saved):
     # сохраняет значения в save_values
     '''R_e, ksi_shock, beta, total L_x ...'''
     file_name = 'save_values.txt'
@@ -58,10 +59,11 @@ def make_save_values_file(curr_configuration, L_surfs, L_scatter, cur_path_data,
         f.write(f'avg_L_on_phase / L_x = {avg_L_on_phase / curr_configuration.top_column.L_x:.3}\n')
 
         d0 = newService.get_delta_distance(curr_configuration.top_column.inner_surface.theta_range[0],
-                                           curr_configuration.top_column.inner_surface.surf_R_e)
+                                           curr_configuration.top_column.inner_surface.surf_R_e,
+                                           curr_configuration.dRe_div_Re)
         l0 = newService.get_A_normal(curr_configuration.top_column.inner_surface.theta_range[0],
                                      curr_configuration.top_column.inner_surface.surf_R_e,
-                                     curr_configuration.a_portion) / d0
+                                     curr_configuration.a_portion, curr_configuration.dRe_div_Re) / d0
 
         f.write(f'width / length = {(d0 / l0):.6}\n')
         f.write(f'A_perp / 2 d0**2 = {(l0 / (2 * d0)):.6}\n')
@@ -74,7 +76,8 @@ def make_save_values_file(curr_configuration, L_surfs, L_scatter, cur_path_data,
         f.write(f'avg L with scatter / L_x = {number:.6f}\n')
 
 
-def save_some_files(curr_configuration, obs_matrix, L_surfs, L_scatter, L_nu_surfs, L_nu_scatter, PF_L_nu_surfs,
+def save_some_files(curr_configuration: accretingNS.AccretingPulsarConfiguration, obs_matrix, L_surfs, L_scatter,
+                    L_nu_surfs, L_nu_scatter, PF_L_nu_surfs,
                     cur_path_data, cur_dir_saved):
     '''сохраняет разные распределения. понятно из названий файлов'''
     if config.old_path_flag:
@@ -92,8 +95,8 @@ def save_some_files(curr_configuration, obs_matrix, L_surfs, L_scatter, L_nu_sur
     save.save_arr_as_txt(curr_configuration.top_column.outer_surface.theta_range, cur_path, file_name)
 
     tau_array = shadows.get_tau_for_opacity_old(curr_configuration.top_magnet_lines.theta_range,
-                                                curr_configuration.R_e, curr_configuration.M_accretion_rate,
-                                                curr_configuration.a_portion)
+                                                curr_configuration.top_column.R_e, curr_configuration.M_accretion_rate,
+                                                curr_configuration.a_portion, curr_configuration.dRe_div_Re)
     file_name = "save_tau_range.txt"
     save.save_arr_as_txt(tau_array, cur_path, file_name)
 
@@ -158,7 +161,8 @@ def save_new_way(L_surfs, L_scatter, L_nu_surfs, L_nu_scatter, cur_path_data):
         save.save_arr_as_txt(L_nu_scatter[:, i], cur_path / 'scatter/', file_name)
 
 
-def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=False):
+def calc_shadows_and_tau(curr_configuration: accretingNS.AccretingPulsarConfiguration, surface, obs_matrix,
+                         mask_flag=False):
     '''
     функция расчитывает матрицу косинусов на каждой фазе для направлений наблюдателя
 
@@ -215,7 +219,7 @@ def calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag=Fals
                                                             curr_configuration.M_accretion_rate,
                                                             curr_configuration.top_column.inner_surface,
                                                             curr_configuration.bot_column.inner_surface,
-                                                            curr_configuration.a_portion)
+                                                            curr_configuration.a_portion, curr_configuration.dRe_div_Re)
                             # доп проверка с верхними - пока не считаю - надеюсь что слабо влияют ?? или они учтены но криво
                             # if tensor_tau[phase_index, phi_index, theta_index] == 1:
                             #     if surface.surf_R_e != curr_configuration.R_e:
@@ -345,8 +349,8 @@ def calc_async_with_split_at_each_phase(curr_configuration, obs_matrix, surfs_ar
 
 def calc_cos_psi(curr_configuration, obs_matrix, surfs_arr, mask_flag, async_flag=True):
     '''объединил все методы расчета в 1 функцию'''
-    # в 1 потоке или многопоточность async_flag. убрал из конфиг так как если буду параллелить могут быть ошибки
-    # при импорте
+    # в 1 потоке или многопоточность async_flag.
+    # убрал из конфиг так как если буду параллелить могут быть ошибки при импорте
     t1 = time.perf_counter()
     if async_flag:
         if config.N_cpus >= 1:
@@ -358,7 +362,7 @@ def calc_cos_psi(curr_configuration, obs_matrix, surfs_arr, mask_flag, async_fla
                                                  zip(repeat(curr_configuration), surfs_arr,
                                                      repeat(obs_matrix), repeat(mask_flag)))
     else:
-        # в 1 потоке посчитать по каждой поверхности честно в цикле
+        # в 1 потоке посчитать по каждой поверхности честно в цикле - так и делаю для main_loop
         new_cos_psi_range = np.empty((len(surfs_arr), config.N_phase, config.N_phi_accretion, config.N_theta_accretion))
         for i, surface in enumerate(surfs_arr):
             new_cos_psi_range[i] = calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag)
@@ -462,7 +466,7 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
         # tau_scatter_matrix = np.ones_like(cos_alpha_matrix)
         tau_scatter_matrix = shadows.get_tau_for_scatter_with_cos(magnet_surface.theta_range, magnet_surface.surf_R_e,
                                                                   curr_configuration.M_accretion_rate, a_portion,
-                                                                  cos_alpha_matrix)
+                                                                  cos_alpha_matrix, curr_configuration.dRe_div_Re)
 
         L_x = integralsService.calculate_total_luminosity(curr_configuration.top_column.inner_surface,
                                                           curr_configuration.top_column.T_eff)
@@ -507,7 +511,8 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
         observer_phi = ans[:, 0]
         observer_theta = ans[:, 1]
         plot_package.plot_scripts.plot_observer_angles(observer_phi, observer_theta, cur_path_fig)
-        plot_package.plot_scripts.plot_Teff_to_ksi(curr_configuration.R_e, curr_configuration.top_column.T_eff,
+        plot_package.plot_scripts.plot_Teff_to_ksi(curr_configuration.top_column.R_e,
+                                                   curr_configuration.top_column.T_eff,
                                                    curr_configuration.top_column.inner_surface.theta_range,
                                                    cur_path_fig)
 

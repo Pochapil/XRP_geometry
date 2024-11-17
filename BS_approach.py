@@ -24,7 +24,7 @@ def find_ksi_shock(eta, gamma):
         return x - f(x) / df(x)
 
     delta = 0.001  # точность для метода ньютона
-    ksi_prev = 30  # начальное предположение
+    ksi_prev = 130  # начальное предположение
     ksi_next = nuton(ksi_prev)
     while np.abs((ksi_prev - ksi_next)) > delta:
         ksi_prev = ksi_next

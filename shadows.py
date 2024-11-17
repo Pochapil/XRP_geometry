@@ -74,10 +74,11 @@ def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_ve
     c_x_0 = 6 * cos_alpha - 4 * np.cos(phi_delta) * eta
 
     # теперь коэффициенты надо укзывать в порядке с 0 до 5 степени
-    # coefficients = np.array([c_x_0, c_x_1, c_x_2, c_x_3, c_x_4, c_x_5], dtype=np.complex128)
+    # coefficients = np.array([c_x_0, c_x_1, c_x_2, c_x_3, c_x_4, c_x_5])
     # solutions = np.polynomial.polynomial.polyroots(coefficients)
 
     # для numba
+    # coefficients = np.array([c_x_5, c_x_4, c_x_3, c_x_2, c_x_1, c_x_0])
     coefficients = np.array([c_x_5, c_x_4, c_x_3, c_x_2, c_x_1, c_x_0], dtype=np.complex128)
     solutions = np.roots(coefficients)
     return solutions
@@ -85,7 +86,8 @@ def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_ve
 
 def get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector, solution):
     # ищем положительные корни и при этом вещественные
-    if solution.real > 0 and solution.imag == 0:
+    # if solution.real > 0 and solution.imag == 0:
+    if solution.real > 0 and np.abs(solution.imag) < 1e-8:
         # direction - направление на наблюдателя
         direction_x, direction_y, direction_z = matrix.vec_to_coord(obs_vector)
         # origin - откуда бьет луч. площадка на поверхности
@@ -153,13 +155,13 @@ def check_shadow_with_dipole(surface, phi_index, theta_index, obs_vector, soluti
     return 1
 
 
-def get_tau_for_opacity_old(theta, R_e, M_accretion_rate, a_portion):
-    tau = config.k * M_accretion_rate * newService.get_delta_distance(theta, R_e) / (
-            newService.get_A_normal(theta, R_e, a_portion) * newService.get_free_fall_velocity(theta, R_e))
+def get_tau_for_opacity_old(theta, R_e, M_accretion_rate, a_portion, dRe_div_Re):
+    tau = config.k * M_accretion_rate * newService.get_delta_distance(theta, R_e, dRe_div_Re) / (
+            newService.get_A_normal(theta, R_e, a_portion, dRe_div_Re) * newService.get_free_fall_velocity(theta, R_e))
     return tau
 
 
-def get_tau_for_opacity(phi, theta, R_e_of_atenuation_surf, M_accretion_rate, a_portion, obs_vector):
+def get_tau_for_opacity(phi, theta, R_e_of_atenuation_surf, M_accretion_rate, a_portion, obs_vector, dRe_div_Re):
     '''
     считаем коэффициент ослабления
 
@@ -176,8 +178,8 @@ def get_tau_for_opacity(phi, theta, R_e_of_atenuation_surf, M_accretion_rate, a_
     normal = matrix.newE_n(phi, theta)
     cos_alpha = np.dot(normal, obs_vector) / (np.linalg.norm(normal) * np.linalg.norm(obs_vector))
     # формула в статье есть
-    tau = config.k * M_accretion_rate * newService.get_delta_distance(theta, R_e_of_atenuation_surf)
-    tau /= (newService.get_A_normal(theta, R_e_of_atenuation_surf, a_portion)
+    tau = config.k * M_accretion_rate * newService.get_delta_distance(theta, R_e_of_atenuation_surf, dRe_div_Re)
+    tau /= (newService.get_A_normal(theta, R_e_of_atenuation_surf, a_portion, dRe_div_Re)
             * newService.get_free_fall_velocity(theta, R_e_of_atenuation_surf))
     # print(f'{tau=}')
     tau /= cos_alpha
@@ -186,9 +188,9 @@ def get_tau_for_opacity(phi, theta, R_e_of_atenuation_surf, M_accretion_rate, a_
     return np.abs(tau)
 
 
-def get_tau_for_scatter_with_cos(theta_range, R_e_emission_surf, M_accretion_rate, a_portion, cos_alpha):
-    tau = config.k * M_accretion_rate * newService.get_delta_distance(theta_range, R_e_emission_surf)
-    tau /= (newService.get_A_normal(theta_range, R_e_emission_surf, a_portion)
+def get_tau_for_scatter_with_cos(theta_range, R_e_emission_surf, M_accretion_rate, a_portion, cos_alpha, dRe_div_Re):
+    tau = config.k * M_accretion_rate * newService.get_delta_distance(theta_range, R_e_emission_surf, dRe_div_Re)
+    tau /= (newService.get_A_normal(theta_range, R_e_emission_surf, a_portion, dRe_div_Re)
             * newService.get_free_fall_velocity(theta_range, R_e_emission_surf))
     tau = tau[np.newaxis, :] / cos_alpha
     # print(f'cos_alpha_min = {np.min(cos_alpha)}, cos_alpha_max = {np.max(cos_alpha)}')
@@ -197,7 +199,7 @@ def get_tau_for_scatter_with_cos(theta_range, R_e_emission_surf, M_accretion_rat
 
 
 def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, R_e_of_atenuation_surf, beta_mu,
-                        M_accretion_rate, top_column, bot_column, a_portion):
+                        M_accretion_rate, top_column, bot_column, a_portion, dRe_div_Re):
     '''
     считаем коэффициент ослабления tau
     R_e_of_atenuation_surf = inner surf!!!!!
@@ -230,7 +232,7 @@ def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, 
             # если есть пересечение считаем коэффициент ослабления
             if intersection_condition:
                 tau = get_tau_for_opacity(intersect_phi, intersect_theta, R_e_of_atenuation_surf, M_accretion_rate,
-                                          a_portion, obs_vector)
+                                          a_portion, obs_vector, dRe_div_Re)
                 if tau > config.tau_cutoff:
                     return np.exp(-1 * tau)
                 else:

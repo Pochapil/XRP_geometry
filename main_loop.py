@@ -33,25 +33,12 @@ def make_arr(theta_obs_arr, beta_mu_arr, mc2_arr, a_portion_arr, phi_0_arr):
 if __name__ == '__main__':
     mu = 0.1e31
 
-    beta_mu_arr = [10 * i for i in range(1, 10)]
-    theta_obs_arr = [10 * i for i in range(1, 10)]
+    # --------sky_map-------------
+    theta_obs_arr = [10 * i for i in range(0, 10)]
+    beta_mu_arr = [10 * i for i in range(0, 10)]
     mc2_arr = [30, 60, 100]
     a_portion_arr = [0.22, 0.44, 0.66, 1]
     phi_0_arr = [0]
-
-    theta_obs_arr = [10 * i for i in range(1, 10)]
-    beta_mu_arr = [10 * i for i in range(1, 10)]
-    mc2_arr = [30, 100]
-    a_portion_arr = [0.22, 0.44, 0.66]
-    phi_0_arr = [120]
-
-    # -----L_to_phi_0-------
-    theta_obs_arr = [40]
-    beta_mu_arr = [60]
-    mc2_arr = [30]
-    a_portion_arr = [0.66]
-    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    phi_0_arr = [20, 60, 80, 100, 120, 160]
 
     # -----------L_to_m-----
     theta_obs_arr = [20]
@@ -61,24 +48,25 @@ if __name__ == '__main__':
     a_portion_arr = [0.44, 0.66]
     phi_0_arr = [0]
 
-    # ----- L_nu_to_phi_0 / PF_to_L_nu-----
+    # ------L_to_a------
     theta_obs_arr = [20]
+    beta_mu_arr = [40]
+    mc2_arr = [100]
+    a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825]
+    a_portion_arr = [0.165, 0.275, 0.33, 0.385, 0.5, 0.55, 0.605, 0.715, 0.77, 0.825]
+    phi_0_arr = [0]
+
+    # ----- L_nu_to_phi_0 / PF_to_L_nu-----
+    theta_obs_arr = [20, 40]
     beta_mu_arr = [40, 60]
     mc2_arr = [30, 100]
     a_portion_arr = [0.22, 0.66]
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
     phi_0_arr = [20, 40, 60, 80, 100, 120, 140, 160, 180]
 
-    # ------L_to_a------
-    theta_obs_arr = [20]
-    beta_mu_arr = [40]
-    mc2_arr = [100]
-    a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825]
-    phi_0_arr = [0]
-
-    # -------cur
-    beta_mu_arr = [10 * i for i in range(8, 9)]
-    theta_obs_arr = [10 * i for i in range(9, 10)]
+    # -------cur-------
+    theta_obs_arr = [10 * i for i in range(0, 10)]
+    beta_mu_arr = [10 * i for i in range(0, 9)]
     mc2_arr = [30, 60, 100]
     a_portion_arr = [0.22, 0.44, 0.66, 1]
     phi_0_arr = [0]
@@ -88,7 +76,7 @@ if __name__ == '__main__':
     N_big = len(theta_obs_arr) * len(beta_mu_arr) * len(mc2_arr) * len(a_portion_arr) * len(phi_0_arr)
     if config.flag_calc_clever:
 
-        sec_one_loop = 200
+        sec_one_loop = 80
         print(
             f'{N_big} loops about {sec_one_loop * N_big / config.N_cpus:.2f} seconds or '
             + f'{sec_one_loop * N_big / 60 / config.N_cpus:.2f} mins or '
@@ -111,7 +99,7 @@ if __name__ == '__main__':
 
         t2 = time.perf_counter()
         print(f'{(t2 - t1):.2f} seconds {(t2 - t1) / 60:.2f} mins {(t2 - t1) / 3600:.2f} hours')
-        print(f'{((t2 - t1) / N_big):.2f} avg s')
+        print(f'{((t2 - t1) / N_big * config.N_cpus):.2f} avg s')
 
     else:
         print(f'to calculate {N_big} loops need about {20 * N_big / 3600} hours')
