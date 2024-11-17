@@ -77,7 +77,8 @@ def calc_scatter_L(surface, L_x, cos_tensor, tau_scatter_matrix=None):
         coeff = coeff * (1 - np.exp(-np.abs(tau_scatter_matrix)))  # УЧЕСТЬ tau в отражаемой точке!!!!!!!!!
         # np.abs ??? хотя вроде бы косинус между нормалью и на НЗ не может быть отрицательным
         # z = (1 - np.exp(-tau_scatter_matrix)) tau = 45-50 ????
-    L = L_x * np.abs(scipy.integrate.simps(scipy.integrate.simps(cos_tensor * tilda_s * coeff, surface.theta_range),
+    # 4 --- из за того что I = F/pi; int = 4 pi I = 4 F
+    L = 4 * L_x * np.abs(scipy.integrate.simps(scipy.integrate.simps(cos_tensor * tilda_s * coeff, surface.theta_range),
                                            surface.phi_range))
     return L
 
@@ -106,7 +107,8 @@ def calc_scatter_L_nu(magnet_surface, emission_surface, T_eff, cos_tensor, tau_s
         coeff = coeff * (1 - np.exp(-np.abs(tau_scatter_matrix)))  # УЧЕСТЬ tau в отражаемой точке!!!!!!!!!
         # np.abs ??? хотя вроде бы косинус между нормалью и на НЗ не может быть отрицательным
         # z = (1 - np.exp(-tau_scatter_matrix)) tau = 45-50 ????
-    L_nu = emission_intensity * np.abs(
+    # 4 --- из за того что I = F/pi; int = 4 pi I = 4 F
+    L_nu = 4 * emission_intensity * np.abs(
         scipy.integrate.simps(scipy.integrate.simps(cos_tensor * tilda_s * coeff, magnet_surface.theta_range),
                               magnet_surface.phi_range))
     return L_nu
