@@ -10,6 +10,14 @@ import newService
 column_surf_types = {'bot': 'bot', 'top': 'top'}
 surface_surf_types = {'outer': 'outer', 'inner': 'inner'}
 
+'''на данный момент в программе задается (delta R_disk)/R_disk как AC в качестве константы
+
+во время расчета для конфигурации считается R_disk = R_a * ksi, theta_disk, 
+из них получаем R_e (радиус магнитного диполя на котором сидит колонка). 
+
+после этого происходит перерасчет (delta R_e)/R_e -
+чтобы получить delta R_e (= DE), которое соответствует AC на угле theta_disk.'''
+
 
 class AccretingPulsarConfiguration:
     '''решил сделать класс который хранит текущую конфигурацию.
