@@ -359,10 +359,9 @@ def plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, flag_same
             L_data_same_res[i] = L_data[i][::step]
 
         data_to_plot = np.apply_along_axis(newService.extend_arr_twice_for_plot, axis=-1, arr=L_data_same_res)
-        config.phase_for_plot = np.linspace(0, 2, len(data_to_plot[0]))
 
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
-    im = ax['a'].contourf(config.phase_for_plot, phi_0_arr_for_plot, data_to_plot, levels=30)
+    im = ax['a'].contourf(np.linspace(0, 2, len(data_to_plot[0])), phi_0_arr_for_plot, data_to_plot, levels=30)
     clb = plt.colorbar(im, pad=0.01)
     clb.set_label(r'$L_{\rm iso}$' + r'$\rm [erg/s]$', fontsize=26)
 
@@ -553,6 +552,10 @@ def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
 
     color_arr = ['red', 'green', 'blue', 'purple']
 
+    M_accretion_rate = np.array(mc2_arr) * config.L_edd / config.c ** 2
+    R_alfven = (mu ** 2 / (2 * M_accretion_rate * (2 * config.G * config.M_ns) ** (1 / 2))) ** (2 / 7)
+    R_disk = config.ksi_param * R_alfven / config.R_ns
+
     for i, a_portion in enumerate(a_portion_arr):
         R_e_arr = np.empty(len(mc2_arr))
         ksi_shock_arr = np.empty(len(mc2_arr))
@@ -572,6 +575,9 @@ def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
 
     ax['a'].scatter(mc2_arr, R_e_arr, s=30, facecolors='none', edgecolors='black', label=r'$\frac{R_e}{R_*}$')
     ax['a'].plot(mc2_arr, R_e_arr, color='black', alpha=0.2, linestyle='-')
+
+    ax['a'].scatter(mc2_arr, R_disk, s=30, color='black', label=r'$\frac{R_{disk}}{R_*}$')
+    ax['a'].plot(mc2_arr, R_disk, color='black', alpha=0.2, linestyle='-')
 
     ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
 
@@ -627,64 +633,252 @@ if __name__ == '__main__':
     phi_0 = 0
     theta_obs = 20
 
-    beta_mu = 60
-    mc2 = 30
-    a_portion = 1
-    phi_0 = 0
-    # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
 
-    theta_obs = 20
-    beta_mu = 60
-    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
-    a_portion = 0.44
-    phi_0 = 0
-    # plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+    def plot_sky_map_as_in_art():
+        beta_mu = 20
+        mc2 = 30
+        a_portion = 0.22
+        phi_0 = 0
+        plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+
+        beta_mu = 20
+        mc2 = 30
+        a_portion = 0.66
+        phi_0 = 0
+        plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+
+        beta_mu = 20
+        mc2 = 30
+        a_portion = 1
+        phi_0 = 0
+        plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+
+        beta_mu = 40
+        mc2 = 30
+        a_portion = 1
+        phi_0 = 0
+        plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+
+        beta_mu = 60
+        mc2 = 30
+        a_portion = 1
+        phi_0 = 0
+        plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+
+        beta_mu = 80
+        mc2 = 30
+        a_portion = 1
+        phi_0 = 0
+        plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+
+
+    def plot_L_to_mc2_as_in_art():
+        theta_obs = 20
+        beta_mu = 60
+        mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+        a_portion = 0.44
+        phi_0 = 0
+        plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+
+        theta_obs = 40
+        beta_mu = 60
+        mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+        a_portion = 0.44
+        phi_0 = 0
+        plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+
+        theta_obs = 20
+        beta_mu = 60
+        mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+        a_portion = 0.66
+        phi_0 = 0
+        plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+
+        theta_obs = 40
+        beta_mu = 60
+        mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+        a_portion = 0.66
+        phi_0 = 0
+        plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+
+
+    def plot_L_to_a_portion_as_in_art():
+        theta_obs = 20
+        beta_mu = 40
+        mc2 = 100
+        a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
+        phi_0 = 0
+        plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+
+        theta_obs = 20
+        beta_mu = 60
+        mc2 = 30
+        a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
+        phi_0 = 0
+        plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+
+
+    def plot_L_to_phi_0_as_in_art():
+        theta_obs = 40
+        beta_mu = 60
+        mc2 = 30
+        a_portion = 0.22
+        phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+        plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
+
+        # plt.clf()
+        # plt.cla()
+        # plt.close()
+
+        theta_obs = 40
+        beta_mu = 60
+        mc2 = 30
+        a_portion = 0.66
+        phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+        plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
+
+
+    def plot_masses_PF_L_nu_as_in_art():
+        theta_obs = 20
+        beta_mu = 40
+        mc2_arr = [30, 100]
+        a_portion_arr = [0.22, 0.66]
+        phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+        plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+        plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+
+        theta_obs = 20
+        beta_mu = 60
+        mc2_arr = [30, 100]
+        a_portion_arr = [0.22, 0.66]
+        phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+        plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+        plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+
+        theta_obs = 40
+        beta_mu = 40
+        mc2_arr = [30, 100]
+        a_portion_arr = [0.22, 0.66]
+        phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+        plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+        plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+
+        theta_obs = 40
+        beta_mu = 60
+        mc2_arr = [30, 100]
+        a_portion_arr = [0.22, 0.66]
+        phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+        plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+        plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+
+
+    def plot_PF_contour_as_in_art():
+        mc2 = 30
+        a_portion = 1
+        phi_0 = 0
+        plot_PF_contour(mu, mc2, a_portion, phi_0)
+        plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0)
+
+        mc2 = 100
+        a_portion = 1
+        phi_0 = 0
+        plot_PF_contour(mu, mc2, a_portion, phi_0)
+        plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0)
+
+
+    def plot_table_as_in_art():
+        theta_obs = 40
+        beta_mu = 60
+        mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+        a_portion = 0.44
+        phi_0 = 0
+        plot_L_iso_to_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+
+        theta_obs = 40
+        beta_mu = 60
+        mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+        a_portion = 0.66
+        phi_0 = 0
+        plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+
+        a_portion_arr = [0.22, 0.44, 0.66, 1]
+        plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
+
 
     theta_obs = 20
     beta_mu = 40
     mc2 = 100
     a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
     phi_0 = 0
-    # plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
-    # plot_PF_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+    # plot_PF_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)  # wtf ???
 
-    theta_obs = 40
-    beta_mu = 60
-    mc2 = 30
-    a_portion = 0.22
-    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    # plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
+    # plot_sky_map_as_in_art()
+    # plot_L_to_phi_0_as_in_art()
+    # plot_L_to_mc2_as_in_art()
+    # plot_L_to_a_portion_as_in_art()
+    # plot_masses_PF_L_nu_as_in_art()
+    # plot_PF_contour_as_in_art()
+    plot_table_as_in_art()
 
-    theta_obs = 20
-    beta_mu = 60
-    mc2_arr = [30, 100]
-    a_portion_arr = [0.22, 0.66]
-    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
-    # plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    # ----- old --------
+    # beta_mu = 60
+    # mc2 = 30
+    # a_portion = 1
+    # phi_0 = 0
+    # # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
 
-    mc2 = 30
-    a_portion = 1
-    phi_0 = 0
-    # plot_PF_contour(mu, mc2, a_portion, phi_0)
+    # theta_obs = 20
+    # beta_mu = 60
+    # mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+    # a_portion = 0.44
+    # phi_0 = 0
+    # # plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
-    mc2 = 30
-    a_portion = 1
-    phi_0 = 0
-    # plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0)
+    # theta_obs = 20
+    # beta_mu = 40
+    # mc2 = 100
+    # a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
+    # phi_0 = 0
+    # # plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+    # # plot_PF_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
 
-    theta_obs = 40
-    beta_mu = 60
-    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
-    a_portion = 0.44
-    phi_0 = 0
-    # plot_L_iso_to_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+    # theta_obs = 40
+    # beta_mu = 60
+    # mc2 = 30
+    # a_portion = 0.22
+    # phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # # plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
 
-    theta_obs = 40
-    beta_mu = 60
-    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
-    a_portion = 0.66
-    phi_0 = 0
-    # plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
-    a_portion_arr = [0.22, 0.44, 0.66, 1]
-    # plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
+    # theta_obs = 20
+    # beta_mu = 60
+    # mc2_arr = [30, 100]
+    # a_portion_arr = [0.22, 0.66]
+    # phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # # plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    # # plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+
+    # mc2 = 30
+    # a_portion = 1
+    # phi_0 = 0
+    # # plot_PF_contour(mu, mc2, a_portion, phi_0)
+    #
+    # mc2 = 30
+    # a_portion = 1
+    # phi_0 = 0
+    # # plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0)
+
+    # theta_obs = 40
+    # beta_mu = 60
+    # mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+    # a_portion = 0.44
+    # phi_0 = 0
+    # # plot_L_iso_to_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+    #
+    # theta_obs = 40
+    # beta_mu = 60
+    # mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+    # a_portion = 0.66
+    # phi_0 = 0
+    # # plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+    # a_portion_arr = [0.22, 0.44, 0.66, 1]
+    # # plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
