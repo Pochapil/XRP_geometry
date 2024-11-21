@@ -430,8 +430,9 @@ class Visualization(HasTraits):
     def get_data_for_accretion_disc_side_surface(self, accretion_disc_con_val):
         # cylinder - боковая поверхность у диска
         # accretion_disc_con_val = насколько меняется радиус ??
-        r_min = self.curr_configuration.top_column.R_e / config.R_ns * np.sin(
-            np.pi / 2 - np.deg2rad(self.curr_configuration.beta_mu)) ** 2
+        r_min = self.curr_configuration.R_disk / config.R_ns
+        # self.curr_configuration.top_column.R_e / config.R_ns * np.sin(
+        # np.pi / 2 - np.deg2rad(self.curr_configuration.beta_mu)) ** 2
         r_max = 4 * r_min
         radius = r_max
         z = np.linspace(-accretion_disc_con_val * radius, accretion_disc_con_val * radius, config.N_theta_accretion)
@@ -615,6 +616,8 @@ class Visualization(HasTraits):
                                                                                self.curr_configuration.phi_0)
             if self.flag_draw_magnet_lines:
                 self.update_magnet_lines()
+            if mc2 is not None:
+                self.update_accretion_disc()
             # upate
             # self.update_accretion_columns()
             self.update_all()
