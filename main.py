@@ -18,6 +18,7 @@ import save
 
 def calc_number_pow(num):
     # считает степень и основание
+    # np.floor(np.log10(np.abs(x))).astype(int)
     pow = 0
     while num > 10:
         num = num / 10
