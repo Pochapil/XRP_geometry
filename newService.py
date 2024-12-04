@@ -3,11 +3,17 @@ import numpy as np
 # from numba import jit
 
 import config
+from geometry import matrix
 
 
-def get_dRe_Re(disk_min_theta_angle):
-    return config.dRdisk_div_Rdisk * (1 + 3 * np.cos(disk_min_theta_angle) ** 2) ** (1 / 2) / np.sin(
-        disk_min_theta_angle)
+def get_dRe_Re(disk_min_theta_angle, disk_min_phi_angle=0):
+    disk_xyz = matrix.get_cartesian_from_spherical(1, disk_min_theta_angle, disk_min_phi_angle)
+    n_xyz = matrix.newE_n(disk_min_phi_angle, disk_min_theta_angle)
+    cos_gamma = np.dot(disk_xyz, n_xyz) / (np.linalg.norm(n_xyz) * np.linalg.norm(disk_xyz))  # - AC
+    # cos_gamma = 1 - AB
+    return 0.25  # - AC
+    # return config.dRdisk_div_Rdisk * cos_gamma * (1 + 3 * np.cos(disk_min_theta_angle) ** 2) ** (1 / 2) / np.sin(
+    #     disk_min_theta_angle)
 
 
 # @jit

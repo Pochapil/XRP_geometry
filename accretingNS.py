@@ -47,11 +47,13 @@ class AccretingPulsarConfiguration:
         # зависит от азимутов колонки и магнитного угла
         phi_range = np.linspace(-np.pi * a_portion, np.pi * a_portion, config.N_phi_accretion) + np.deg2rad(phi_0)
         self.disk_min_theta_angle = np.min(np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(phi_range)))
+        idx = np.argmin(np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(phi_range)))
+        self.disk_min_phi_angle = phi_range[idx]
         # print(f'{self.disk_min_theta_angle =}')
 
         # радиус на котором лежат внутренние дипольные линии
         R_e = self.R_disk / ((np.sin(self.disk_min_theta_angle)) ** 2)
-        self.dRe_div_Re = newService.get_dRe_Re(self.disk_min_theta_angle)
+        self.dRe_div_Re = newService.get_dRe_Re(self.disk_min_theta_angle, self.disk_min_phi_angle)
         # print(f'{self.dRe_div_Re=}')
         # -------------------------------------------------- columns -------------------------------------------------
         self.top_column = AccretionColumn(R_e, self.dRe_div_Re, mu, self.beta_mu, mc2, self.a_portion, self.phi_0,
