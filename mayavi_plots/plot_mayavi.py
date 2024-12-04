@@ -230,6 +230,7 @@ class Visualization(HasTraits):
 
     R_e_val = Float(0)
     ksi_val = Float(0)
+    R_disk_val = Float(0)
 
     slider_distance_init_val = 100
 
@@ -274,6 +275,7 @@ class Visualization(HasTraits):
 
         self.R_e_val = curr_configuration.top_column.R_e / config.R_ns
         self.ksi_val = curr_configuration.top_column.ksi_shock
+        self.R_disk_val = curr_configuration.R_disk / config.R_ns
 
         self.R_e_for_distance = self.R_e_val
 
@@ -419,7 +421,7 @@ class Visualization(HasTraits):
         # r_min = self.curr_configuration.top_column.R_e / config.R_ns * np.sin(
         #     np.pi / 2 - np.deg2rad(self.curr_configuration.beta_mu)) ** 2
 
-        r_max = 4 * r_min
+        r_max = 1.25 * r_min
         r, phi = np.mgrid[r_min:r_max:100j, 0:2 * np.pi:100j]
         x = r * np.cos(phi)
         y = r * np.sin(phi)
@@ -433,7 +435,7 @@ class Visualization(HasTraits):
         r_min = self.curr_configuration.R_disk / config.R_ns
         # self.curr_configuration.top_column.R_e / config.R_ns * np.sin(
         # np.pi / 2 - np.deg2rad(self.curr_configuration.beta_mu)) ** 2
-        r_max = 4 * r_min
+        r_max = 1.25 * r_min
         radius = r_max
         z = np.linspace(-accretion_disc_con_val * radius, accretion_disc_con_val * radius, config.N_theta_accretion)
         phi = np.linspace(0, 2 * np.pi, config.N_phi_accretion)
@@ -629,6 +631,7 @@ class Visualization(HasTraits):
         self.R_e_val = self.curr_configuration.top_column.R_e / config.R_ns
         self.ksi_val = self.curr_configuration.top_column.ksi_shock
         self.slider_distance = max(self.ksi_val * 4, self.slider_distance)
+        self.R_disk_val = self.curr_configuration.R_disk / config.R_ns
 
     def update_all(self):
         self.update_accretion_columns()
@@ -806,7 +809,7 @@ class Visualization(HasTraits):
                     ),
                     HGroup('_', 'slider_phase', 'slider_distance'),
                     HGroup('button_magnet_line', 'button_hide_accr_disc', 'button_accr_disc', 'button_animate'),
-                    HGroup('R_e_val', 'ksi_val')
+                    HGroup('R_e_val', 'ksi_val', 'R_disk_val')
                 )
                 )
 
