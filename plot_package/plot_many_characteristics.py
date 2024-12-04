@@ -4,6 +4,7 @@ import scienceplots
 import matplotlib as mpl
 import matplotlib.cm as cm
 import matplotlib.colors as colors
+import matplotlib.lines as mlines
 
 import pathService
 import config
@@ -19,6 +20,15 @@ mpl.rcParams['font.family'] = 'STIXGeneral'
 ticks_labelsize = 18
 mpl.rcParams['xtick.labelsize'] = ticks_labelsize
 mpl.rcParams['ytick.labelsize'] = ticks_labelsize
+
+cmap = mpl.cm.plasma
+# plasma
+# magma
+# inferno
+# 'jet'
+# viridis
+
+mpl.rcParams['image.cmap'] = 'plasma'
 
 
 # plt.rcParams['axes.labelsize'] = 42
@@ -156,7 +166,7 @@ def plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
     # малых значений, которые появляются после добавления а=1
     im = ax['a'].pcolormesh(config.phase_for_plot, np.linspace(0, 1, len(a_portion_arr)), data_to_plot,
                             # norm=colors.LogNorm(vmin=data_to_plot.min(), vmax=data_to_plot.max())
-                            norm=colors.TwoSlopeNorm(0.92, vmin=data_to_plot.min(), vmax=data_to_plot.max())
+                            norm=colors.TwoSlopeNorm(0.9, vmin=data_to_plot.min(), vmax=data_to_plot.max())
                             )
     ax['a'].set_yticks(np.linspace(0, 1, len(a_portion_arr)), np.round(a_portion_arr, 2))
 
@@ -194,6 +204,8 @@ def plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_ar
     marker_dict = {0: '.', 1: '*', 2: '+', 3: '^'}
     file_name = f'L_nu_of_energy_{config.energy_arr[energy_index]:.2f}_KeV_of_surfaces'
 
+    global cmap
+
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
     for a_index, a_portion in enumerate(a_portion_arr):
         for mc2_index, mc2 in enumerate(mc2_arr):
@@ -227,11 +239,11 @@ def plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_ar
             colors = (np.array(colors_sort_phi_0)) / np.max(colors_sort_phi_0)
 
             if marker_index == 0:
-                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, color=cm.jet(colors))
+                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, color=cmap(colors))
                 # ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=30, facecolors='none', edgecolors=cm.jet(colors))
             else:
                 ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, marker=marker_dict[marker_index % 4],
-                                color=cm.jet(colors))
+                                color=cmap(colors))
 
             ax['a'].plot(x_sort_phi_0, y_sort_phi_0, color='black', alpha=0.2, linestyle=line_style[mc2_index])
 
@@ -249,7 +261,6 @@ def plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_ar
     # ax['a'].legend()
 
     bounds = phi_0_arr.copy()
-    cmap = mpl.cm.jet
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', pad=0.01)
     cb.set_label(label=r'$\varphi_0 ~ [^\circ]$', fontsize=24)
@@ -268,6 +279,9 @@ def plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr):
     line_style = ['-', '--']
     marker_dict = {0: '.', 1: '*', 2: '+', 3: '^'}
 
+    # cmap = mpl.cm.viridis
+    global cmap
+
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
     for a_index, a_portion in enumerate(a_portion_arr):
         for mc2_index, mc2 in enumerate(mc2_arr):
@@ -285,11 +299,11 @@ def plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr):
             colors = (np.array(colors_sort_phi_0)) / np.max(colors_sort_phi_0)
 
             if marker_index == 0:
-                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, color=cm.jet(colors))
+                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, color=cmap(colors))
                 # ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, facecolors='none', edgecolors=cm.jet(colors))
             else:
                 ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, marker=marker_dict[marker_index % 4],
-                                color=cm.jet(colors))
+                                color=cmap(colors))
 
             ax['a'].plot(x_sort_phi_0, y_sort_phi_0, color='black', alpha=0.2, linestyle=line_style[mc2_index])
 
@@ -302,12 +316,113 @@ def plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr):
     ax['a'].set_xscale('log')
 
     bounds = phi_0_arr.copy()
-    cmap = mpl.cm.jet
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', pad=0.01)
     cb.set_label(label=r'$\varphi_0 ~ [^\circ]$', fontsize=24)
 
     prefix_folder = 'PF_to_L/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+
+    file_name = f'theta={theta_obs} beta_mu={beta_mu} All_PF_to_L.png'
+    save.save_figure(fig, save_dir, file_name)
+
+
+def plot_PF_to_L_const_a_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0_arr):
+    '''то же самое что plot_masses_PF_L_nu только рисуем от L_iso'''
+    marker_index = 0
+    line_style = ['--']
+    marker_dict = {0: '.', 1: '*', 2: '+', 3: '^', 4: "o", 5: "d", 6: "s", 7: "X"}
+
+    global cmap
+    legend_arr = [0] * len(mc2_arr)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    for mc2_index, mc2 in enumerate(mc2_arr):
+        full_dict = {}
+        for phi_0_index, phi_0 in enumerate(phi_0_arr):
+            L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+            PF = newService.get_PF(L_total)
+            full_dict[np.mean(L_total)] = (PF, phi_0_arr[phi_0_index])
+
+            # в словаере лежит среднее : (PF, phi_0). сортируем его по значению phi_0
+            list_tuples = sorted(full_dict.items(), key=lambda item: item[1][1])
+            x_sort_phi_0, y_sort_phi_0 = zip(*list_tuples)
+            y_sort_phi_0, colors_sort_phi_0 = zip(*y_sort_phi_0)
+
+            colors = (np.array(colors_sort_phi_0)) / np.max(colors_sort_phi_0)
+
+            ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, marker=marker_dict[marker_index], color=cmap(colors))
+            ax['a'].plot(x_sort_phi_0, y_sort_phi_0, color='black', alpha=0.2, linestyle=line_style[0])
+
+        legend_arr[mc2_index] = mlines.Line2D([], [], color=cmap(colors)[2], marker=marker_dict[marker_index],
+                                              markersize=15, linestyle='--', label=f'm={mc2}', alpha=0.2)
+        marker_index += 1
+
+    x_axis_label = r'$L_{\rm iso}$' + r'$\rm [erg/s]$'
+    y_axis_label = r'$PF$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+    ax['a'].set_xscale('log')
+
+    plt.legend(handles=legend_arr)
+    bounds = phi_0_arr.copy()
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+    cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', pad=0.01)
+    cb.set_label(label=r'$\varphi_0 ~ [^\circ]$', fontsize=24)
+
+    prefix_folder = 'PF_to_L_const_a/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=a_portion,
+                                   phi_0=None, prefix_folder=prefix_folder)
+
+    file_name = f'theta={theta_obs} beta_mu={beta_mu} All_PF_to_L.png'
+    save.save_figure(fig, save_dir, file_name)
+
+
+def plot_PF_to_L_const_a_const_phi0_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
+    '''то же самое что plot_masses_PF_L_nu только рисуем от L_iso'''
+    marker_index = 0
+    line_style = ['--']
+    marker_dict = {0: '.', 1: '*', 2: '+', 3: '^', 4: "o", 5: "d", 6: "s", 7: "X"}
+
+    # cmap = mpl.cm.plasma
+    global cmap
+    legend_arr = [0] * len(a_portion_arr)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    for a_portion_index, a_portion in enumerate(a_portion_arr):
+        full_dict = {}
+        for mc2_index, mc2 in enumerate(mc2_arr):
+            L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+            PF = newService.get_PF(L_total)
+            full_dict[np.mean(L_total)] = (PF, mc2)
+
+        # в словаере лежит среднее : (PF, mc2). сортируем его по значению mc2
+        list_tuples = sorted(full_dict.items(), key=lambda item: item[1][1])
+        x_sort_mc2, y_sort_mc2 = zip(*list_tuples)
+        y_sort_mc2, colors_sort_mc2 = zip(*y_sort_mc2)
+
+        colors = (np.array(colors_sort_mc2)) / np.max(colors_sort_mc2)
+
+        ax['a'].scatter(x_sort_mc2, y_sort_mc2, s=100, marker=marker_dict[a_portion_index], color=cmap(colors))
+        ax['a'].plot(x_sort_mc2, y_sort_mc2, color='black', alpha=0.2, linestyle=line_style[0])
+
+        legend_arr[a_portion_index] = mlines.Line2D([], [], color=cmap(colors)[1], marker=marker_dict[a_portion_index],
+                                                    markersize=15, linestyle='--', label=f'a={a_portion}')
+
+    x_axis_label = r'$L_{\rm iso}$' + r'$\rm [erg/s]$'
+    y_axis_label = r'$PF$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+    ax['a'].set_xscale('log')
+
+    plt.legend(handles=legend_arr)
+    bounds = mc2_arr.copy()
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+    cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', pad=0.01)
+    cb.set_label(label=r'$\dot{m}$', fontsize=24)
+
+    prefix_folder = 'PF_to_L_const_a_diff_m/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
                                    phi_0=None, prefix_folder=prefix_folder)
 
@@ -625,6 +740,26 @@ def plot_PF_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
     plt.show()
 
 
+def plot_ksi_to_beta(mu, theta_obs, beta_mu_arr, mc2, a_portion, phi_0):
+    ksi_arr = np.empty(len(beta_mu_arr))
+    for i, beta_mu in enumerate(beta_mu_arr):
+        ksi_arr[i] = save.load_ksi_shock(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+    ax['a'].plot(beta_mu_arr, ksi_arr, color='black')
+
+    x_axis_label = r'$\chi [^\circ]$'
+    y_axis_label = r'$\xi$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    prefix_folder = 'ksi_to_beta/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=None, mc2=mc2, a_portion=a_portion,
+                                   phi_0=phi_0, prefix_folder=prefix_folder)
+    file_name = f'ksi_to_beta'
+    save.save_figure(fig, save_dir, file_name)
+
+
 if __name__ == '__main__':
     mu = 0.1e31
     beta_mu = 40
@@ -633,6 +768,30 @@ if __name__ == '__main__':
     phi_0 = 0
     theta_obs = 20
 
+
+    # ---------------------- $PF(Liso)$ for $a=const$
+    theta_obs = 40
+    beta_mu = 20
+    mc2_arr = [20, 40, 60, 80, 100, 120]
+    a_portion_arr = [0.22, 0.44, 0.66]
+    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    for a_portion in a_portion_arr:
+        plot_PF_to_L_const_a_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0_arr)
+    #
+    theta_obs = 40
+    beta_mu = 20
+    mc2_arr = [20, 40, 60, 80, 100, 120]
+    a_portion_arr = [0.22, 0.44, 0.66]
+    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    plot_PF_to_L_const_a_const_phi0_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
+    #
+    # theta_obs = 40
+    # beta_mu_arr = [10 * i for i in range(0, 9)]
+    # mc2 = 100
+    # a_portion = 0.66
+    # phi_0 = 0
+
+    # plot_ksi_to_beta(mu, theta_obs, beta_mu_arr, mc2, a_portion, phi_0)
 
     def plot_sky_map_as_in_art():
         beta_mu = 20
@@ -713,6 +872,34 @@ if __name__ == '__main__':
         theta_obs = 20
         beta_mu = 60
         mc2 = 30
+        a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
+        phi_0 = 0
+        plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+
+        theta_obs = 40
+        beta_mu = 20
+        mc2 = 30
+        a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
+        phi_0 = 0
+        plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+
+        theta_obs = 40
+        beta_mu = 20
+        mc2 = 100
+        a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
+        phi_0 = 0
+        plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+
+        theta_obs = 60
+        beta_mu = 20
+        mc2 = 30
+        a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
+        phi_0 = 0
+        plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+
+        theta_obs = 60
+        beta_mu = 20
+        mc2 = 100
         a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
         phi_0 = 0
         plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
@@ -812,13 +999,21 @@ if __name__ == '__main__':
     phi_0 = 0
     # plot_PF_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)  # wtf ???
 
+    # theta_obs_arr = [20, 60, 80]
+    # beta_mu = 20
+    # mc2 = 30
+    # a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
+    # phi_0 = 0
+    # for theta_obs in theta_obs_arr:
+    # plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+
     # plot_sky_map_as_in_art()
     # plot_L_to_phi_0_as_in_art()
     # plot_L_to_mc2_as_in_art()
     # plot_L_to_a_portion_as_in_art()
     # plot_masses_PF_L_nu_as_in_art()
     # plot_PF_contour_as_in_art()
-    plot_table_as_in_art()
+    # plot_table_as_in_art()
 
     # ----- old --------
     # beta_mu = 60
