@@ -5,6 +5,7 @@ import matplotlib as mpl
 import matplotlib.cm as cm
 import matplotlib.colors as colors
 import matplotlib.lines as mlines
+import scipy.interpolate
 
 import pathService
 import config
@@ -21,14 +22,14 @@ ticks_labelsize = 18
 mpl.rcParams['xtick.labelsize'] = ticks_labelsize
 mpl.rcParams['ytick.labelsize'] = ticks_labelsize
 
-cmap = mpl.cm.plasma
+cmap = mpl.cm.magma
 # plasma
 # magma
 # inferno
 # 'jet'
 # viridis
-
-mpl.rcParams['image.cmap'] = 'plasma'
+# twilight_shifted
+mpl.rcParams['image.cmap'] = 'magma'
 
 
 # plt.rcParams['axes.labelsize'] = 42
@@ -83,10 +84,10 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
 
     fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
     im = ax['a'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot, levels=30)
-    ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='white', marker='*', s=300)
-    ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='white', marker='*', s=300)
-    ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='black', marker='*', s=100)
-    ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='black', marker='*', s=100)
+    # ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='white', marker='*', s=300)
+    # ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='white', marker='*', s=300)
+    # ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='black', marker='*', s=100)
+    # ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='black', marker='*', s=100)
 
     x_axis_label = r'$\Phi$'
     y_axis_label = r'$\theta_{\rm obs} \, [^{\circ}]$'
@@ -749,7 +750,7 @@ def plot_ksi_to_beta(mu, theta_obs, beta_mu_arr, mc2, a_portion, phi_0):
     ax['a'].plot(beta_mu_arr, ksi_arr, color='black')
 
     x_axis_label = r'$\chi [^\circ]$'
-    y_axis_label = r'$\xi$'
+    y_axis_label = r'$\xi_{\rm s}$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
 
@@ -757,6 +758,95 @@ def plot_ksi_to_beta(mu, theta_obs, beta_mu_arr, mc2, a_portion, phi_0):
     save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=None, mc2=mc2, a_portion=a_portion,
                                    phi_0=phi_0, prefix_folder=prefix_folder)
     file_name = f'ksi_to_beta'
+    save.save_figure(fig, save_dir, file_name)
+
+
+def plot_L_max_phase_to_m_to_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
+    '''
+    max phase position.
+    контуры равной фазы максимума
+    :return:
+    '''
+
+    # mc2_arr = [10, 30, 60, 80, 100, 130, 160]
+    # a_portion_arr = [0.11, 0.22, 0.33, 0.44, 0.55, 0.66]
+
+    phase = np.linspace(0, 1, config.N_phase)
+    max_phase_idx_data = np.zeros((len(a_portion_arr), len(mc2_arr)))
+
+    for i, a_portion in enumerate(a_portion_arr):
+        for j, mc2 in enumerate(mc2_arr):
+            L = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+            max_idx = np.argmax(L)
+            max_phase_idx_data[i, j] = phase[max_idx]
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+
+    # im = ax['a'].contourf(mc2_arr, a_portion_arr, max_phase_idx_data)
+    im = ax['a'].contourf(np.linspace(0, 1, len(mc2_arr)), np.linspace(0, 1, len(a_portion_arr)), max_phase_idx_data)
+    ax['a'].set_xticks(np.linspace(0, 1, len(mc2_arr)), mc2_arr)
+    ax['a'].set_yticks(np.linspace(0, 1, len(a_portion_arr)), a_portion_arr)
+
+    # ax.contour(mc2_arr, a_portion_arr, max_phase_idx_data)
+    clb = plt.colorbar(im, pad=0.01)
+    clb.set_label(r'$\Phi_{max}$', fontsize=26)
+
+    x_axis_label = r'$\dot{m}$'
+    y_axis_label = r'$a$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    prefix_folder = 'L_max_phase/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
+                                   phi_0=phi_0, prefix_folder=prefix_folder)
+    file_name = f'contour_max'
+    save.save_figure(fig, save_dir, file_name)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+    # im = ax['a'].pcolormesh(mc2_arr, a_portion_arr, max_phase_idx_data)
+    im = ax['a'].pcolormesh(np.linspace(0, 1, len(mc2_arr)), np.linspace(0, 1, len(a_portion_arr)), max_phase_idx_data)
+    ax['a'].set_xticks(np.linspace(0, 1, len(mc2_arr)), mc2_arr)
+    ax['a'].set_yticks(np.linspace(0, 1, len(a_portion_arr)), a_portion_arr)
+    # ax.contour(mc2_arr, a_portion_arr, max_phase_idx_data, colors='k')
+    clb = plt.colorbar(im, pad=0.01)
+    clb.set_label(r'$\Phi_{max}$', fontsize=26)
+
+    x_axis_label = r'$\dot{m}$'
+    y_axis_label = r'$a$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    prefix_folder = 'L_max_phase/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
+                                   phi_0=phi_0, prefix_folder=prefix_folder)
+    file_name = f'colormesh_max'
+    save.save_figure(fig, save_dir, file_name)
+
+    newpoints = 20
+    xq, yq = np.linspace(min(mc2_arr), max(mc2_arr), newpoints), \
+             np.linspace(min(a_portion_arr), max(a_portion_arr), newpoints)
+    f = scipy.interpolate.interp2d(mc2_arr, a_portion_arr, max_phase_idx_data, kind='cubic')
+    interpolate_data = f(xq, yq)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+    im = ax['a'].contourf(xq, yq, interpolate_data)
+    # im = ax['a'].contourf(np.linspace(0, 1, len(xq)), np.linspace(0, 1, len(yq)), interpolate_data)
+    # ax['a'].set_xticks(np.linspace(0, 1, len(xq)), xq)
+    # ax['a'].set_yticks(np.linspace(0, 1, len(yq)), yq)
+
+    clb = plt.colorbar(im, pad=0.01)
+    clb.set_label(r'$\Phi_{max}$', fontsize=26)
+
+    x_axis_label = r'$\dot{m}$'
+    y_axis_label = r'$a$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+    # fig.suptitle(figure_title, fontsize=22)
+
+    prefix_folder = 'L_max_phase/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
+                                   phi_0=phi_0, prefix_folder=prefix_folder)
+    file_name = f'contour_max_interpolate'
     save.save_figure(fig, save_dir, file_name)
 
 
@@ -768,7 +858,6 @@ if __name__ == '__main__':
     phi_0 = 0
     theta_obs = 20
 
-
     # ---------------------- $PF(Liso)$ for $a=const$
     theta_obs = 40
     beta_mu = 20
@@ -776,22 +865,32 @@ if __name__ == '__main__':
     a_portion_arr = [0.22, 0.44, 0.66]
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
     for a_portion in a_portion_arr:
-        plot_PF_to_L_const_a_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0_arr)
+        # plot_PF_to_L_const_a_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0_arr)
+        ...
     #
     theta_obs = 40
     beta_mu = 20
     mc2_arr = [20, 40, 60, 80, 100, 120]
     a_portion_arr = [0.22, 0.44, 0.66]
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    plot_PF_to_L_const_a_const_phi0_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
-    #
-    # theta_obs = 40
-    # beta_mu_arr = [10 * i for i in range(0, 9)]
-    # mc2 = 100
-    # a_portion = 0.66
-    # phi_0 = 0
+    # plot_PF_to_L_const_a_const_phi0_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
 
+    theta_obs = 20
+    beta_mu_arr = [10 * i for i in range(0, 9)]
+    mc2 = 30
+    a_portion = 0.66
+    phi_0 = 0
     # plot_ksi_to_beta(mu, theta_obs, beta_mu_arr, mc2, a_portion, phi_0)
+
+    # -------------------
+    theta_obs = 40
+    beta_mu = 20
+    mc2_arr = [20, 40, 60, 80, 100, 120]
+    a_portion_arr = [0.22, 0.44, 0.66, 1]
+    phi_0 = 0
+    # plot_L_max_phase_to_m_to_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
+    theta_obs = 40
+
 
     def plot_sky_map_as_in_art():
         beta_mu = 20
@@ -988,6 +1087,10 @@ if __name__ == '__main__':
         phi_0 = 0
         plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
+        theta_obs = 40
+        beta_mu = 80
+        mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+        phi_0 = 0
         a_portion_arr = [0.22, 0.44, 0.66, 1]
         plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
 
