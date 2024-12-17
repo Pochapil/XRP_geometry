@@ -63,11 +63,11 @@ class AccretingPulsarConfiguration:
                                           column_type=column_surf_types['bot'])
 
         # ------------------------------------------------ magnet lines ------------------------------------------------
-        self.top_magnet_lines = MagnetLine(self.top_column.R_e_inner_surface, self.beta_mu,
+        self.top_magnet_lines = MagnetLine(self.top_column.R_e_inner_surface, self.R_disk, self.beta_mu,
                                            self.top_column.inner_surface.phi_range,
                                            self.top_column.inner_surface.theta_range[-1], self.top_column.column_type)
 
-        self.bot_magnet_lines = MagnetLine(self.top_column.R_e_inner_surface, self.beta_mu,
+        self.bot_magnet_lines = MagnetLine(self.top_column.R_e_inner_surface, self.R_disk, self.beta_mu,
                                            self.top_column.inner_surface.phi_range,
                                            self.top_column.inner_surface.theta_range[-1], self.bot_column.column_type)
 
@@ -233,7 +233,7 @@ class MagnetLine:
     '''класс магнитных поверхностей (вещество над ударной волной) для рассеяния.
         знает распределение сетки по theta phi. начинается над колонкой.'''
 
-    def __init__(self, R_e, beta_mu, top_column_phi_range, top_column_theta_end, column_type):
+    def __init__(self, R_e, R_disk, beta_mu, top_column_phi_range, top_column_theta_end, column_type):
 
         '''
         top_column_theta_end = для ВНУТРЕННЕЙ поверхности пока что!!!!
@@ -260,11 +260,18 @@ class MagnetLine:
         self.mask_array = np.zeros((config.N_phi_accretion, config.N_theta_accretion)).astype(bool)
         # mask = np.zeros_like(x).astype(bool)
         for i, phi in enumerate(self.phi_range):
+            flag_cut_r = False
             for j, theta in enumerate(self.theta_range):
                 theta_end = np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(phi))
                 # ограничиваю диском True - значит не надо использовать эту площадку
                 if theta > theta_end:
                     self.mask_array[i][j] = True
+                if flag_cut_r:
+                    self.mask_array[i][j] = True
+                else:
+                    if self.surf_R_e * np.sin(theta) ** 2 > 1.25 * R_disk:  # 38.17 * config.R_ns
+                        flag_cut_r = True
+                        self.mask_array[i][j] = True
 
         if column_type == column_surf_types['bot']:
             # для нижней колонки меняем phi, theta. mask_array будет такой же
