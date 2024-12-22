@@ -2,6 +2,7 @@ import numpy as np
 import time
 from numba import njit
 
+import accretingNS
 import config
 import newService
 from geometry import matrix
@@ -41,7 +42,7 @@ def intersection_with_sphere(surface, origin_phi, origin_theta, direction_vector
     return False
 
 
-@njit
+@njit(cache=True, fastmath=True)
 def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_vector):
     '''
         очень затратная операция - необходимо параллелить
@@ -87,6 +88,7 @@ def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_ve
 def get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector, solution):
     # ищем положительные корни и при этом вещественные
     # if solution.real > 0 and solution.imag == 0:
+    # return -pi/2, pi/2 angles
     if solution.real > 0 and np.abs(solution.imag) < 1e-8:
         # direction - направление на наблюдателя
         direction_x, direction_y, direction_z = matrix.vec_to_coord(obs_vector)
@@ -198,13 +200,23 @@ def get_tau_for_scatter_with_cos(theta_range, R_e_emission_surf, M_accretion_rat
     return tau
 
 
-def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, R_e_of_atenuation_surf, beta_mu,
-                        M_accretion_rate, top_column, bot_column, a_portion, dRe_div_Re):
+def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions,
+                        curr_configuration: accretingNS.AccretingPulsarConfiguration):
+    # срочно ввести учет маски магнитных линий !!!!
     '''
-    считаем коэффициент ослабления tau
-    R_e_of_atenuation_surf = inner surf!!!!!
-    я беру пересечения только с внутренней (пока что)
+        считаем коэффициент ослабления tau
+        R_e_of_atenuation_surf = inner surf!!!!!
+        я беру пересечения только с внутренней (пока что)
     '''
+
+    R_e_of_atenuation_surf = curr_configuration.top_column.R_e
+    beta_mu = curr_configuration.beta_mu
+    M_accretion_rate = curr_configuration.M_accretion_rate
+    a_portion = curr_configuration.a_portion
+    dRe_div_Re = curr_configuration.dRe_div_Re
+    top_column = curr_configuration.top_column.inner_surface
+    bot_column = curr_configuration.bot_column.inner_surface
+
     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
     # здесь радиус основания, радиус излучающей так как r = для положения излучающей
     r = surface.surf_R_e / config.R_ns * np.sin(origin_theta) ** 2
@@ -221,7 +233,7 @@ def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, 
             top_column_intersect_theta_correct = intersect_theta < theta_end
             bot_column_intersect_theta_correct = intersect_theta > theta_end
 
-            # условия пересечений фи
+            # условия пересечений фи - такие же как и у колонки. можно их вызвать
             top_column_intersect_phi = get_intersection_phi_with_column(top_column, intersect_phi)
             bot_column_intersect_phi = get_intersection_phi_with_column(bot_column, intersect_phi)
 
@@ -229,7 +241,24 @@ def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, 
             intersection_condition = (top_column_intersect_phi and top_column_intersect_theta_correct) or (
                     bot_column_intersect_phi and bot_column_intersect_theta_correct)
 
-            # если есть пересечение считаем коэффициент ослабления
+            if intersection_condition:
+                # учет маски!!
+                phi_range = np.abs(curr_configuration.top_magnet_lines.phi_range - intersect_phi)
+                closest_id = np.argmin(phi_range)
+                max_theta = curr_configuration.top_magnet_lines.theta_range[
+                    ~ curr_configuration.top_magnet_lines.mask_array[closest_id]]
+                if max_theta.shape[0] > 0:
+                    max_theta = max_theta[-1]
+
+                    top_column_intersect_theta_correct = intersect_theta < max_theta
+                    bot_column_intersect_theta_correct = intersect_theta > np.pi - max_theta
+
+                    intersection_condition = (top_column_intersect_phi and top_column_intersect_theta_correct) or (
+                            bot_column_intersect_phi and bot_column_intersect_theta_correct)
+                else:
+                    intersection_condition = False
+
+                    # если есть пересечение считаем коэффициент ослабления
             if intersection_condition:
                 tau = get_tau_for_opacity(intersect_phi, intersect_theta, R_e_of_atenuation_surf, M_accretion_rate,
                                           a_portion, obs_vector, dRe_div_Re)
@@ -237,7 +266,7 @@ def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, 
                     return np.exp(-1 * tau)
                 else:
                     return 1
-    # если не нашли пересечений то ослабления нет
+    # если не нашли пересечений, то ослабления нет
     return 1
 
 

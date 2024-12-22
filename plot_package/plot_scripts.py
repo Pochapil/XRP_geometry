@@ -10,7 +10,7 @@ import save
 plt.style.use(['science', 'notebook', 'grid'])
 mpl.rcParams['mathtext.fontset'] = 'cm'
 mpl.rcParams['font.family'] = 'STIXGeneral'
-mpl.use('Agg')
+mpl.use('Agg')  # вроде ускоряет ??
 
 
 def plot_total_luminosity_of_surfaces(L_surfs, save_dir=None):
