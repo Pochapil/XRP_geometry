@@ -215,12 +215,7 @@ def calc_shadows_and_tau(curr_configuration: accretingNS.AccretingPulsarConfigur
                             # если затмения нет то считаем ослабление тау с внутренними магнитными линиями!!
                             tensor_tau[phase_index, phi_index, theta_index] = \
                                 shadows.get_tau_with_dipole(surface, phi_index, theta_index, obs_matrix[phase_index],
-                                                            solutions, curr_configuration.top_column.R_e,
-                                                            curr_configuration.beta_mu,
-                                                            curr_configuration.M_accretion_rate,
-                                                            curr_configuration.top_column.inner_surface,
-                                                            curr_configuration.bot_column.inner_surface,
-                                                            curr_configuration.a_portion, curr_configuration.dRe_div_Re)
+                                                            solutions, curr_configuration)
                             # доп проверка с верхними - пока не считаю - надеюсь что слабо влияют ?? или они учтены но криво
                             # if tensor_tau[phase_index, phi_index, theta_index] == 1:
                             #     if surface.surf_R_e != curr_configuration.R_e:
@@ -310,12 +305,7 @@ def calc_shadows_and_tau_one_dim(curr_configuration, surface, obs_mu, mask_flag=
                         # если затмения нет, то считаем ослабление тау с ВНУТРЕННИМИ (r=R_e) магнитными линиями!!
                         tensor_tau[phi_index, theta_index] = \
                             shadows.get_tau_with_dipole(surface, phi_index, theta_index, obs_mu,
-                                                        solutions, curr_configuration.top_column.R_e,
-                                                        curr_configuration.beta_mu,
-                                                        curr_configuration.M_accretion_rate,
-                                                        curr_configuration.top_column.inner_surface,
-                                                        curr_configuration.bot_column.inner_surface,
-                                                        curr_configuration.a_portion)
+                                                        solutions, curr_configuration)
             else:
                 # если косинус < 0 -> поверхность излучает от наблюдателя и мы не получим вклад в интеграл
                 new_cos_psi_range[phi_index, theta_index] = 0
@@ -544,11 +534,11 @@ if __name__ == '__main__':
     # ------------------------------------------------- start -------------------------------------------------------
     mu = 0.1e31
 
-    theta_obs = 10
+    theta_obs = 70
     beta_mu = 60
 
     mc2 = 100
-    a_portion = 0.22
+    a_portion = 1
     phi_0 = 0
 
-    calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, True, config.ASYNC_FLAG)
+    calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, True, True)
