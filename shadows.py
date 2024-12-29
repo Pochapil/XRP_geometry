@@ -228,37 +228,64 @@ def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions,
         if intersect_phi is not None:
             # из геометрических выводов = конец магнитосферной линии. был вывод в тетрадке этой формулы
             theta_end = np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(intersect_phi))
+            # учет маски!!
+            spherical_R_condition = curr_configuration.top_magnet_lines.surf_R_e * np.sin(
+                intersect_theta) ** 2 < 1.25 * curr_configuration.R_disk
 
             # условия пересечений тета
             top_column_intersect_theta_correct = intersect_theta < theta_end
-            bot_column_intersect_theta_correct = intersect_theta > theta_end
+            bot_column_intersect_theta_correct = intersect_theta > theta_end  # wtf ????????????
 
             # условия пересечений фи - такие же как и у колонки. можно их вызвать
             top_column_intersect_phi = get_intersection_phi_with_column(top_column, intersect_phi)
             bot_column_intersect_phi = get_intersection_phi_with_column(bot_column, intersect_phi)
 
             # условия пересечений с верхней или нижней линией магнитной
-            intersection_condition = (top_column_intersect_phi and top_column_intersect_theta_correct) or (
-                    bot_column_intersect_phi and bot_column_intersect_theta_correct)
+            intersection_condition = ((top_column_intersect_phi and top_column_intersect_theta_correct) or (
+                    bot_column_intersect_phi and bot_column_intersect_theta_correct)) and spherical_R_condition
 
-            if intersection_condition:
-                # учет маски!!
-                phi_range = np.abs(curr_configuration.top_magnet_lines.phi_range - intersect_phi)
-                closest_id = np.argmin(phi_range)
-                max_theta = curr_configuration.top_magnet_lines.theta_range[
-                    ~ curr_configuration.top_magnet_lines.mask_array[closest_id]]
-                if max_theta.shape[0] > 0:
-                    max_theta = max_theta[-1]
+            # if intersection_condition:
+            #     # учет маски!!
+            #
+            #     if top_column_intersect_phi:
+            #         phi_range = curr_configuration.top_magnet_lines.phi_range
+            #     else:  # bot_column_intersect_phi
+            #         phi_range = curr_configuration.bot_magnet_lines.phi_range
+            #
+            #     phi_range_plus = phi_range + 2 * np.pi
+            #     phi_range_minus = phi_range - 2 * np.pi
+            #     phi_range = np.hstack([phi_range, phi_range_plus, phi_range_minus])
+            #
+            #     phi_range = np.abs(phi_range - intersect_phi)
+            #
+            #     closest_id = np.argmin(phi_range) % curr_configuration.top_magnet_lines.phi_range.shape[0]
+            #     # mask_array - общий ???? да
+            #     # ~ потому что тут mask = True -- значит нет линий
+            #     # берем top_mag_lines так как у bot np.pi - theta; и все ок
+            #
+            #     if top_column_intersect_phi:
+            #         theta_arr = curr_configuration.top_magnet_lines.theta_range[
+            #             ~ curr_configuration.top_magnet_lines.mask_array[closest_id]]
+            #     else:
+            #         theta_arr = curr_configuration.bot_magnet_lines.theta_range[
+            #             ~ curr_configuration.top_magnet_lines.mask_array[closest_id]]
+            #
+            #     if theta_arr.shape[0] > 0:
+            #         max_theta = theta_arr[-1]
+            #         # if theta_arr.shape[0] != config.N_theta_accretion:
+            #         #     next_theta = curr_configuration.top_magnet_lines.theta_range[theta_arr.shape[0]]
+            #         #     if next_theta > theta_end:
+            #         #         max_theta = theta_end
+            #
+            #         top_column_intersect_theta_correct = intersect_theta < max_theta
+            #         bot_column_intersect_theta_correct = intersect_theta > max_theta  # np.pi - max_theta ????
+            #
+            #         intersection_condition = (top_column_intersect_phi and top_column_intersect_theta_correct) or (
+            #                 bot_column_intersect_phi and bot_column_intersect_theta_correct)
+            #     else:
+            #         intersection_condition = False
 
-                    top_column_intersect_theta_correct = intersect_theta < max_theta
-                    bot_column_intersect_theta_correct = intersect_theta > np.pi - max_theta
-
-                    intersection_condition = (top_column_intersect_phi and top_column_intersect_theta_correct) or (
-                            bot_column_intersect_phi and bot_column_intersect_theta_correct)
-                else:
-                    intersection_condition = False
-
-                    # если есть пересечение считаем коэффициент ослабления
+            # если есть пересечение считаем коэффициент ослабления
             if intersection_condition:
                 tau = get_tau_for_opacity(intersect_phi, intersect_theta, R_e_of_atenuation_surf, M_accretion_rate,
                                           a_portion, obs_vector, dRe_div_Re)
