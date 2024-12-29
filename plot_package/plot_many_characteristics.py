@@ -84,10 +84,10 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
 
     fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
     im = ax['a'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot, levels=30)
-    # ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='white', marker='*', s=300)
-    # ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='white', marker='*', s=300)
-    # ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='black', marker='*', s=100)
-    # ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='black', marker='*', s=100)
+    ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='white', marker='*', s=300)
+    ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='white', marker='*', s=300)
+    ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='black', marker='*', s=100)
+    ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='black', marker='*', s=100)
 
     x_axis_label = r'$\Phi$'
     y_axis_label = r'$\theta_{\rm obs} \, [^{\circ}]$'
@@ -637,17 +637,18 @@ def plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
 
     fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
 
-    ax['a'].scatter(mc2_arr, R_e_arr, s=30, facecolors='none', edgecolors='red', label=r'$\frac{R_e}{R_*}$')
+    ax['a'].scatter(mc2_arr, R_e_arr, s=30, facecolors='none', edgecolors='red',
+                    label=r'$\xi_{\rm e}$')  # \frac{R_e}{R_*}
     ax['a'].plot(mc2_arr, R_e_arr, color='black', alpha=0.2, linestyle='-')
 
-    ax['a'].scatter(mc2_arr, ksi_shock_arr, s=30, facecolors='none', edgecolors='blue', label=r'$\xi_{s}$')
+    ax['a'].scatter(mc2_arr, ksi_shock_arr, s=30, facecolors='none', edgecolors='blue', label=r'$\xi_{\rm s}$')
     ax['a'].plot(mc2_arr, ksi_shock_arr, color='black', alpha=0.2, linestyle='-')
 
     ax['a'].scatter(mc2_arr, L_x_arr, s=30, facecolors='none', edgecolors='green', label=r'$\frac{L_{\rm x}}{10^{38}}$')
     ax['a'].plot(mc2_arr, L_x_arr, color='black', alpha=0.2, linestyle='-')
 
     x_axis_label = r'$\dot{m}$'
-    y_axis_label = r'$\xi$'
+    y_axis_label = r'$R/R_{*}$'  # \xi
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
     ax['a'].legend()
@@ -689,16 +690,16 @@ def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
                          label=r'$L_{\rm x}$' + ' for ' + f'a={a_portion}')
         ax1['a'].plot(mc2_arr, L_x_arr, color='black', alpha=0.2, linestyle='-')
 
-    ax['a'].scatter(mc2_arr, R_e_arr, s=30, facecolors='none', edgecolors='black', label=r'$\frac{R_e}{R_*}$')
-    ax['a'].plot(mc2_arr, R_e_arr, color='black', alpha=0.2, linestyle='-')
+    # ax['a'].scatter(mc2_arr, R_e_arr, s=30, facecolors='none', edgecolors='black', label=r'$\xi_{\rm e}$')
+    # ax['a'].plot(mc2_arr, R_e_arr, color='black', alpha=0.2, linestyle='-')
 
-    ax['a'].scatter(mc2_arr, R_disk, s=30, color='black', label=r'$\frac{R_{disk}}{R_*}$')
+    ax['a'].scatter(mc2_arr, R_disk, s=30, facecolors='none', edgecolors='black', label=r'$\xi_{\rm disk}$')
     ax['a'].plot(mc2_arr, R_disk, color='black', alpha=0.2, linestyle='-')
 
     ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
 
     x_axis_label = r'$\dot{m}$'
-    y_axis_label = r'$\xi$'
+    y_axis_label = r'$R/R_{*}$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
     ax['a'].legend()
@@ -722,6 +723,38 @@ def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
                                    phi_0=None, prefix_folder=prefix_folder)
     file_name = f'together_a_L_x'
     save.save_figure(fig1, save_dir, file_name)
+
+
+def plot_table_R_disk(mu, theta_obs, beta_mu_arr, a_portion, mc2_arr, phi_0):
+    '''R_e/R_ns от m'''
+    ticks_labelsize = 18
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+
+    for i, beta_mu in enumerate(beta_mu_arr):
+        R_e_arr = np.empty(len(mc2_arr))
+        for j, mc2 in enumerate(mc2_arr):
+            R_e_arr[j] = save.load_R_e(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+
+        ax['a'].scatter(mc2_arr, R_e_arr, s=30, label=r'$\chi = $' + f'{beta_mu}' + r'$^\circ$')
+        ax['a'].plot(mc2_arr, R_e_arr, color='black', alpha=0.2, linestyle='-')
+
+    # ax['a'].scatter(mc2_arr, R_disk, s=30, color='black', label=r'$\frac{R_{disk}}{R_*}$')
+    # ax['a'].plot(mc2_arr, R_disk, color='black', alpha=0.2, linestyle='-')
+
+    ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
+    ax['a'].set_yscale('log')
+
+    x_axis_label = r'$\dot{m}$'
+    y_axis_label = r'$R/R_{*}$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+    ax['a'].legend()
+
+    prefix_folder = 'table/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'R_e'
+    save.save_figure(fig, save_dir, file_name)
 
 
 def plot_PF_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
@@ -850,7 +883,51 @@ def plot_L_max_phase_to_m_to_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, p
     save.save_figure(fig, save_dir, file_name)
 
 
+def plot_a_restrictions():
+    '''
+        отрисовка пределов для а
+    '''
+
+    eps = 1e-5
+    chi_arr = np.linspace(eps, np.pi / 2, 1600, endpoint=False)
+    # cos >
+    # ans = 1 / ((1 + delta) * np.sin(chi_arr) ** 2) - 1 / np.tan(chi_arr) ** 2
+
+    theta_end = np.pi / 2 - chi_arr
+    delta = 0.25
+    delta_arr = [0.05, 0.25, 0.5, 1, 1.5]
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    for delta in delta_arr[::-1]:
+
+        ans = (1 / np.tan(chi_arr) ** 2 * (1 - (1 + delta) * np.sin(theta_end) ** 2) / (
+                (1 + delta) * np.sin(theta_end) ** 2))
+
+        res = np.zeros(ans.shape[0])
+        for i in range(ans.shape[0]):
+            if ans[i] < 0:
+                res[i] = 1
+            elif ans[i] > 1:
+                res[i] = 0
+            else:
+                res[i] = np.arccos(ans[i] ** (1 / 2)) / np.pi
+
+        ax['a'].scatter(np.rad2deg(chi_arr), res, label=r'$\Delta$' + f' = {delta}')
+
+        x_axis_label = r'$\chi ~ [^{\circ}]$'
+        y_axis_label = r'$a$'
+        ax['a'].set_xlabel(x_axis_label, fontsize=24)
+        ax['a'].set_ylabel(y_axis_label, fontsize=24)
+        ax['a'].legend()
+        ax['a'].set_ylim(0, 1.1)
+
+    plt.show()
+
+
 if __name__ == '__main__':
+
+    # plot_a_restrictions()
+
     mu = 0.1e31
     beta_mu = 40
     mc2 = 100
@@ -891,6 +968,49 @@ if __name__ == '__main__':
     # plot_L_max_phase_to_m_to_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
     theta_obs = 40
 
+    beta_mu = 20
+    mc2 = 30
+    a_portion = 0.66
+    phi_0 = 60
+    plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+
+    theta_obs = 40
+    beta_mu = 20
+    mc2 = 30
+    a_portion = 0.66
+    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
+
+    theta_obs = 20
+    beta_mu = 20
+    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+    a_portion = 0.66
+    phi_0 = 20
+    # plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+
+    theta_obs = 20
+    beta_mu = 20
+    mc2 = 100
+    a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
+    phi_0 = 20
+    # plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+
+    theta_obs = 60
+    beta_mu = 20
+    mc2_arr = [30, 100]
+    a_portion_arr = [0.22, 0.66]
+    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+
+    theta_obs = 40
+    beta_mu_arr = [10 * i for i in range(0, 9)]
+    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+    a_portion = 0.44
+    phi_0 = 0
+    # plot_table_R_disk(mu, theta_obs, beta_mu_arr, a_portion, mc2_arr, phi_0)
+
+
+    # plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    # plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
 
     def plot_sky_map_as_in_art():
         beta_mu = 20
@@ -1074,21 +1194,21 @@ if __name__ == '__main__':
 
     def plot_table_as_in_art():
         theta_obs = 40
-        beta_mu = 60
+        beta_mu = 20
         mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
         a_portion = 0.44
         phi_0 = 0
         plot_L_iso_to_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
         theta_obs = 40
-        beta_mu = 60
+        beta_mu = 20
         mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
         a_portion = 0.66
         phi_0 = 0
         plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
         theta_obs = 40
-        beta_mu = 80
+        beta_mu = 20
         mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
         phi_0 = 0
         a_portion_arr = [0.22, 0.44, 0.66, 1]
@@ -1109,6 +1229,15 @@ if __name__ == '__main__':
     # phi_0 = 0
     # for theta_obs in theta_obs_arr:
     # plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+
+    beta_mu = 20
+    mc2 = 30
+    a_portion_arr = [0.22, 0.66]
+    phi_0_arr = [20, 40, 60]
+    for a_portion in a_portion_arr:
+        for phi_0 in phi_0_arr:
+            pass
+            # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
 
     # plot_sky_map_as_in_art()
     # plot_L_to_phi_0_as_in_art()
