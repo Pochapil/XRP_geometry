@@ -857,7 +857,7 @@ def plot_L_max_phase_to_m_to_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, p
 
     newpoints = 20
     xq, yq = np.linspace(min(mc2_arr), max(mc2_arr), newpoints), \
-             np.linspace(min(a_portion_arr), max(a_portion_arr), newpoints)
+        np.linspace(min(a_portion_arr), max(a_portion_arr), newpoints)
     f = scipy.interpolate.interp2d(mc2_arr, a_portion_arr, max_phase_idx_data, kind='cubic')
     interpolate_data = f(xq, yq)
 
@@ -897,9 +897,24 @@ def plot_a_restrictions():
     delta = 0.25
     delta_arr = [0.05, 0.25, 0.5, 1, 1.5]
 
-    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
-    for delta in delta_arr[::-1]:
+    colors = ['black', 'blue', 'red', 'green', 'magenta', 'cyan']
 
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    for delta_ind, delta in enumerate(delta_arr[::-1]):
+
+        ans = (1 / np.tan(chi_arr) ** 2 * (1 - (1 + delta) * np.sin(theta_end) ** 2) / (
+                (1 + delta) * np.sin(theta_end) ** 2))
+
+        chi_05 = np.arccos((1/(1 + delta + eps)) ** (1 / 2))
+        n_arr1 = 100
+        chi_arr1 = np.linspace(eps, chi_05, n_arr1, endpoint=False)
+        n_arr2 = 400
+        chi_arr2 = np.linspace(chi_05 + eps, np.pi / 2, n_arr2, endpoint=False)
+        chi_arr = np.concatenate((chi_arr1, chi_arr2))
+
+        # ax['a'].axvline(x=np.rad2deg(chi_05), color='black', linestyle='--')
+
+        theta_end = np.pi / 2 - chi_arr
         ans = (1 / np.tan(chi_arr) ** 2 * (1 - (1 + delta) * np.sin(theta_end) ** 2) / (
                 (1 + delta) * np.sin(theta_end) ** 2))
 
@@ -912,7 +927,14 @@ def plot_a_restrictions():
             else:
                 res[i] = np.arccos(ans[i] ** (1 / 2)) / np.pi
 
-        ax['a'].scatter(np.rad2deg(chi_arr), res, label=r'$\Delta$' + f' = {delta}')
+        ax['a'].plot(np.rad2deg(chi_arr1), res[:n_arr1], label=r'$\Delta$' + f' = {delta}', color=colors[delta_ind])
+        ax['a'].plot(np.rad2deg(chi_arr2), res[n_arr1:], color=colors[delta_ind])
+        # ax['a'].scatter(np.rad2deg(chi_05), 0.5, color=colors[delta_ind])
+        ax['a'].plot(np.rad2deg([chi_arr1[-1], chi_05 + eps]), [1, 0.5], color=colors[delta_ind], linestyle='--')
+
+
+        # ax['a'].scatter(np.rad2deg(chi_arr), res, label=r'$\Delta$' + f' = {delta}')
+        ax['a'].axhline(y=0.5, color='black', linestyle='--', alpha=0.1)
 
         x_axis_label = r'$\chi ~ [^{\circ}]$'
         y_axis_label = r'$a$'
@@ -923,10 +945,83 @@ def plot_a_restrictions():
 
     plt.show()
 
+def plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
+
+    tensor_tau_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_tau_cols')
+
+    buf = tensor_tau_cols.reshape(1, -1)
+    buf = buf[buf > 0]
+
+    fig, ax = plt.subplot_mosaic('ab', figsize=(18, 6))
+    ax['a'].hist(buf, 30, histtype='bar', rwidth=0.8) # barstacked
+    ax['a'].set_title(r'$\tau$', fontsize=26)
+
+    tensor_alpha_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_alpha_cols')
+
+    buf = tensor_alpha_cols.reshape(1, -1)
+    buf = buf[buf > 0]
+
+    ax['b'].hist(buf, 30, histtype='bar', rwidth=0.8)
+    ax['b'].set_title(r'$\cos \alpha$', fontsize=26)
+
+    fig.suptitle('cols', fontsize=22)
+
+    plt.show()
+
+
+    tensor_tau_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_tau_scatter')
+
+    buf = tensor_tau_cols.reshape(1, -1)
+    buf = buf[buf > 0]
+
+    fig, ax = plt.subplot_mosaic('ab', figsize=(18, 6))
+    ax['a'].hist(buf, 30, histtype='bar', rwidth=0.8) # barstacked
+    ax['a'].set_title(r'$\tau$', fontsize=26)
+
+    tensor_alpha_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_alpha_scatter')
+
+    buf = tensor_alpha_cols.reshape(1, -1)
+    buf = buf[buf > 0]
+
+    ax['b'].hist(buf, 30, histtype='bar', rwidth=0.8)
+    ax['b'].set_title(r'$\cos \alpha$', fontsize=26)
+
+    fig.suptitle('scatter', fontsize=22)
+
+    plt.show()
+
+
+
+
+
+
+    # counts, bin_edges = np.histogram(buf, 20)
+    # bin_centres = (bin_edges[:-1] + bin_edges[1:]) / 2.
+    # err = np.random.rand(bin_centres.size) * 100
+    # ax['a'].errorbar(bin_centres, counts, yerr=err, fmt='o')
+    #
+    # plt.show()
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
 
-    # plot_a_restrictions()
+    plot_a_restrictions()
+
+    mu = 0.1e31
+    theta_obs = 60
+    beta_mu = 70
+    mc2 = 100
+    a_portion = 0.66
+    phi_0 = 0
+
+    plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+
 
     mu = 0.1e31
     beta_mu = 40
@@ -1006,8 +1101,9 @@ if __name__ == '__main__':
     mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
     a_portion = 0.44
     phi_0 = 0
-    # plot_table_R_disk(mu, theta_obs, beta_mu_arr, a_portion, mc2_arr, phi_0)
 
+
+    # plot_table_R_disk(mu, theta_obs, beta_mu_arr, a_portion, mc2_arr, phi_0)
 
     # plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
     # plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
