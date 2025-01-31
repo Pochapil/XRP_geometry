@@ -172,6 +172,7 @@ def calc_shadows_and_tau(curr_configuration: accretingNS.AccretingPulsarConfigur
     # тензор косинусов между нормалью на площадке и направлением на наблюдателя. размер phase x phi x theta
     # умножаем скалярно phi x theta x 3 на phase x 3 (по последнему индексу) и делаем reshape.
     # phase x phi x theta
+    # i,j = phi, theta; l=x,y,z
     cos_psi_rotation_matrix = np.einsum('ijl,tl->tij', surface.array_normal, obs_matrix)
     # print(f'obs_matrix = {np.max(np.linalg.norm(obs_matrix, axis=1))}')
     # print(f'array_normal_max = {np.max(np.linalg.norm(surface.array_normal, axis=2))}')
@@ -182,6 +183,9 @@ def calc_shadows_and_tau(curr_configuration: accretingNS.AccretingPulsarConfigur
     tensor_shadows_columns = np.ones_like(cos_psi_rotation_matrix)
     tensor_tau = np.ones_like(cos_psi_rotation_matrix)
     new_cos_psi_range = cos_psi_rotation_matrix.copy()
+
+    tensor_tau_save = np.empty_like(cos_psi_rotation_matrix)
+    tensor_alpha_save = np.empty_like(cos_psi_rotation_matrix)
 
     if mask_flag:
         mask = np.zeros_like(new_cos_psi_range).astype(bool)
@@ -213,9 +217,15 @@ def calc_shadows_and_tau(curr_configuration: accretingNS.AccretingPulsarConfigur
                                                              curr_configuration.bot_column.inner_surface)
                         if tensor_shadows_columns[phase_index, phi_index, theta_index] > 0:
                             # если затмения нет то считаем ослабление тау с внутренними магнитными линиями!!
-                            tensor_tau[phase_index, phi_index, theta_index] = \
-                                shadows.get_tau_with_dipole(surface, phi_index, theta_index, obs_matrix[phase_index],
-                                                            solutions, curr_configuration)
+                            # здесь нужно запомнить тау и альфа!
+
+                            buf = shadows.get_tau_with_dipole(surface, phi_index, theta_index, obs_matrix[phase_index],
+                                                              solutions, curr_configuration)
+
+                            tensor_tau[phase_index, phi_index, theta_index] = buf[0]
+                            tensor_tau_save[phase_index, phi_index, theta_index] = buf[1]
+                            tensor_alpha_save[phase_index, phi_index, theta_index] = buf[2]
+
                             # доп проверка с верхними - пока не считаю - надеюсь что слабо влияют ?? или они учтены но криво
                             # if tensor_tau[phase_index, phi_index, theta_index] == 1:
                             #     if surface.surf_R_e != curr_configuration.R_e:
@@ -226,7 +236,7 @@ def calc_shadows_and_tau(curr_configuration: accretingNS.AccretingPulsarConfigur
     new_cos_psi_range = new_cos_psi_range * tensor_shadows_NS * tensor_shadows_columns * tensor_tau
     # if tensor_tau[tensor_tau != 1].shape[0] > 0:
     #     print(np.max(tensor_tau[tensor_tau != 1]))
-    return new_cos_psi_range
+    return new_cos_psi_range, tensor_tau_save, tensor_alpha_save
 
 
 def calc_async_with_split(curr_configuration, obs_matrix, surfs_arr, mask_flag):
@@ -355,12 +365,16 @@ def calc_cos_psi(curr_configuration, obs_matrix, surfs_arr, mask_flag, async_fla
     else:
         # в 1 потоке посчитать по каждой поверхности честно в цикле - так и делаю для main_loop
         new_cos_psi_range = np.empty((len(surfs_arr), config.N_phase, config.N_phi_accretion, config.N_theta_accretion))
+        tensor_tau_save = np.empty((len(surfs_arr), config.N_phase, config.N_phi_accretion, config.N_theta_accretion))
+        tensor_alpha_save = np.empty((len(surfs_arr), config.N_phase, config.N_phi_accretion, config.N_theta_accretion))
         for i, surface in enumerate(surfs_arr):
-            new_cos_psi_range[i] = calc_shadows_and_tau(curr_configuration, surface, obs_matrix, mask_flag)
+            new_cos_psi_range[i], tensor_tau_save[i], tensor_alpha_save[i] = calc_shadows_and_tau(curr_configuration,
+                                                                                                  surface, obs_matrix,
+                                                                                                  mask_flag)
     t2 = time.perf_counter()
     if config.print_time_flag:
         print(f'{t2 - t1} seconds new_cos_psi_range')
-    return new_cos_psi_range
+    return new_cos_psi_range, tensor_tau_save, tensor_alpha_save
 
 
 def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, figs_flag=False, async_flag=True):
@@ -411,7 +425,8 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
     if config.print_time_flag:
         print('start calc surfs')
     # расчет матрицы косинусов на каждой фазе
-    new_cos_psi_range_surfs = calc_cos_psi(curr_configuration, obs_matrix, accr_col_surfs, True, async_flag)
+    new_cos_psi_range_surfs, tensor_tau_save, tensor_alpha_save = calc_cos_psi(curr_configuration, obs_matrix,
+                                                                               accr_col_surfs, True, async_flag)
 
     L_surfs = np.empty((4, config.N_phase))
     L_nu_surfs = np.empty((4, config.N_energy, config.N_phase))
@@ -427,6 +442,10 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
 
     PF_L_surfs = newService.get_PF(np.sum(L_surfs, axis=0))
     PF_L_nu_surfs = newService.get_PF(np.sum(L_nu_surfs, axis=0))
+
+    np.save(cur_path_data / 'tensor_tau_cols', tensor_tau_save)
+    np.save(cur_path_data / 'tensor_alpha_cols', tensor_alpha_save)
+
     if config.print_time_flag:
         print('finish calc surfs')
     # plot_package.plot_scripts.plot_L(L_surfs)
@@ -436,7 +455,8 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
         print('start calc scatter')
     magnet_line_surfs = [curr_configuration.top_magnet_lines, curr_configuration.bot_magnet_lines]
 
-    new_cos_psi_range_surfs = calc_cos_psi(curr_configuration, obs_matrix, magnet_line_surfs, True, async_flag)
+    new_cos_psi_range_surfs, tensor_tau_save, tensor_alpha_save = calc_cos_psi(curr_configuration, obs_matrix,
+                                                                               magnet_line_surfs, True, async_flag)
 
     L_scatter = np.empty((2, config.N_phase))
     L_nu_scatter = np.empty((2, config.N_energy, config.N_phase))
@@ -476,6 +496,10 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
 
     PF_L_scatter = newService.get_PF(np.sum(L_scatter, axis=0))
     PF_L_nu_scatter = newService.get_PF(np.sum(L_nu_scatter, axis=0))
+
+    np.save(cur_path_data / 'tensor_tau_scatter', tensor_tau_save)
+    np.save(cur_path_data / 'tensor_alpha_scatter', tensor_alpha_save)
+
     if config.print_time_flag:
         print('finish calc scatter')
     # ------------------------------------------------- save txt -----------------------------------------------------

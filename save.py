@@ -150,3 +150,9 @@ def load_PF_nu(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
 def load_PF(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     L_total = load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     return newService.get_PF(L_total)
+
+
+def load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, file_name):
+    data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    file_name = file_name + '.npy'
+    return np.load(data_folder / file_name)

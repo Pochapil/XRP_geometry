@@ -112,25 +112,21 @@ def get_intersection_phi_with_column(surface, intersect_phi):
     # смотрим чтобы intersect_phi лежал внутри диапазона по фи. + двигаем на +- 2pi
     column_phi_range_begin, column_phi_range_end = surface.phi_range[0], surface.phi_range[-1]
     return (column_phi_range_begin <= intersect_phi <= column_phi_range_end) \
-           or (column_phi_range_begin <= intersect_phi + 2 * np.pi <= column_phi_range_end) \
-           or (column_phi_range_begin <= intersect_phi - 2 * np.pi <= column_phi_range_end)
+        or (column_phi_range_begin <= intersect_phi + 2 * np.pi <= column_phi_range_end) \
+        or (column_phi_range_begin <= intersect_phi - 2 * np.pi <= column_phi_range_end)
 
 
 def check_shadow_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, top_column, bot_column):
     # checks for 1 element area!
     # obs_vector = direction_vector
     '''
-
         принимает на вход массив решений для затмений с колонкой
-
-
-
-       находим пересечение с колонками
+        находим пересечение с колонками
            если пересекается то истина
            если нет то ложь
 
-       корни в магнитной СК - betta_mu
-       '''
+        корни в магнитной СК - betta_mu
+    '''
 
     # origin - откуда бьет луч. площадка на поверхности
     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
@@ -175,6 +171,9 @@ def get_tau_for_opacity(phi, theta, R_e_of_atenuation_surf, M_accretion_rate, a_
     сейчас почти всегда >>1 и ослабление сразу в 0. почти как затмение
 
     очень маленькие cos = 0.005?? - хз вроде уже норм
+
+    + save tau and alpha here in tensors
+
     '''
     # phi, theta - в точке пересечения; R_e =
     normal = matrix.newE_n(phi, theta)
@@ -184,10 +183,10 @@ def get_tau_for_opacity(phi, theta, R_e_of_atenuation_surf, M_accretion_rate, a_
     tau /= (newService.get_A_normal(theta, R_e_of_atenuation_surf, a_portion, dRe_div_Re)
             * newService.get_free_fall_velocity(theta, R_e_of_atenuation_surf))
     # print(f'{tau=}')
-    tau /= cos_alpha
+    # tau /= cos_alpha
     # print(f'{cos_alpha=}')
     # мы уже поняли что будет пересечение. отрицательный угол может получиться поэтому берем модуль
-    return np.abs(tau)
+    return np.abs(tau / cos_alpha), tau, cos_alpha
 
 
 def get_tau_for_scatter_with_cos(theta_range, R_e_emission_surf, M_accretion_rate, a_portion, cos_alpha, dRe_div_Re):
@@ -197,7 +196,7 @@ def get_tau_for_scatter_with_cos(theta_range, R_e_emission_surf, M_accretion_rat
     tau = tau[np.newaxis, :] / cos_alpha
     # print(f'cos_alpha_min = {np.min(cos_alpha)}, cos_alpha_max = {np.max(cos_alpha)}')
     # print(f'tau_min = {np.min(tau)}, max = {np.max(tau)}')
-    return tau
+    return tau  # np.abs?
 
 
 def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions,
@@ -230,7 +229,7 @@ def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions,
             theta_end = np.pi / 2 - np.arctan(np.tan(np.deg2rad(beta_mu)) * np.cos(intersect_phi))
             # учет маски!!
             spherical_R_condition = curr_configuration.top_magnet_lines.surf_R_e * np.sin(
-                intersect_theta) ** 2 < 1.25 * curr_configuration.R_disk
+                intersect_theta) ** 2 < (1 + dRe_div_Re) * curr_configuration.R_disk
 
             # условия пересечений тета
             top_column_intersect_theta_correct = intersect_theta < theta_end
@@ -287,14 +286,18 @@ def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions,
 
             # если есть пересечение считаем коэффициент ослабления
             if intersection_condition:
-                tau = get_tau_for_opacity(intersect_phi, intersect_theta, R_e_of_atenuation_surf, M_accretion_rate,
-                                          a_portion, obs_vector, dRe_div_Re)
-                if tau > config.tau_cutoff:
-                    return np.exp(-1 * tau)
+                tau_cos, tau, cos_alpha = get_tau_for_opacity(intersect_phi, intersect_theta, R_e_of_atenuation_surf,
+                                                              M_accretion_rate,
+                                                              a_portion, obs_vector, dRe_div_Re)
+                # tau = get_tau_for_opacity(intersect_phi, intersect_theta, R_e_of_atenuation_surf, M_accretion_rate,
+                #                           a_portion, obs_vector, dRe_div_Re)
+                if tau_cos > config.tau_cutoff:
+                    return np.exp(-1 * tau_cos), tau, np.abs(cos_alpha)
                 else:
-                    return 1
+                    # pass
+                    return 1, 0, -1
     # если не нашли пересечений, то ослабления нет
-    return 1
+    return 1, 0, -1
 
 
 if __name__ == '__main__':
