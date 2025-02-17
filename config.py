@@ -32,7 +32,10 @@ k = 0.35  # opacity непрозрачность [см**2 / г]
 
 new_magnet_lines_flag = True
 tau_flag = True
-NS_shadow_flag = True
+
+NS_shadow_flag = True  # считать или нет затмения НЗ
+flag_attenuation_above_shock = True  # считать или нет ослабления над ударной волной
+flag_scatter = True  # считать или нет рассеянное излучение
 
 FLAG_PHI_0_OLD = False  # False - чтобы phi = центр (новый метод). True - в терминах старого phi; начало
 FLAG_R_E_OLD = False  # False - новый способ - учет толщины. True = допущение что толщина = 0
@@ -44,7 +47,9 @@ ASYNC_FLAG = True
 old_path_flag = False
 
 L_nu_flag = False  # флаг для сохранения массивов графиков на каждой энергии. довольно долго (порядка 20 секунд). пока отключил
-print_time_flag = False
+print_time_flag = False  # в main пишет сколько времени заняли промежутки
+
+flag_save_tensors = False  # охраняет данные tensor_tau_cols для того чтобы отразить в диаграмме потом
 
 tau_cutoff = 0
 opacity_above_shock = 0  # непрозрачность вещества над ударной волной: 0 - полностью прозрачное, 1 - непрозрачное
@@ -111,3 +116,6 @@ fi_0_dict = {0.11: 340, 0.165: 330, 0.22: 320, 0.275: 310, 0.33: 300, 0.385: 290
 # val = G * M_ns * M_accretion_rate / ((val_ksi * R_ns) ** 3 * val_n)
 # print(val)
 # print(H/10**11)
+
+if __name__ == '__main__':
+    print(L_edd)

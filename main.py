@@ -200,7 +200,8 @@ def calc_shadows_and_tau(curr_configuration: accretingNS.AccretingPulsarConfigur
                 if new_cos_psi_range[phase_index, phi_index, theta_index] > 0:
                     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
                     # сначала проверяем на затмение НЗ
-                    if shadows.intersection_with_sphere(surface, origin_phi, origin_theta, obs_matrix[phase_index]):
+                    if config.NS_shadow_flag and shadows.intersection_with_sphere(surface, origin_phi, origin_theta,
+                                                                                  obs_matrix[phase_index]):
                         tensor_shadows_NS[phase_index, phi_index, theta_index] = 0
                     # иначе тяжелые вычисления
                     else:
@@ -216,20 +217,22 @@ def calc_shadows_and_tau(curr_configuration: accretingNS.AccretingPulsarConfigur
                                                              curr_configuration.top_column.inner_surface,
                                                              curr_configuration.bot_column.inner_surface)
                         if tensor_shadows_columns[phase_index, phi_index, theta_index] > 0:
-                            # если затмения нет то считаем ослабление тау с внутренними магнитными линиями!!
-                            # здесь нужно запомнить тау и альфа!
+                            if config.flag_attenuation_above_shock:
+                                # если затмения нет то считаем ослабление тау с внутренними магнитными линиями!!
+                                # здесь нужно запомнить тау и альфа!
 
-                            buf = shadows.get_tau_with_dipole(surface, phi_index, theta_index, obs_matrix[phase_index],
-                                                              solutions, curr_configuration)
+                                buf = shadows.get_tau_with_dipole(surface, phi_index, theta_index,
+                                                                  obs_matrix[phase_index],
+                                                                  solutions, curr_configuration)
 
-                            tensor_tau[phase_index, phi_index, theta_index] = buf[0]
-                            tensor_tau_save[phase_index, phi_index, theta_index] = buf[1]
-                            tensor_alpha_save[phase_index, phi_index, theta_index] = buf[2]
+                                tensor_tau[phase_index, phi_index, theta_index] = buf[0]
+                                tensor_tau_save[phase_index, phi_index, theta_index] = buf[1]
+                                tensor_alpha_save[phase_index, phi_index, theta_index] = buf[2]
 
-                            # доп проверка с верхними - пока не считаю - надеюсь что слабо влияют ?? или они учтены но криво
-                            # if tensor_tau[phase_index, phi_index, theta_index] == 1:
-                            #     if surface.surf_R_e != curr_configuration.R_e:
-                            #         ...
+                                # доп проверка с верхними - пока не считаю - надеюсь что слабо влияют ?? или они учтены но криво
+                                # if tensor_tau[phase_index, phi_index, theta_index] == 1:
+                                #     if surface.surf_R_e != curr_configuration.R_e:
+                                #         ...
                 else:
                     # если косинус < 0 -> поверхность излучает от наблюдателя и мы не получим вклад в интеграл
                     new_cos_psi_range[phase_index, phi_index, theta_index] = 0
@@ -443,8 +446,9 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
     PF_L_surfs = newService.get_PF(np.sum(L_surfs, axis=0))
     PF_L_nu_surfs = newService.get_PF(np.sum(L_nu_surfs, axis=0))
 
-    np.save(cur_path_data / 'tensor_tau_cols', tensor_tau_save)
-    np.save(cur_path_data / 'tensor_alpha_cols', tensor_alpha_save)
+    if config.flag_save_tensors:
+        np.save(cur_path_data / 'tensor_tau_cols', tensor_tau_save)
+        np.save(cur_path_data / 'tensor_alpha_cols', tensor_alpha_save)
 
     if config.print_time_flag:
         print('finish calc surfs')
@@ -458,47 +462,50 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
     new_cos_psi_range_surfs, tensor_tau_save, tensor_alpha_save = calc_cos_psi(curr_configuration, obs_matrix,
                                                                                magnet_line_surfs, True, async_flag)
 
-    L_scatter = np.empty((2, config.N_phase))
-    L_nu_scatter = np.empty((2, config.N_energy, config.N_phase))
-    # ------------------------------------------------ L_scatter ----------------------------------------------------
-    for i, magnet_surface in enumerate(magnet_line_surfs):
-        # new_cos_psi_range = calc_shadows_and_tau(curr_configuration, magnet_surface, obs_matrix, True)
-        new_cos_psi_range = new_cos_psi_range_surfs[i]
+    L_scatter = np.zeros((2, config.N_phase))
+    L_nu_scatter = np.zeros((2, config.N_energy, config.N_phase))
 
-        # УЧЕСТЬ угол падения от центра в отражаемой точке!!!!!!!!!
-        xyz_magnet_line = matrix.get_xyz_coord(magnet_surface, normalize=True)  # вектор на отражающую площадку
-        # -xyz потому что берем угол от нормали к НЗ
-        # cos_alpha_matrix - это также матрица необходимая для расчета tau - как накрест лежащие
-        cos_alpha_matrix = np.einsum('ijl,ijl->ij', magnet_surface.array_normal, -xyz_magnet_line)
-        # cos_alpha_1_matrix = np.einsum('ijl,ijl->ij', -surface.array_normal, xyz_magnet_line)
-        new_cos_psi_range *= cos_alpha_matrix  # учитываю угол падения от центра в отражаемой точке!!!!!!!!!
+    if config.flag_scatter:
+        # ------------------------------------------------ L_scatter ----------------------------------------------------
+        for i, magnet_surface in enumerate(magnet_line_surfs):
+            # new_cos_psi_range = calc_shadows_and_tau(curr_configuration, magnet_surface, obs_matrix, True)
+            new_cos_psi_range = new_cos_psi_range_surfs[i]
 
-        # УЧЕСТЬ tau в отражаемой точке!!!!!!!!!
-        # tau_scatter_matrix = np.ones_like(cos_alpha_matrix)
-        tau_scatter_matrix = shadows.get_tau_for_scatter_with_cos(magnet_surface.theta_range, magnet_surface.surf_R_e,
-                                                                  curr_configuration.M_accretion_rate, a_portion,
-                                                                  cos_alpha_matrix, curr_configuration.dRe_div_Re)
+            # УЧЕСТЬ угол падения от центра в отражаемой точке!!!!!!!!!
+            xyz_magnet_line = matrix.get_xyz_coord(magnet_surface, normalize=True)  # вектор на отражающую площадку
+            # -xyz потому что берем угол от нормали к НЗ
+            # cos_alpha_matrix - это также матрица необходимая для расчета tau - как накрест лежащие
+            cos_alpha_matrix = np.einsum('ijl,ijl->ij', magnet_surface.array_normal, -xyz_magnet_line)
+            # cos_alpha_1_matrix = np.einsum('ijl,ijl->ij', -surface.array_normal, xyz_magnet_line)
+            new_cos_psi_range *= cos_alpha_matrix  # учитываю угол падения от центра в отражаемой точке!!!!!!!!!
 
-        L_x = integralsService.calculate_total_luminosity(curr_configuration.top_column.inner_surface,
-                                                          curr_configuration.top_column.T_eff)
-        # надо брать не curr_configuration.top_column.L_x а посчитанный через интеграл! хоть они и отличаются на сильно
-        L_scatter[i] = integralsService.calc_scatter_L(magnet_surface, L_x, new_cos_psi_range, tau_scatter_matrix)
+            # УЧЕСТЬ tau в отражаемой точке!!!!!!!!!
+            # tau_scatter_matrix = np.ones_like(cos_alpha_matrix)
+            tau_scatter_matrix = shadows.get_tau_for_scatter_with_cos(magnet_surface.theta_range,
+                                                                      magnet_surface.surf_R_e,
+                                                                      curr_configuration.M_accretion_rate, a_portion,
+                                                                      cos_alpha_matrix, curr_configuration.dRe_div_Re)
 
-        L_nu_scatter[i] = integralsService.calc_scatter_L_nu(magnet_surface,
-                                                             curr_configuration.top_column.inner_surface,
-                                                             curr_configuration.top_column.T_eff,
-                                                             new_cos_psi_range, tau_scatter_matrix)
+            L_x = integralsService.calculate_total_luminosity(curr_configuration.top_column.inner_surface,
+                                                              curr_configuration.top_column.T_eff)
+            # надо брать не curr_configuration.top_column.L_x а посчитанный через интеграл! хоть они и отличаются на сильно
+            L_scatter[i] = integralsService.calc_scatter_L(magnet_surface, L_x, new_cos_psi_range, tau_scatter_matrix)
+
+            L_nu_scatter[i] = integralsService.calc_scatter_L_nu(magnet_surface,
+                                                                 curr_configuration.top_column.inner_surface,
+                                                                 curr_configuration.top_column.T_eff,
+                                                                 new_cos_psi_range, tau_scatter_matrix)
 
     # plot_package.plot_scripts.plot_L(L_scatter)
-
     L_scatter[np.isnan(L_scatter)] = 0
     L_nu_scatter[np.isnan(L_nu_scatter)] = 0
 
     PF_L_scatter = newService.get_PF(np.sum(L_scatter, axis=0))
     PF_L_nu_scatter = newService.get_PF(np.sum(L_nu_scatter, axis=0))
 
-    np.save(cur_path_data / 'tensor_tau_scatter', tensor_tau_save)
-    np.save(cur_path_data / 'tensor_alpha_scatter', tensor_alpha_save)
+    if config.flag_save_tensors:
+        np.save(cur_path_data / 'tensor_tau_scatter', tensor_tau_save)
+        np.save(cur_path_data / 'tensor_alpha_scatter', tensor_alpha_save)
 
     if config.print_time_flag:
         print('finish calc scatter')
