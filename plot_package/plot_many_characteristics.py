@@ -315,6 +315,7 @@ def plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr):
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
     ax['a'].set_xscale('log')
+    # ax['a'].set_ylim(0, 1.1)
 
     bounds = phi_0_arr.copy()
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
@@ -905,7 +906,7 @@ def plot_a_restrictions():
         ans = (1 / np.tan(chi_arr) ** 2 * (1 - (1 + delta) * np.sin(theta_end) ** 2) / (
                 (1 + delta) * np.sin(theta_end) ** 2))
 
-        chi_05 = np.arccos((1/(1 + delta + eps)) ** (1 / 2))
+        chi_05 = np.arccos((1 / (1 + delta + eps)) ** (1 / 2))
         n_arr1 = 100
         chi_arr1 = np.linspace(eps, chi_05, n_arr1, endpoint=False)
         n_arr2 = 400
@@ -932,7 +933,6 @@ def plot_a_restrictions():
         # ax['a'].scatter(np.rad2deg(chi_05), 0.5, color=colors[delta_ind])
         ax['a'].plot(np.rad2deg([chi_arr1[-1], chi_05 + eps]), [1, 0.5], color=colors[delta_ind], linestyle='--')
 
-
         # ax['a'].scatter(np.rad2deg(chi_arr), res, label=r'$\Delta$' + f' = {delta}')
         ax['a'].axhline(y=0.5, color='black', linestyle='--', alpha=0.1)
 
@@ -945,15 +945,15 @@ def plot_a_restrictions():
 
     plt.show()
 
-def plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
 
+def plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     tensor_tau_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_tau_cols')
 
     buf = tensor_tau_cols.reshape(1, -1)
     buf = buf[buf > 0]
 
     fig, ax = plt.subplot_mosaic('ab', figsize=(18, 6))
-    ax['a'].hist(buf, 30, histtype='bar', rwidth=0.8) # barstacked
+    ax['a'].hist(buf, 30, histtype='bar', rwidth=0.8)  # barstacked
     ax['a'].set_title(r'$\tau$', fontsize=26)
 
     tensor_alpha_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_alpha_cols')
@@ -968,14 +968,13 @@ def plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
 
     plt.show()
 
-
     tensor_tau_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_tau_scatter')
 
     buf = tensor_tau_cols.reshape(1, -1)
     buf = buf[buf > 0]
 
     fig, ax = plt.subplot_mosaic('ab', figsize=(18, 6))
-    ax['a'].hist(buf, 30, histtype='bar', rwidth=0.8) # barstacked
+    ax['a'].hist(buf, 30, histtype='bar', rwidth=0.8)  # barstacked
     ax['a'].set_title(r'$\tau$', fontsize=26)
 
     tensor_alpha_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_alpha_scatter')
@@ -990,11 +989,6 @@ def plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
 
     plt.show()
 
-
-
-
-
-
     # counts, bin_edges = np.histogram(buf, 20)
     # bin_centres = (bin_edges[:-1] + bin_edges[1:]) / 2.
     # err = np.random.rand(bin_centres.size) * 100
@@ -1003,25 +997,178 @@ def plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     # plt.show()
 
 
+def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
+    '''рисует карты неба (излучательный коэффициент в зависимости от положения наблюдателя)
+    по другому - куча профилей. для разных наблюдателей. характеризует как источник излучает в пространство
+    '''
+    ticks_labelsize = 16
+    # try_sky_map(obs_i_angle_arr)
+    # obs_i_angle = np.linspace(0, 180, 19)
+    L_x = save.load_L_x(mu, 10, beta_mu, mc2, a_portion, phi_0)
+
+    def get_data_for_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
+        theta_obs_arr = np.linspace(0, 90, 10).astype(int)
+        data_array = np.empty((len(theta_obs_arr) * 2 - 1, config.N_phase))
+        # roll -- циклическая перестановка - делаем так как симметрическая задача и для угла 180 - theta будет симметрично
+        # для сдвига на полфазы -- можно расчитать только до 90 а потом для других переставить и получить для до 180
+        for i, theta_obs in enumerate(theta_obs_arr):
+            L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+            data_array[i] = L_total
+            # для углов больших 90 будет симметрично относительно 90 (со сдвигом на полфазы)
+            if i != len(theta_obs_arr) - 1:  # wtf -1 ?? - не будем трогать 90, его не дублируем
+                data_array[-i - 1] = np.roll(data_array[i], len(data_array[i]) // 2)
+        return data_array
+
+    data_NS_on_scatter_on = get_data_for_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+
+    config.NS_shadow_flag = False
+    data_NS_off_scatter_on = get_data_for_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+    config.NS_shadow_flag = True
+
+    config.flag_scatter = False
+    data_NS_on_scatter_off = get_data_for_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+    config.flag_scatter = True
+
+    def plot_maps(data_to_plot, prefix_folder, file_name):
+
+        theta_obs_arr_to_plot = np.linspace(0, 180, 19).astype(int)
+
+        fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
+        im = ax['a'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot, levels=30)
+        ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='white', marker='*', s=300)
+        ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='white', marker='*', s=300)
+        ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='black', marker='*', s=100)
+        ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='black', marker='*', s=100)
+
+        x_axis_label = r'$\Phi$'
+        y_axis_label = r'$\theta_{\rm obs} \, [^{\circ}]$'
+        ax['a'].set_xlabel(x_axis_label, fontsize=24)
+        ax['a'].set_ylabel(y_axis_label, fontsize=24)
+        ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
+
+        clb = plt.colorbar(im)
+        clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
+        clb.ax.tick_params(labelsize=ticks_labelsize)
+
+        save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion,
+                                       phi_0=phi_0,
+                                       prefix_folder=prefix_folder)
+
+        save.save_figure(fig, save_dir, file_name)
+
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_NS_on_scatter_on / L_x)
+    plot_maps(data_to_plot, 'sky_map_difference/', 'all_on')
+
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_NS_off_scatter_on / L_x)
+    plot_maps(data_to_plot, 'sky_map_difference/', 'NS_off')
+
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1,
+                                       arr=np.abs(data_NS_on_scatter_on - data_NS_off_scatter_on) / L_x)
+    plot_maps(data_to_plot, 'sky_map_difference/', 'NS_off_diff')
+
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_NS_on_scatter_off / L_x)
+    plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off')
+
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1,
+                                       arr=(data_NS_on_scatter_on - data_NS_on_scatter_off) / L_x)
+    plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off_diff')
 
 
+def plot_PF_obs(mu, beta_mu, mc2_arr, a_portion_arr, phi_0):
+    '''PF to obs'''
+    marker_index = 0
+    line_style = ['-', '--']
+    marker_dict = {0: '.', 1: '*', 2: '+', 3: '^'}
 
+    # cmap = mpl.cm.viridis
+    global cmap
 
+    theta_obs_arr = [10 * i for i in range(0, 10)]
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    for a_index, a_portion in enumerate(a_portion_arr):
+        for mc2_index, mc2 in enumerate(mc2_arr):
+            full_dict = {}
+            for theta_obs_index, theta_obs in enumerate(theta_obs_arr):
+                L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+                PF = newService.get_PF(L_total)
+                full_dict[np.mean(L_total)] = (PF, theta_obs_arr[theta_obs_index])
+
+            # в словаере лежит среднее : (PF, phi_0). сортируем его по значению phi_0
+            list_tuples = sorted(full_dict.items(), key=lambda item: item[1][1])
+            x_sort_phi_0, y_sort_phi_0 = zip(*list_tuples)
+            y_sort_phi_0, colors_sort_phi_0 = zip(*y_sort_phi_0)
+
+            colors = (np.array(colors_sort_phi_0)) / np.max(colors_sort_phi_0)
+
+            if marker_index == 0:
+                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, color=cmap(colors))
+                # ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, facecolors='none', edgecolors=cm.jet(colors))
+            else:
+                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, marker=marker_dict[marker_index % 4],
+                                color=cmap(colors))
+
+            ax['a'].plot(x_sort_phi_0, y_sort_phi_0, color='black', alpha=0.2, linestyle=line_style[mc2_index])
+
+        marker_index = 3
+
+    x_axis_label = r'$L_{\rm iso}$' + r'$\rm [erg/s]$'
+    y_axis_label = r'$PF$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+    ax['a'].set_xscale('log')
+    # ax['a'].set_ylim(0, 1.1)
+
+    bounds = theta_obs_arr.copy()
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+    cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', pad=0.01)
+    cb.set_label(label=r'$\theta_{\rm obs} ~ [^\circ]$', fontsize=24)
+
+    prefix_folder = 'PF_to_obs/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=None, a_portion=None,
+                                   phi_0=phi_0, prefix_folder=prefix_folder)
+
+    file_name = f'beta_mu={beta_mu} phi_0={phi_0} All_PF_to_obs.png'
+    save.save_figure(fig, save_dir, file_name)
 
 
 if __name__ == '__main__':
 
-    plot_a_restrictions()
+    # plot_a_restrictions()
 
     mu = 0.1e31
-    theta_obs = 60
-    beta_mu = 70
+    theta_obs = 10
+    beta_mu = 20
     mc2 = 100
     a_portion = 0.66
     phi_0 = 0
 
+
+    theta_obs = 60
+    beta_mu = 20
+    mc2 = 30
+    a_portion = 0.22
+    phi_0 = 20
     plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
 
+    beta_mu = 40
+    mc2 = 60
+    a_portion = 0.66
+    phi_0 = 0
+    # plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0)
+
+    theta_obs = 60
+    beta_mu = 20
+    mc2_arr = [30, 100]
+    a_portion_arr = [0.22, 0.66]
+    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+
+    beta_mu = 80
+    mc2_arr = [30, 100]
+    a_portion_arr = [0.22, 0.66]
+    phi_0 = 0
+    plot_PF_obs(mu, beta_mu, mc2_arr, a_portion_arr, phi_0)
 
     mu = 0.1e31
     beta_mu = 40
@@ -1067,7 +1214,7 @@ if __name__ == '__main__':
     mc2 = 30
     a_portion = 0.66
     phi_0 = 60
-    plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+    # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
 
     theta_obs = 40
     beta_mu = 20
