@@ -7,6 +7,13 @@ print_flag = False
 def get_prefix_dir():
     PROJECT_DIR = pathlib.Path(__file__).resolve().parent
     prefix_dir = PROJECT_DIR / 'data'
+    if not config.NS_shadow_flag:
+        prefix_dir = prefix_dir / 'NS_shadow_off'
+    if not config.flag_scatter:
+        prefix_dir = prefix_dir / 'scatter_off'
+    if not config.flag_attenuation_above_shock:
+        prefix_dir = prefix_dir / 'tau_off'
+
     return prefix_dir
 
 
@@ -47,7 +54,7 @@ def get_dir(mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None, phi_0=No
 
 class PathSaver:
 
-    def __init__(self, mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
+    def __init__(self, mu, theta_obs, beta_mu, mc2, a_portion, phi_0, NS_shadow_flag=None, flag_scatter=None, flag_attenuation_above_shock=None):
         '''
             поменять название betta_mu на beta, i на theta_obs, fi_0 на phi_0 !!!!
             'NS_shadow_off/'
@@ -73,6 +80,31 @@ class PathSaver:
         # ------------------------ new way ---------------------------
 
         self.prefix_dir = self.PROJECT_DIR / 'data'
+
+        if NS_shadow_flag is None:
+            NS_shadow_flag = config.NS_shadow_flag
+        if flag_scatter is None:
+            flag_scatter = config.flag_scatter
+        if flag_attenuation_above_shock is None:
+            flag_attenuation_above_shock = config.flag_attenuation_above_shock
+
+        # if NS_shadow_flag and flag_scatter:
+        #     pass
+        # else:
+        #     if not NS_shadow_flag and not flag_scatter:
+        #         self.prefix_dir = self.prefix_dir / 'NS_shadow_off_scatter_off'
+        #     elif not NS_shadow_flag:
+        #         self.prefix_dir = self.prefix_dir / 'NS_shadow_off'
+        #     else:
+        #         self.prefix_dir = self.prefix_dir / 'scatter_off'
+
+        if not flag_scatter:
+            self.prefix_dir = self.prefix_dir / 'scatter_off'
+        if not NS_shadow_flag:
+            self.prefix_dir = self.prefix_dir / 'NS_shadow_off'
+        if not flag_attenuation_above_shock:
+            self.prefix_dir = self.prefix_dir / 'tau_off'
+
         # if config.tau_flag:
         #     self.prefix_dir = self.prefix_dir / 'tau'
         # else:
