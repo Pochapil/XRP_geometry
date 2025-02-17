@@ -16,7 +16,8 @@ surface_surf_types = {'outer': 'outer', 'inner': 'inner'}
 из них получаем R_e (радиус магнитного диполя на котором сидит колонка). 
 
 после этого происходит перерасчет (delta R_e)/R_e -
-чтобы получить delta R_e (= DE), которое соответствует AC на угле theta_disk.'''
+чтобы получить delta R_e (= DE), которое соответствует AC на угле theta_disk.
+'''
 
 
 class AccretingPulsarConfiguration:
@@ -269,9 +270,14 @@ class MagnetLine:
                 if flag_cut_r:
                     self.mask_array[i][j] = True
                 else:
-                    if self.surf_R_e * np.sin(theta) ** 2 > 1.25 * R_disk:  # 38.17 * config.R_ns
+                    dRe_div_Re = 0.25
+                    if self.surf_R_e * np.sin(theta) ** 2 > (1 + dRe_div_Re) * R_disk:
                         flag_cut_r = True
                         self.mask_array[i][j] = True
+                    # if self.surf_R_e * np.sin(theta_end) ** 2 > (1 + dRe_div_Re) * R_disk or self.surf_R_e * np.sin(
+                    #         theta_end) ** 2 < R_disk:
+                    #     flag_cut_r = True
+                    #     self.mask_array[i][j] = True
 
         if column_type == column_surf_types['bot']:
             # для нижней колонки меняем phi, theta. mask_array будет такой же
