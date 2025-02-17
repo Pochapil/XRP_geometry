@@ -1019,15 +1019,25 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
                 data_array[-i - 1] = np.roll(data_array[i], len(data_array[i]) // 2)
         return data_array
 
-    data_NS_on_scatter_on = get_data_for_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+    data_all_on = get_data_for_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
 
     config.NS_shadow_flag = False
-    data_NS_off_scatter_on = get_data_for_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+    data_NS_off = get_data_for_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
     config.NS_shadow_flag = True
 
     config.flag_scatter = False
-    data_NS_on_scatter_off = get_data_for_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+    data_scatter_off = get_data_for_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
     config.flag_scatter = True
+
+    config.flag_attenuation_above_shock = False
+    data_tau_off = get_data_for_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+    config.flag_attenuation_above_shock = True
+
+    config.flag_scatter = False
+    config.flag_attenuation_above_shock = False
+    data_scatter_off_tau_off = get_data_for_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+    config.flag_scatter = True
+    config.flag_attenuation_above_shock = True
 
     def plot_maps(data_to_plot, prefix_folder, file_name):
 
@@ -1056,22 +1066,36 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
 
         save.save_figure(fig, save_dir, file_name)
 
-    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_NS_on_scatter_on / L_x)
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_all_on / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'all_on')
 
-    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_NS_off_scatter_on / L_x)
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_NS_off / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'NS_off')
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1,
-                                       arr=np.abs(data_NS_on_scatter_on - data_NS_off_scatter_on) / L_x)
+                                       arr=np.abs(data_all_on - data_NS_off) / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'NS_off_diff')
 
-    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_NS_on_scatter_off / L_x)
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_scatter_off / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off')
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1,
-                                       arr=(data_NS_on_scatter_on - data_NS_on_scatter_off) / L_x)
+                                       arr=(data_all_on - data_scatter_off) / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off_diff')
+
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_tau_off / L_x)
+    plot_maps(data_to_plot, 'sky_map_difference/', 'tau_off')
+
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1,
+                                       arr=(data_all_on - data_tau_off) / L_x)
+    plot_maps(data_to_plot, 'sky_map_difference/', 'tau_off_diff')
+
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_scatter_off_tau_off / L_x)
+    plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off_tau_off')
+
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1,
+                                       arr=(data_all_on - data_scatter_off_tau_off) / L_x)
+    plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off_tau_off_diff')
 
 
 def plot_PF_obs(mu, beta_mu, mc2_arr, a_portion_arr, phi_0):
@@ -1143,16 +1167,15 @@ if __name__ == '__main__':
     a_portion = 0.66
     phi_0 = 0
 
-
     theta_obs = 60
     beta_mu = 20
     mc2 = 30
     a_portion = 0.22
     phi_0 = 20
-    plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    # plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
 
-    beta_mu = 40
-    mc2 = 60
+    beta_mu = 20
+    mc2 = 30
     a_portion = 0.66
     phi_0 = 0
     # plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0)
@@ -1164,7 +1187,7 @@ if __name__ == '__main__':
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
     # plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
 
-    beta_mu = 80
+    beta_mu = 70
     mc2_arr = [30, 100]
     a_portion_arr = [0.22, 0.66]
     phi_0 = 0
