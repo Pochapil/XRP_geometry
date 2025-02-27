@@ -10,19 +10,19 @@ import numpy as np
 
 import config
 
-fi_0 = 0
-betta_mu_deg = 70
-betta_mu = np.deg2rad(betta_mu_deg)
 mu = 0.1e31
 
+beta_mu_deg = 60
+beta_mu = np.deg2rad(beta_mu_deg)
+mc2 = 10
+a_portion = 1
+phi_0 = 0
 
-step_phi_accretion = 2 * np.pi / (config.N_phi_accretion - 1)
-phi_range = np.array([np.deg2rad(fi_0) + step_phi_accretion * i for i in range(config.N_phi_accretion)])
-
+phi_range = np.linspace(np.deg2rad(phi_0), 2 * np.pi, 200)
 theta_range = np.zeros_like(phi_range)
 
 for i in range(len(phi_range)):
-    theta_range[i] = np.pi / 2 - np.arctan(np.tan(betta_mu) * np.cos(phi_range[i]))
+    theta_range[i] = np.pi / 2 - np.arctan(np.tan(beta_mu) * np.cos(phi_range[i]))
     # theta_range[i] = np.pi / 2 - betta_mu * np.cos(phi_range[i])
 
 mc2 = 30
@@ -31,7 +31,17 @@ M_accretion_rate = mc2 * config.L_edd / config.c ** 2
 R_alfven = (mu ** 2 / (2 * M_accretion_rate * (2 * config.G * config.M_ns) ** (1 / 2))) ** (2 / 7)
 R_alfven = R_alfven / config.R_ns
 
-R_e = R_alfven * config.ksi_param
+# R_e = R_alfven * config.ksi_param
+R_disk = config.ksi_param * R_alfven
+
+disk_min_theta_angle = np.min(np.pi / 2 - np.arctan(np.tan((beta_mu)) * np.cos(phi_range)))
+idx = np.argmin(np.pi / 2 - np.arctan(np.tan((beta_mu)) * np.cos(phi_range)))
+disk_min_phi_angle = phi_range[idx]
+# print(f'{self.disk_min_theta_angle =}')
+
+# радиус на котором лежат внутренние дипольные линии
+R_e = R_disk / ((np.sin(disk_min_theta_angle)) ** 2)
+# R_e = R_alfven * config.ksi_param
 
 fig = plt.figure(figsize=(6, 6))
 ax = fig.add_subplot(111)
@@ -42,7 +52,7 @@ r1 = r
 # r1 = r * np.sin(theta_range)
 x = r1 * np.cos(phi_range)
 y = r1 * np.sin(phi_range)
-ax.plot(x, y, 'blue', label='inner R')
+ax.plot(x, y, 'red', label='inner R')
 
 # внешний радиус колонки
 dRe_div_Re = 0.25
@@ -51,48 +61,60 @@ r1 = r
 # r1 = r * np.sin(theta_range)
 x = r1 * np.cos(phi_range)
 y = r1 * np.sin(phi_range)
-ax.plot(x, y, 'green', label='outer R')
+ax.plot(x, y, 'red', label='outer R')
 
 # круг R_e
-x = R_e * np.cos(phi_range)
-y = R_e * np.sin(phi_range)
-ax.plot(x, y, 'red', label='R_e circle')
+x = R_disk * np.cos(phi_range)
+y = R_disk * np.sin(phi_range)
+ax.plot(x, y, 'brown', label='R_m circle')
+
+x = 1.25 * R_disk * np.cos(phi_range)
+y = 1.25 * R_disk * np.sin(phi_range)
+ax.plot(x, y, 'brown', label='1.25 R_m circle')
 
 # попытка менять R_e - 69 стр - там ksi
 '''  The process also requires selecting a
 value for the normalization constant ξ appearing in Equation (22), such that the minimum
 value of the Alfv´en radius equals the maximum value of R2, disk, corresponding to α = 0'''
 
-c = 1
-r = ((3 * np.cos(theta_range) ** 2 + 1) / c) ** (2 / 7)
-ksi = max(R_e * np.sin((theta_range)) ** 2) / min(r)
-r *= ksi
+# H = 2 * mu / config.R_ns ** 3
+# B_disk = H / 2 * (3 * np.cos(theta_range) ** 2 + 1) ** (1 / 2)
+r = R_disk * ((3 * np.cos(theta_range) ** 2 + 1)) ** (2 / 7)
+ksi = R_disk / np.max(r)
+r = r * ksi
+
+# c = 1
+# r = ((3 * np.cos(theta_range) ** 2 + 1) / c) ** (2 / 7)
+# ksi = max(R_disk * np.sin((theta_range)) ** 2) / min(r)
+# r *= ksi
+# r *= R_disk
 
 # ksi = 2 * max(np.sin((theta_range)) ** 2)
 # print(ksi)
 # r = ksi * R_e * 1 / 2 * (1 + 3 * np.cos(theta_range) ** 2) ** (1 / 2) / (R_e * np.sin(theta_range) ** 3)
 rotate_angle = 0
+rotate_angle = np.deg2rad(rotate_angle)
 x = r * np.cos(phi_range + rotate_angle)
 y = r * np.sin(phi_range + rotate_angle)
-ax.plot(x, y, 'black', label='R_e eq22')
+# eq22 https://arxiv.org/pdf/1612.02411
+ax.plot(x, y, 'blue', label='fake R_alfv')
 
 # вектор магнитного поля
 origin = np.array([0, 0])
-vector = np.array([R_e * 1.25, 0])
+vector = np.array([R_disk * 2.25, 0])
 # plt.quiver(origin, vector, angles='xy', scale_units='xy',color='black', scale=10)
-ax.arrow(0, 0, *vector, head_width=0.05, head_length=1, color='purple')
+ax.arrow(0, 0, *vector, head_width=0.05, head_length=1, color='black')
 
 ax.legend()
 ax.set_xlabel('r/R_ns', fontsize=24)
 ax.set_ylabel('r/R_ns', fontsize=24)
 
-plt.title(r'$\beta_{\mu}$' + f'={betta_mu_deg}')
+plt.title(r'$\beta_{\mu}$' + f'={beta_mu_deg}')
 plt.axis('equal')
 # plt.axis('scaled')
+# ax.set_ylim(-R_disk*1.25, 1.25*R_disk)
+# ax.set_xlim(-R_disk*1.25, 1.25*R_disk)
 plt.show()
-
-
-
 
 crit_betta_mu = np.arctan((1 / 12) ** (1 / 2))
 crit_betta_mu = np.rad2deg(crit_betta_mu)
