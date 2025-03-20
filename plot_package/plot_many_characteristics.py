@@ -1,3 +1,5 @@
+from typing import Iterable
+
 import matplotlib.pyplot as plt
 import numpy as np
 import scienceplots
@@ -329,6 +331,130 @@ def plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr):
     file_name = f'theta={theta_obs} beta_mu={beta_mu} All_PF_to_L.png'
     save.save_figure(fig, save_dir, file_name)
 
+def plot_masses_PF_L_on_off(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr):
+    '''то же самое что plot_masses_PF_L_nu только рисуем от L_iso'''
+    marker_index = 0
+    line_style = ['-', '--']
+    marker_dict = {0: '.', 1: '*', 2: '+', 3: '^'}
+
+    # cmap = mpl.cm.viridis
+    global cmap
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    for a_index, a_portion in enumerate(a_portion_arr):
+        for mc2_index, mc2 in enumerate(mc2_arr):
+            full_dict = {}
+            for phi_0_index, phi_0 in enumerate(phi_0_arr):
+                L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+                PF = newService.get_PF(L_total)
+                full_dict[np.mean(L_total)] = (PF, phi_0_arr[phi_0_index])
+
+            # в словаере лежит среднее : (PF, phi_0). сортируем его по значению phi_0
+            list_tuples = sorted(full_dict.items(), key=lambda item: item[1][1])
+            x_sort_phi_0, y_sort_phi_0 = zip(*list_tuples)
+            y_sort_phi_0, colors_sort_phi_0 = zip(*y_sort_phi_0)
+
+            colors = (np.array(colors_sort_phi_0)) / np.max(colors_sort_phi_0)
+
+            if marker_index == 0:
+                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, color=cmap(colors))
+                # ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, facecolors='none', edgecolors=cm.jet(colors))
+            else:
+                ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, marker=marker_dict[marker_index % 4],
+                                color=cmap(colors))
+
+            ax['a'].plot(x_sort_phi_0, y_sort_phi_0, color='black', alpha=0.2, linestyle=line_style[mc2_index])
+
+        marker_index = 3
+
+    x_axis_label = r'$L_{\rm iso}$' + r'$\rm [erg/s]$'
+    y_axis_label = r'$PF$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+    ax['a'].set_xscale('log')
+    # ax['a'].set_ylim(0, 1.1)
+
+    bounds = phi_0_arr.copy()
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+    cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', pad=0.01)
+    cb.set_label(label=r'$\varphi_0 ~ [^\circ]$', fontsize=24)
+
+
+    limits_x = ax['a'].get_xlim()
+    limits_y = ax['a'].get_ylim()
+
+    config.flag_scatter = False
+    marker_index = 0
+
+    fig1, ax1 = plt.subplot_mosaic('a', figsize=(12, 6))
+    for a_index, a_portion in enumerate(a_portion_arr):
+        for mc2_index, mc2 in enumerate(mc2_arr):
+            full_dict = {}
+            for phi_0_index, phi_0 in enumerate(phi_0_arr):
+                L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+                PF = newService.get_PF(L_total)
+                full_dict[np.mean(L_total)] = (PF, phi_0_arr[phi_0_index])
+
+            # в словаере лежит среднее : (PF, phi_0). сортируем его по значению phi_0
+            list_tuples = sorted(full_dict.items(), key=lambda item: item[1][1])
+            x_sort_phi_0, y_sort_phi_0 = zip(*list_tuples)
+            y_sort_phi_0, colors_sort_phi_0 = zip(*y_sort_phi_0)
+
+            colors = (np.array(colors_sort_phi_0)) / np.max(colors_sort_phi_0)
+
+            if marker_index == 0:
+                ax1['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, color=cmap(colors))
+                # ax['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, facecolors='none', edgecolors=cm.jet(colors))
+            else:
+                ax1['a'].scatter(x_sort_phi_0, y_sort_phi_0, s=100, marker=marker_dict[marker_index % 4],
+                                color=cmap(colors))
+
+            ax1['a'].plot(x_sort_phi_0, y_sort_phi_0, color='black', alpha=0.2, linestyle=line_style[mc2_index])
+
+        marker_index = 3
+
+    x_axis_label = r'$L_{\rm iso}$' + r'$\rm [erg/s]$'
+    y_axis_label = r'$PF$'
+    ax1['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax1['a'].set_ylabel(y_axis_label, fontsize=24)
+
+    ax1['a'].set_xscale('log')
+
+    limits_x1 = ax1['a'].get_xlim()
+    limits_y1 = ax1['a'].get_ylim()
+
+    limits_xall = (min(limits_x[0], limits_x1[0]), max(limits_x[1], limits_x1[1]))
+    limits_yall = (min(limits_y[0], limits_y1[0]), max(limits_y[1], limits_y1[1]))
+
+    ax['a'].set_xlim(limits_xall)
+    ax['a'].set_ylim(limits_yall)
+
+    ax1['a'].set_xlim(limits_xall)
+    ax1['a'].set_ylim(limits_yall)
+
+    bounds = phi_0_arr.copy()
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+    cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax1['a'], orientation='vertical', pad=0.01)
+    cb.set_label(label=r'$\varphi_0 ~ [^\circ]$', fontsize=24)
+
+
+
+
+    prefix_folder = 'PF_to_L/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+
+    file_name = f'theta={theta_obs} beta_mu={beta_mu} All_PF_to_L_on'
+    save.save_figure(fig, save_dir, file_name)
+
+
+    prefix_folder = 'PF_to_L/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+
+    file_name = f'theta={theta_obs} beta_mu={beta_mu} All_PF_to_L_off'
+    save.save_figure(fig1, save_dir, file_name)
+
 
 def plot_PF_to_L_const_a_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0_arr):
     '''то же самое что plot_masses_PF_L_nu только рисуем от L_iso'''
@@ -492,6 +618,19 @@ def plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, flag_same
                                    phi_0=None, prefix_folder=prefix_folder)
     file_name = 'map_contour_L_iso_c'
     save.save_figure(fig, save_dir, file_name)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def plot_PF_contour(mu, mc2, a_portion, phi_0):
@@ -1039,12 +1178,13 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
     config.flag_scatter = True
     config.flag_attenuation_above_shock = True
 
-    def plot_maps(data_to_plot, prefix_folder, file_name):
+    def plot_maps(data_to_plot, prefix_folder, file_name, vmin=None, vmax=None, flag_remove_cbar=False):
 
         theta_obs_arr_to_plot = np.linspace(0, 180, 19).astype(int)
 
         fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
-        im = ax['a'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot, levels=30)
+        im = ax['a'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot, levels=30, vmin=vmin,
+                              vmax=vmax)
         ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='white', marker='*', s=300)
         ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='white', marker='*', s=300)
         ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='black', marker='*', s=100)
@@ -1059,6 +1199,15 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
         clb = plt.colorbar(im)
         clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
         clb.ax.tick_params(labelsize=ticks_labelsize)
+        if flag_remove_cbar:
+            clb.remove()
+            # fig.subplots_adjust(right=0.85, top=0.85)
+            # cax = ax['a'].inset_axes([1.03, 0, 0.1, 1])
+            # cax.clear()
+            # from mpl_toolkits.axes_grid1 import make_axes_locatable
+            # divider = make_axes_locatable(ax['a'])
+            # cax = divider.append_axes("right", size="5%", pad=0.05)
+            # cax.clear()
 
         save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion,
                                        phi_0=phi_0,
@@ -1066,35 +1215,38 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
 
         save.save_figure(fig, save_dir, file_name)
 
+    vmin = np.min(np.hstack((data_all_on, data_scatter_off_tau_off, data_scatter_off, data_NS_off)) / L_x)
+    vmax = np.max(np.hstack((data_all_on, data_scatter_off_tau_off, data_scatter_off, data_NS_off)) / L_x)
+
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_all_on / L_x)
-    plot_maps(data_to_plot, 'sky_map_difference/', 'all_on')
+    plot_maps(data_to_plot, 'sky_map_difference/', 'all_on', vmin=vmin, vmax=vmax)
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_NS_off / L_x)
-    plot_maps(data_to_plot, 'sky_map_difference/', 'NS_off')
+    plot_maps(data_to_plot, 'sky_map_difference/', 'NS_off', vmin=vmin, vmax=vmax)
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1,
-                                       arr=np.abs(data_all_on - data_NS_off) / L_x)
+                                       arr=np.abs(data_all_on - data_NS_off) / data_all_on)
     plot_maps(data_to_plot, 'sky_map_difference/', 'NS_off_diff')
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_scatter_off / L_x)
-    plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off')
+    plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off', vmin=vmin, vmax=vmax)
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1,
-                                       arr=(data_all_on - data_scatter_off) / L_x)
+                                       arr=np.abs(data_all_on - data_scatter_off) / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off_diff')
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_tau_off / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'tau_off')
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1,
-                                       arr=(data_all_on - data_tau_off) / L_x)
+                                       arr=np.abs(data_all_on - data_tau_off) / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'tau_off_diff')
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_scatter_off_tau_off / L_x)
-    plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off_tau_off')
+    plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off_tau_off', vmin=vmin, vmax=vmax)
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1,
-                                       arr=(data_all_on - data_scatter_off_tau_off) / L_x)
+                                       arr=np.abs(data_all_on - data_scatter_off_tau_off) / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off_tau_off_diff')
 
 
@@ -1156,6 +1308,77 @@ def plot_PF_obs(mu, beta_mu, mc2_arr, a_portion_arr, phi_0):
     save.save_figure(fig, save_dir, file_name)
 
 
+def plot_romanova(mu, theta_obs, beta_mu, mc2_arr, a_portion):
+    # romanova_tuples = [(10, 0), (20, 28), (30, 43), (40, 52), (50, 60), (60, 64), (70, 68), (80, 71), (90, 74),
+    #                    (100, 77)]
+    # for i, tuple in enumerate(romanova_tuples):
+    #     mc2 = tuple[0]
+    #     phi_0 = tuple[1]
+    # mc2_arr = np.array([10 * i for i in range(1, len(romanova_tuples)+1)])
+
+    import romanova_phi_0
+    phi_0_arr = romanova_phi_0.phi_0_arr
+    mc2_arr = romanova_phi_0.mc2_arr
+
+    data_array = np.empty((len(phi_0_arr), config.N_phase))
+
+    if not isinstance(a_portion, np.ndarray):
+        a_portion = np.full(10, a_portion)
+        suffix = ''
+    else:
+        suffix = f'a_range {a_portion[0]} - {a_portion[-1]}'
+
+    for i in range(len(phi_0_arr)):
+        phi_0 = phi_0_arr[i]
+        mc2 = mc2_arr[i]
+        L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion[i], phi_0)
+        data_array[i] = L_total
+
+    avg = 1
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_array)
+    data_to_plot = data_to_plot / avg
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    im = ax['a'].contourf(config.phase_for_plot, mc2_arr, data_to_plot, levels=30)
+    clb = plt.colorbar(im, pad=0.01)
+    clb.set_label(r'$\langle L_{\rm iso} \rangle$', fontsize=26)
+
+    x_axis_label = r'$\Phi$'
+    y_axis_label = r'$\dot{m}$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    # ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
+
+    prefix_folder = 'romanova/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=a_portion[0],
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'P={romanova_phi_0.P} contour_L_iso' + suffix
+    save.save_figure(fig, save_dir, file_name)
+
+    avg = np.mean(data_array, axis=1)[:, np.newaxis]
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_array)
+    data_to_plot = data_to_plot / avg
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    im = ax['a'].contourf(config.phase_for_plot, mc2_arr, data_to_plot, levels=30)
+    clb = plt.colorbar(im, pad=0.01)
+    clb.set_label(r'$\langle L_{\rm iso} \rangle$', fontsize=26)
+
+    x_axis_label = r'$\Phi$'
+    y_axis_label = r'$\dot{m}$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    # ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
+
+    prefix_folder = 'romanova/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=a_portion[0],
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'P={romanova_phi_0.P} contour_L_iso_avg' + suffix
+    save.save_figure(fig, save_dir, file_name)
+
+
 if __name__ == '__main__':
 
     # plot_a_restrictions()
@@ -1175,23 +1398,33 @@ if __name__ == '__main__':
     # plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
 
     beta_mu = 20
-    mc2 = 30
+    mc2 = 60
     a_portion = 0.66
     phi_0 = 0
     # plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0)
 
     theta_obs = 60
     beta_mu = 20
+    a_portion = 0.22
+
+    a_portion_start = 0.44
+    a_portion_stop = 0.66
+    a_portion_arr = np.linspace(a_portion_start, a_portion_stop, 10)
+
+    # plot_romanova(mu, theta_obs, beta_mu, None, a_portion)
+
+    theta_obs = 40
+    beta_mu = 20
     mc2_arr = [30, 100]
     a_portion_arr = [0.22, 0.66]
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    # plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    # plot_masses_PF_L_on_off(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
 
     beta_mu = 70
     mc2_arr = [30, 100]
     a_portion_arr = [0.22, 0.66]
     phi_0 = 0
-    plot_PF_obs(mu, beta_mu, mc2_arr, a_portion_arr, phi_0)
+    # plot_PF_obs(mu, beta_mu, mc2_arr, a_portion_arr, phi_0)
 
     mu = 0.1e31
     beta_mu = 40
@@ -1234,17 +1467,17 @@ if __name__ == '__main__':
     theta_obs = 40
 
     beta_mu = 20
-    mc2 = 30
-    a_portion = 0.66
+    mc2 = 60
+    a_portion = 0.22
     phi_0 = 60
     # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
 
-    theta_obs = 40
-    beta_mu = 20
-    mc2 = 30
+    theta_obs = 20
+    beta_mu = 40
+    mc2 = 60
     a_portion = 0.66
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    # plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
+    plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
 
     theta_obs = 20
     beta_mu = 20
