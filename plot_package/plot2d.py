@@ -3,6 +3,9 @@ import tkinter as Tk
 import matplotlib
 import matplotlib.pyplot as plt
 
+import pathService
+import save
+
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
@@ -17,6 +20,8 @@ beta_mu = np.deg2rad(beta_mu_deg)
 mc2 = 10
 a_portion = 1
 phi_0 = 0
+
+colors = {'magnet': 'blue', 'disc': 'brown', 'alfv': 'black'}
 
 phi_range = np.linspace(np.deg2rad(phi_0), 2 * np.pi, 200)
 theta_range = np.zeros_like(phi_range)
@@ -43,8 +48,7 @@ disk_min_phi_angle = phi_range[idx]
 R_e = R_disk / ((np.sin(disk_min_theta_angle)) ** 2)
 # R_e = R_alfven * config.ksi_param
 
-fig = plt.figure(figsize=(6, 6))
-ax = fig.add_subplot(111)
+fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
 
 # внутренний радиус колонки
 r = R_e * np.sin(theta_range) ** 2
@@ -52,7 +56,7 @@ r1 = r
 # r1 = r * np.sin(theta_range)
 x = r1 * np.cos(phi_range)
 y = r1 * np.sin(phi_range)
-ax.plot(x, y, 'red', label='inner R')
+ax['a'].plot(x, y, colors['magnet'], label='inner R')
 
 # внешний радиус колонки
 dRe_div_Re = 0.25
@@ -61,16 +65,16 @@ r1 = r
 # r1 = r * np.sin(theta_range)
 x = r1 * np.cos(phi_range)
 y = r1 * np.sin(phi_range)
-ax.plot(x, y, 'red', label='outer R')
+ax['a'].plot(x, y, colors['magnet'], label='outer R')
 
 # круг R_e
 x = R_disk * np.cos(phi_range)
 y = R_disk * np.sin(phi_range)
-ax.plot(x, y, 'brown', label='R_m circle')
+ax['a'].plot(x, y, colors['disc'], label='R_m circle')
 
 x = 1.25 * R_disk * np.cos(phi_range)
 y = 1.25 * R_disk * np.sin(phi_range)
-ax.plot(x, y, 'brown', label='1.25 R_m circle')
+ax['a'].plot(x, y, colors['disc'], label='1.25 R_m circle')
 
 # попытка менять R_e - 69 стр - там ksi
 '''  The process also requires selecting a
@@ -97,24 +101,44 @@ rotate_angle = np.deg2rad(rotate_angle)
 x = r * np.cos(phi_range + rotate_angle)
 y = r * np.sin(phi_range + rotate_angle)
 # eq22 https://arxiv.org/pdf/1612.02411
-ax.plot(x, y, 'blue', label='fake R_alfv')
+ax['a'].plot(x, y, colors['alfv'], label='fake R_alfv')
 
 # вектор магнитного поля
 origin = np.array([0, 0])
 vector = np.array([R_disk * 2.25, 0])
 # plt.quiver(origin, vector, angles='xy', scale_units='xy',color='black', scale=10)
-ax.arrow(0, 0, *vector, head_width=0.05, head_length=1, color='black')
+ax['a'].arrow(0, 0, *vector, head_width=0.05, head_length=1, color='black')
 
-ax.legend()
-ax.set_xlabel('r/R_ns', fontsize=24)
-ax.set_ylabel('r/R_ns', fontsize=24)
+ax['a'].legend()
+ax['a'].set_xlabel('r/R_ns', fontsize=24)
+ax['a'].set_ylabel('r/R_ns', fontsize=24)
+ax['a'].axis('equal')
 
-plt.title(r'$\beta_{\mu}$' + f'={beta_mu_deg}')
-plt.axis('equal')
+# plt.title(r'$\beta_{\mu}$' + f'={beta_mu_deg}')
+# plt.axis('equal')
+
+
+# x_val, y_val = X[i, j], Y[i, j]
+#         if x_val >= 0 and y_val >= 0 and x_val <= 6 and y_val <= 6:  # Ограничение по границам сетки
+#             if x_val**2 + y_val**2 >= 25:  # Точки выше окружности (внешняя область)
+#                 plt.fill_between([x_val, x_val + 1], [y_val, y_val], [y_val + 1, y_val + 1],
+#                                 color='lightgray', alpha=0.3)
+
+
+
+
+
+
+prefix_folder = '2d/'
+save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None,
+                               phi_0=None, prefix_folder=prefix_folder)
+file_name = f'{beta_mu_deg}'
+save.save_figure(fig, save_dir, file_name)
+
 # plt.axis('scaled')
 # ax.set_ylim(-R_disk*1.25, 1.25*R_disk)
 # ax.set_xlim(-R_disk*1.25, 1.25*R_disk)
-plt.show()
+# plt.show()
 
 crit_betta_mu = np.arctan((1 / 12) ** (1 / 2))
 crit_betta_mu = np.rad2deg(crit_betta_mu)
@@ -131,4 +155,4 @@ ax.plot(betta_mu_arr, a_arr)
 ax.set_xlabel(r'$\beta_{\mu}$', fontsize=24)
 ax.set_ylabel('a', fontsize=24)
 
-plt.show()
+# plt.show()
