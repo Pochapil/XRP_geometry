@@ -65,25 +65,27 @@ if __name__ == '__main__':
     phi_0_arr = [20, 40, 60, 80, 100, 120, 140, 160, 180]
 
     # -------cur-------
-    theta_obs_arr = [20, 40, 60]
-    beta_mu_arr = [20]
-    mc2_arr = [30, 100]
-    a_portion_arr = [0.22, 0.66]
-    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-
-    # theta_obs_arr = [20]
-    # beta_mu_arr = [60]  # 40 60
-    # mc2_arr = [30]  # 30 100
-    # a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825]
-    # a_portion_arr = [0.165, 0.275, 0.33, 0.385, 0.5, 0.55, 0.605, 0.715, 0.77, 0.825]
-    # phi_0_arr = [0]
-
     theta_obs_arr = [10 * i for i in range(0, 10)]
     beta_mu_arr = [20]
-    mc2_arr = [30, 60]
+    mc2_arr = [60]
     a_portion_arr = [0.66]
     phi_0_arr = [0]
 
+    #
+    # theta_obs_arr = [20, 40, 60]
+    # beta_mu_arr = [40]
+    # mc2_arr = [60]
+    # a_portion_arr = [0.22, 0.44, 0.66]
+    # phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # phi_0_arr = [20, 40, 60, 80, 100, 120, 140, 160, 180]
+    #
+    #
+    theta_obs_arr = [20, 40, 60]
+    beta_mu_arr = [20]
+    mc2_arr = [30, 60, 100]
+    a_portion_arr = [0.22, 0.66]
+    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    phi_0_arr = [20, 40, 60, 80, 100, 120, 140, 160, 180]
 
     plot_flag = True
     # ------------------------------------------------- start -------------------------------------------------------
@@ -105,7 +107,7 @@ if __name__ == '__main__':
             # ставим chunksize = 1 чтобы все считал по порядку и можно будет в случае сбоя понять где остановился
             pool.starmap(main.calc_and_save_for_configuration,
                          (product([mu], theta_obs_arr, beta_mu_arr, mc2_arr, a_portion_arr, phi_0_arr, [plot_flag],
-                                  [False])), 1)  # False - чтобы считал на 1 процессоре каждый вызов
+                                  [False])), chunksize=1)  # False - чтобы считал на 1 процессоре каждый вызов
 
         #     pool.starmap(main.calc_and_save_for_configuration,
         #                  zip(repeat(mu, N_big), cycle(theta_obs_arr), cycle(beta_mu_arr), cycle(mc2_arr),

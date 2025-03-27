@@ -39,17 +39,17 @@ def make_save_values_file(curr_configuration: accretingNS.AccretingPulsarConfigu
         cur_path = cur_path_data
 
     with open(cur_path / file_name, 'w') as f:
-        f.write(f'R_e = {curr_configuration.top_column.R_e / config.R_ns:.6f}\n')
-        f.write(f'ksi_shock = {curr_configuration.top_column.ksi_shock:.6f}\n')
-        f.write(f'beta = {curr_configuration.top_column.beta:.6f}\n')
+        f.write(f'R_e = {curr_configuration.top_column_for_calc.R_e / config.R_ns:.6f}\n')
+        f.write(f'ksi_shock = {curr_configuration.top_column_for_calc.ksi_shock:.6f}\n')
+        f.write(f'beta = {curr_configuration.top_column_for_calc.beta:.6f}\n')
 
-        number, power = calc_number_pow(curr_configuration.top_column.L_x)
+        number, power = calc_number_pow(curr_configuration.top_column_for_calc.L_x)
         f.write(f'total L_x = {number:.6f} * 10**{power}\n')
 
-        L_calc = integralsService.calculate_total_luminosity(curr_configuration.top_column.inner_surface,
-                                                             curr_configuration.top_column.T_eff)
+        L_calc = integralsService.calculate_total_luminosity(curr_configuration.top_column_for_calc.inner_surface,
+                                                             curr_configuration.top_column_for_calc.T_eff)
 
-        f.write(f'difference L_x / L_calc - 1 : {(curr_configuration.top_column.L_x / L_calc - 1) * 100:.6f} %\n')
+        f.write(f'difference L_x / L_calc - 1 : {(curr_configuration.top_column_for_calc.L_x / L_calc - 1) * 100:.6f} %\n')
 
         number, power = calc_number_pow(L_calc / 4)
         f.write(f'calculated total L_x of single surface = {number:.6f} * 10**{power}\n')
@@ -57,13 +57,13 @@ def make_save_values_file(curr_configuration: accretingNS.AccretingPulsarConfigu
         avg_L_on_phase = np.mean(np.sum(L_surfs, axis=0))
         number, power = calc_number_pow(avg_L_on_phase)
         f.write(f'avg_L_on_phase = {number:.6f} * 10**{power}\n')
-        f.write(f'avg_L_on_phase / L_x = {avg_L_on_phase / curr_configuration.top_column.L_x:.3}\n')
+        f.write(f'avg_L_on_phase / L_x = {avg_L_on_phase / curr_configuration.top_column_for_calc.L_x:.3}\n')
 
-        d0 = newService.get_delta_distance(curr_configuration.top_column.inner_surface.theta_range[0],
-                                           curr_configuration.top_column.inner_surface.surf_R_e,
+        d0 = newService.get_delta_distance(curr_configuration.top_column_for_calc.inner_surface.theta_range[0],
+                                           curr_configuration.top_column_for_calc.inner_surface.surf_R_e,
                                            curr_configuration.dRe_div_Re)
-        l0 = newService.get_A_normal(curr_configuration.top_column.inner_surface.theta_range[0],
-                                     curr_configuration.top_column.inner_surface.surf_R_e,
+        l0 = newService.get_A_normal(curr_configuration.top_column_for_calc.inner_surface.theta_range[0],
+                                     curr_configuration.top_column_for_calc.inner_surface.surf_R_e,
                                      curr_configuration.a_portion, curr_configuration.dRe_div_Re) / d0
 
         f.write(f'width / length = {(d0 / l0):.6}\n')
@@ -73,7 +73,7 @@ def make_save_values_file(curr_configuration: accretingNS.AccretingPulsarConfigu
 
         number, power = calc_number_pow(avg_L_on_phase + np.mean(np.sum(L_scatter, axis=0)))
         f.write(f'avg L with scatter = {number:.6f} * 10**{power}\n')
-        number = (avg_L_on_phase + np.mean(np.sum(L_scatter, axis=0))) / curr_configuration.top_column.L_x
+        number = (avg_L_on_phase + np.mean(np.sum(L_scatter, axis=0))) / curr_configuration.top_column_for_calc.L_x
         f.write(f'avg L with scatter / L_x = {number:.6f}\n')
 
 
@@ -87,16 +87,18 @@ def save_some_files(curr_configuration: accretingNS.AccretingPulsarConfiguration
         cur_path = cur_path_data
 
     file_name = 'surfaces_T_eff.txt'
-    save.save_arr_as_txt(curr_configuration.top_column.T_eff, cur_path, file_name)
+    save.save_arr_as_txt(curr_configuration.top_column_for_calc.T_eff, cur_path, file_name)
 
     file_name = "save_phi_range.txt"
-    save.save_arr_as_txt(curr_configuration.top_column.outer_surface.phi_range, cur_path, file_name)
+    save.save_arr_as_txt(curr_configuration.top_column_for_calc.outer_surface.phi_range, cur_path, file_name)
 
     file_name = "save_theta_range.txt"
-    save.save_arr_as_txt(curr_configuration.top_column.outer_surface.theta_range, cur_path, file_name)
+    save.save_arr_as_txt(curr_configuration.top_column_for_calc.outer_surface.theta_range, cur_path, file_name)
 
-    tau_array = shadows.get_tau_for_opacity_old(curr_configuration.top_magnet_lines.theta_range,
-                                                curr_configuration.top_column.R_e, curr_configuration.M_accretion_rate,
+    tau_array = shadows.get_tau_for_opacity_old(curr_configuration.top_magnet_lines_for_calc.theta_range,
+                                                curr_configuration.top_column_for_calc.R_e,
+                                                curr_configuration.top_column_for_calc.R_e_for_delta,
+                                                curr_configuration.M_accretion_rate,
                                                 curr_configuration.a_portion, curr_configuration.dRe_div_Re)
     file_name = "save_tau_range.txt"
     save.save_arr_as_txt(tau_array, cur_path, file_name)
@@ -214,8 +216,8 @@ def calc_shadows_and_tau(curr_configuration: accretingNS.AccretingPulsarConfigur
                         tensor_shadows_columns[phase_index, phi_index, theta_index] = \
                             shadows.check_shadow_with_dipole(surface, phi_index, theta_index,
                                                              obs_matrix[phase_index], solutions,
-                                                             curr_configuration.top_column.inner_surface,
-                                                             curr_configuration.bot_column.inner_surface)
+                                                             curr_configuration.top_column_for_calc.inner_surface,
+                                                             curr_configuration.bot_column_for_calc.inner_surface)
                         if tensor_shadows_columns[phase_index, phi_index, theta_index] > 0:
                             if config.flag_attenuation_above_shock:
                                 # если затмения нет то считаем ослабление тау с внутренними магнитными линиями!!
@@ -420,8 +422,8 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
         obs_matrix[phase_index] = e_obs_mu
 
     # ------------------------------------------------ L_calc -------------------------------------------------------
-    accr_col_surfs = [curr_configuration.top_column.outer_surface, curr_configuration.top_column.inner_surface,
-                      curr_configuration.bot_column.outer_surface, curr_configuration.bot_column.inner_surface]
+    accr_col_surfs = [curr_configuration.top_column_for_calc.outer_surface, curr_configuration.top_column_for_calc.inner_surface,
+                      curr_configuration.bot_column_for_calc.outer_surface, curr_configuration.bot_column_for_calc.inner_surface]
     # чтобы соответствовать порядку в старом
     # surfaces = {0: top_column.outer_surface, 1: top_column.inner_surface,
     #             2: bot_column.outer_surface, 3: bot_column.inner_surface}
@@ -437,8 +439,8 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
         # new_cos_psi_range = calc_shadows_and_tau(curr_configuration, surface, obs_matrix)
         # print(new_cos_psi_range_async[i][np.abs(new_cos_psi_range_async[i] - new_cos_psi_range) > 1e-3].shape)
         new_cos_psi_range = new_cos_psi_range_surfs[i]
-        L_surfs[i] = integralsService.calc_L(surface, curr_configuration.top_column.T_eff, new_cos_psi_range)
-        L_nu_surfs[i] = integralsService.calc_L_nu(surface, curr_configuration.top_column.T_eff, new_cos_psi_range)
+        L_surfs[i] = integralsService.calc_L(surface, curr_configuration.top_column_for_calc.T_eff, new_cos_psi_range)
+        L_nu_surfs[i] = integralsService.calc_L_nu(surface, curr_configuration.top_column_for_calc.T_eff, new_cos_psi_range)
 
     L_surfs[np.isnan(L_surfs)] = 0
     L_nu_surfs[np.isnan(L_nu_surfs)] = 0
@@ -457,7 +459,7 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
     # ----------------------------------------------- Scatter -----------------------------------------------------
     if config.print_time_flag:
         print('start calc scatter')
-    magnet_line_surfs = [curr_configuration.top_magnet_lines, curr_configuration.bot_magnet_lines]
+    magnet_line_surfs = [curr_configuration.top_magnet_lines_for_calc, curr_configuration.bot_magnet_lines_for_calc]
 
     new_cos_psi_range_surfs, tensor_tau_save, tensor_alpha_save = calc_cos_psi(curr_configuration, obs_matrix,
                                                                                magnet_line_surfs, True, async_flag)
@@ -486,14 +488,14 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
                                                                       curr_configuration.M_accretion_rate, a_portion,
                                                                       cos_alpha_matrix, curr_configuration.dRe_div_Re)
 
-            L_x = integralsService.calculate_total_luminosity(curr_configuration.top_column.inner_surface,
-                                                              curr_configuration.top_column.T_eff)
+            L_x = integralsService.calculate_total_luminosity(curr_configuration.top_column_for_calc.inner_surface,
+                                                              curr_configuration.top_column_for_calc.T_eff)
             # надо брать не curr_configuration.top_column.L_x а посчитанный через интеграл! хоть они и отличаются на сильно
             L_scatter[i] = integralsService.calc_scatter_L(magnet_surface, L_x, new_cos_psi_range, tau_scatter_matrix)
 
             L_nu_scatter[i] = integralsService.calc_scatter_L_nu(magnet_surface,
-                                                                 curr_configuration.top_column.inner_surface,
-                                                                 curr_configuration.top_column.T_eff,
+                                                                 curr_configuration.top_column_for_calc.inner_surface,
+                                                                 curr_configuration.top_column_for_calc.T_eff,
                                                                  new_cos_psi_range, tau_scatter_matrix)
 
     # plot_package.plot_scripts.plot_L(L_scatter)
@@ -533,9 +535,9 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
         observer_phi = ans[:, 0]
         observer_theta = ans[:, 1]
         plot_package.plot_scripts.plot_observer_angles(observer_phi, observer_theta, cur_path_fig)
-        plot_package.plot_scripts.plot_Teff_to_ksi(curr_configuration.top_column.R_e,
-                                                   curr_configuration.top_column.T_eff,
-                                                   curr_configuration.top_column.inner_surface.theta_range,
+        plot_package.plot_scripts.plot_Teff_to_ksi(curr_configuration.top_column_for_calc.R_e,
+                                                   curr_configuration.top_column_for_calc.T_eff,
+                                                   curr_configuration.top_column_for_calc.inner_surface.theta_range,
                                                    cur_path_fig)
 
         # -------------------------------------------------- L_nu --------------------------------------------------
@@ -545,7 +547,7 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
         plot_package.plot_scripts.plot_L_nu_all_in_one(L_nu_surfs, cur_path_fig)
         plot_package.plot_scripts.plot_L_nu_on_phase(L_nu_surfs, cur_path_fig)
         plot_package.plot_scripts.plot_L_nu_avg(L_nu_surfs, cur_path_fig)
-        plot_package.plot_scripts.plot_L_nu_with_bb(L_nu_surfs, curr_configuration.top_column.T_eff, cur_path_fig)
+        plot_package.plot_scripts.plot_L_nu_with_bb(L_nu_surfs, curr_configuration.top_column_for_calc.T_eff, cur_path_fig)
         # ------------------------------------------------- L_scatter -------------------------------------------------
         plot_package.plot_scripts.plot_scatter_L(L_surfs, L_scatter, cur_path_fig)
         plot_package.plot_scripts.plot_PF_to_energy_with_scatter(L_nu_surfs, L_nu_scatter, cur_path_fig)

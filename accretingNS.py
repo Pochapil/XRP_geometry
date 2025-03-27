@@ -57,20 +57,65 @@ class AccretingPulsarConfiguration:
         self.dRe_div_Re = newService.get_dRe_Re(self.disk_min_theta_angle, self.disk_min_phi_angle)
         # print(f'{self.dRe_div_Re=}')
         # -------------------------------------------------- columns -------------------------------------------------
-        self.top_column = AccretionColumn(R_e, self.dRe_div_Re, mu, self.beta_mu, mc2, self.a_portion, self.phi_0,
-                                          column_type=column_surf_types['top'])
+        self.top_column_for_plot = AccretionColumn(R_e * (1 - self.dRe_div_Re / 2), R_e * (1 - self.dRe_div_Re / 2),
+                                                   self.dRe_div_Re, mu, self.beta_mu, mc2, self.a_portion,
+                                                   self.phi_0, column_type=column_surf_types['top'])
         # Accret_col : equatorial, polar surfaces
-        self.bot_column = AccretionColumn(R_e, self.dRe_div_Re, mu, self.beta_mu, mc2, self.a_portion, self.phi_0,
-                                          column_type=column_surf_types['bot'])
+        # self.bot_column_for_plot = AccretionColumn(R_e * (1 - self.dRe_div_Re / 2), R_e * (1 - self.dRe_div_Re / 2),
+        #                                            self.dRe_div_Re, mu, self.beta_mu, mc2, self.a_portion,
+        #                                            self.phi_0, column_type=column_surf_types['bot'])
 
         # ------------------------------------------------ magnet lines ------------------------------------------------
-        self.top_magnet_lines = MagnetLine(self.top_column.R_e_inner_surface, self.R_disk, self.beta_mu,
-                                           self.top_column.inner_surface.phi_range,
-                                           self.top_column.inner_surface.theta_range[-1], self.top_column.column_type)
+        self.top_magnet_lines_for_plot = MagnetLine(self.top_column_for_plot.R_e_inner_surface, self.R_disk,
+                                                    self.top_column_for_plot.R_e_inner_surface,
+                                                    self.beta_mu,
+                                                    self.top_column_for_plot.inner_surface.phi_range,
+                                                    self.top_column_for_plot.inner_surface.theta_range[-1],
+                                                    self.top_column_for_plot.column_type)
 
-        self.bot_magnet_lines = MagnetLine(self.top_column.R_e_inner_surface, self.R_disk, self.beta_mu,
-                                           self.top_column.inner_surface.phi_range,
-                                           self.top_column.inner_surface.theta_range[-1], self.bot_column.column_type)
+        # self.bot_magnet_lines_for_plot = MagnetLine(self.top_column_for_plot.R_e_inner_surface, self.R_disk,
+        #                                             self.top_column_for_plot.R_e_inner_surface,
+        #                                             self.beta_mu,
+        #                                             self.top_column_for_plot.inner_surface.phi_range,
+        #                                             self.top_column_for_plot.inner_surface.theta_range[-1],
+        #                                             self.bot_column_for_plot.column_type)
+
+        self.top_magnet_lines_for_plot_outer = MagnetLine(self.top_column_for_plot.R_e_inner_surface, self.R_disk,
+                                                          self.top_column_for_plot.R_e_inner_surface,
+                                                          self.beta_mu,
+                                                          self.top_column_for_plot.inner_surface.phi_range,
+                                                          self.top_column_for_plot.outer_surface.theta_range[-1],
+                                                          self.top_column_for_plot.column_type)
+
+        # --------------------------------------- для расчета ------------------------------------------
+        # для центральной поверхности R_e_for_delta - мы используем радиус истинно внутренней поверхности, чтобы расчитывать
+        # для БС площадь + дельта.
+        # теперь переделываем для средней колонки ?
+        # и все расчеты были проведены для нее на самом деле
+
+        R_e_middle = R_e  # * (1 + self.dRe_div_Re / 2) - мы берем центральную линию!
+
+        # R_e_for_delta
+
+        self.top_column_for_calc = AccretionColumn(R_e_middle, R_e, self.dRe_div_Re, mu,
+                                                   self.beta_mu, mc2, self.a_portion, self.phi_0,
+                                                   column_type=column_surf_types['top'], flag_R_e_same=True)
+
+        self.bot_column_for_calc = AccretionColumn(R_e_middle, R_e, self.dRe_div_Re, mu,
+                                                   self.beta_mu, mc2, self.a_portion, self.phi_0,
+                                                   column_type=column_surf_types['bot'], flag_R_e_same=True)
+
+        self.top_magnet_lines_for_calc = MagnetLine(self.top_column_for_calc.R_e_inner_surface, self.R_disk, R_e,
+                                                    self.beta_mu,
+                                                    self.top_column_for_calc.inner_surface.phi_range,
+                                                    self.top_column_for_calc.inner_surface.theta_range[-1],
+                                                    self.top_column_for_calc.column_type)
+
+        self.bot_magnet_lines_for_calc = MagnetLine(self.top_column_for_calc.R_e_inner_surface, self.R_disk, R_e,
+                                                    self.beta_mu,
+                                                    self.top_column_for_calc.inner_surface.phi_range,
+                                                    self.top_column_for_calc.inner_surface.theta_range[-1],
+                                                    self.bot_column_for_calc.column_type)
 
 
 class AccretionColumn:
@@ -80,23 +125,28 @@ class AccretionColumn:
     inner_surface - внутрення поверхность/экваториальная
     '''
 
-    def __init__(self, R_e, dRe_div_Re, mu, beta_mu, mc2, a_portion, phi_0, column_type):
+    def __init__(self, R_e, R_e_for_delta, dRe_div_Re, mu, beta_mu, mc2, a_portion, phi_0, column_type,
+                 flag_R_e_same=False):
+        # flag_R_e_same - флаг что учет толщины. True = допущение что толщина = 0
         self.R_e = R_e
         self.column_type = column_type
         self.a_portion = a_portion
         self.phi_0 = phi_0
+        self.R_e_for_delta = R_e_for_delta
 
         # попробую что
-        self.R_e_outer_surface, self.R_e_inner_surface = (1 + dRe_div_Re) * self.R_e, self.R_e
-        if config.FLAG_R_E_OLD:
+        # for plot
+        self.R_e_outer_surface = (1 + dRe_div_Re / 2) * self.R_e / (1 - dRe_div_Re / 2)
+        self.R_e_inner_surface = self.R_e
+        if flag_R_e_same:
             # если допущение что толщина = 0
             self.R_e_outer_surface, self.R_e_inner_surface = self.R_e, self.R_e
 
         M_accretion_rate = mc2 * config.L_edd / config.c ** 2
         # вызов БС чтобы расчитать все распределения. МБ стоит поднять выше так как расчет только 1 раз нужен
         self.T_eff, self.ksi_shock, self.L_x, self.beta = get_T_eff.get_Teff_distribution(
-            newService.get_delta_distance_at_surface_NS(self.R_e, dRe_div_Re),
-            newService.get_A_normal_at_surface_NS(self.R_e, self.a_portion, dRe_div_Re),
+            newService.get_delta_distance_at_surface_NS(self.R_e_for_delta, dRe_div_Re),
+            newService.get_A_normal_at_surface_NS(self.R_e_for_delta, self.a_portion, dRe_div_Re),
             mu, M_accretion_rate
         )
 
@@ -234,7 +284,7 @@ class MagnetLine:
     '''класс магнитных поверхностей (вещество над ударной волной) для рассеяния.
         знает распределение сетки по theta phi. начинается над колонкой.'''
 
-    def __init__(self, R_e, R_disk, beta_mu, top_column_phi_range, top_column_theta_end, column_type):
+    def __init__(self, R_e, R_disk, R_e_for_check, beta_mu, top_column_phi_range, top_column_theta_end, column_type):
 
         '''
         top_column_theta_end = для ВНУТРЕННЕЙ поверхности пока что!!!!
@@ -267,17 +317,19 @@ class MagnetLine:
                 # ограничиваю диском True - значит не надо использовать эту площадку
                 if theta > theta_end:
                     self.mask_array[i][j] = True
-                if flag_cut_r:
-                    self.mask_array[i][j] = True
-                else:
-                    dRe_div_Re = 0.25
-                    if self.surf_R_e * np.sin(theta) ** 2 > (1 + dRe_div_Re) * R_disk:
-                        flag_cut_r = True
-                        self.mask_array[i][j] = True
-                    # if self.surf_R_e * np.sin(theta_end) ** 2 > (1 + dRe_div_Re) * R_disk or self.surf_R_e * np.sin(
-                    #         theta_end) ** 2 < R_disk:
-                    #     flag_cut_r = True
-                    #     self.mask_array[i][j] = True
+                # if flag_cut_r:
+                #     self.mask_array[i][j] = True
+                # else:
+                #     dRe_div_Re = 0.25  # свое значение потому что можем менять условие на магнитные линии.
+                # R_e_for_check ? instead surf_R_e
+                # if self.surf_R_e * np.sin(theta_end) ** 2 > (1 + dRe_div_Re) * R_disk:
+                #     flag_cut_r = True
+                #     self.mask_array[i][j] = True
+                # wdwa
+                # if self.surf_R_e * np.sin(theta_end) ** 2 > (1 + dRe_div_Re) * R_disk or self.surf_R_e * np.sin(
+                #         theta_end) ** 2 < R_disk:
+                #     flag_cut_r = True
+                #     self.mask_array[i][j] = True
 
         if column_type == column_surf_types['bot']:
             # для нижней колонки меняем phi, theta. mask_array будет такой же

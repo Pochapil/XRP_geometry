@@ -71,7 +71,8 @@ class PathSaver:
             buf //= 10
 
         self.old_prefix_dir = self.old_prefix_dir / f'mu=0.1e{count}' / 'tau' / 'figs' / 'loop'
-        fi_0_old = (phi_0 + config.fi_0_dict[a_portion]) % 360
+        fi_0_old = -10000
+        # fi_0_old = (phi_0 + config.fi_0_dict[a_portion]) % 360
         # поменять название betta_mu на beta. i на theta!
         self.old_save_dir = self.old_prefix_dir / f'i={theta_obs} betta_mu={beta_mu}'
         # поменять fi_0 на phi_0
