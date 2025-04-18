@@ -141,11 +141,23 @@ if __name__ == '__main__':
     res = func(chi_arr, 0)
     print(res)
 
+    marker_dict = {0: '.', 1: '*', 2: '+', 3: '^'}
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
-    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    for phi_0 in phi_0_arr:
-        res = func(chi_arr, phi_0)
-        ax['a'].plot(np.rad2deg(chi_arr), res, label=f'{phi_0=}')
+    phi_0_arr = [0, 20, 40, 60, 80, 90, 100, 120, 140, 160, 180]
 
+    line_style = ['-', '--']
+    for phi_0 in phi_0_arr:
+        line_style = '-'
+        if phi_0 in [0, 90, 180]:
+            line_style = '--'
+        res = func(chi_arr, phi_0)
+        ax['a'].plot(np.rad2deg(chi_arr), res, linestyle=line_style,  label=f'{phi_0=}')
+
+    x_axis_label = r'$\chi ~ [^{\circ}]$'
+    y_axis_label = r'$a$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+
+    ax['a'].grid()
     plt.legend(fontsize=18)
     plt.show()
