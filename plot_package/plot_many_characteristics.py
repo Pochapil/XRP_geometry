@@ -8,6 +8,7 @@ import matplotlib.cm as cm
 import matplotlib.colors as colors
 import matplotlib.lines as mlines
 import scipy.interpolate
+from scipy import stats
 
 import pathService
 import config
@@ -1362,6 +1363,86 @@ def plot_romanova(mu, theta_obs, beta_mu, mc2_arr, a_portion):
     save.save_figure(fig, save_dir, file_name)
 
 
+def plot_show_phase_shift(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr):
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+
+    line_style = ['-', '--']
+    for i, phi_0 in enumerate(phi_0_arr):
+        L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+        data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=L_total)
+        ax['a'].plot(config.phase_for_plot, data_to_plot, label=r'$\phi_0 = $' + f'{phi_0}', linestyle=line_style[i],
+                     color='black')
+    ax['a'].legend()
+    prefix_folder = 'phase_shift_phi/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'{mc2=} {a_portion=} phi_0={phi_0_arr}'
+    save.save_figure(fig, save_dir, file_name)
+
+
+def plot_Teff_to_ksi_diff_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
+    '''рисует Т от кси'''
+
+    color_arr = ['red', 'green', 'blue', 'purple']
+    line_style = ['-', '--']
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    ksi_max = [0]
+    for j, mc2 in enumerate(mc2_arr):
+        for i, a_portion in enumerate(a_portion_arr):
+            # R_e_arr = np.empty(len(mc2_arr))
+            R_e = save.load_R_e(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+            # ksi_shock = save.load_ksi_shock(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+            T_eff = save.load_T_eff(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+            theta_range = save.load_theta_range(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+            ksi = R_e * (np.sin(theta_range)) ** 2
+
+            # ax['a'].scatter(ksi, T_eff, s=30, facecolors='none', edgecolors=color_arr[i], label=f'a={a_portion}')
+            ax['a'].plot(ksi, T_eff, color=color_arr[i], alpha=0.8, linestyle=line_style[j],
+                         label=f'a={a_portion}' + r'$\dot{m}$' + f'={mc2}')
+
+            y1 = np.log(T_eff)
+            x1 = np.log(ksi)
+            n = 40
+            a = stats.linregress(x1[:n], y1[:n])
+            print(a)
+            if ksi[-1] > ksi_max[-1]:
+                ksi_max = ksi
+            # ax['a'].plot(ksi, ksi ** (a[0]) * max(T_eff), color='black', alpha=0.8, linestyle='-', label=f'regr')
+        # ax['a'].plot(ksi, T_eff, color='black')
+    ax['a'].plot(ksi_max, ksi_max ** (-5 / 8) * max(T_eff), color='black', alpha=0.8, linestyle='-', label=f'-5/8')
+    x_axis_label = r'$\xi$'
+    y_axis_label = r'$T_{\rm eff} ~ [K]$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+    ax['a'].legend()
+
+    ax['a'].set_xscale('log')
+    ax['a'].set_yscale('log')
+
+    prefix_folder = 'table/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'T_eff'
+    save.save_figure(fig, save_dir, file_name)
+
+    # ax['a'].set_xlim(1, 8)
+    file_name = f'T_eff_lim'
+    save.save_figure(fig, save_dir, file_name)
+
+
+def plot_coeff_gamma():
+    import scipy.special as special
+    gamma = np.linspace(0, 1, 100)
+    ksi_shock_arr = [1,2,3,5,10,20,100]
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    for ksi_shock in ksi_shock_arr:
+        beta = 1 - gamma * np.exp(gamma) * (special.expn(1, gamma) - special.expn(1, gamma * ksi_shock))
+        coef = -3 / 8 + gamma / 4 - 1 / (4 * beta)
+        ax['a'].plot(gamma, coef, label=r'$\xi_s=$' + f'{ksi_shock}')
+    ax['a'].legend()
+    plt.show()
+
+
 if __name__ == '__main__':
 
     # plot_a_restrictions()
@@ -1383,7 +1464,14 @@ if __name__ == '__main__':
     mc2 = 60
     a_portion = 0.66
     phi_0 = 0
-    plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0)
+    # plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0)
+
+    theta_obs = 20
+    beta_mu = 20
+    mc2 = 30
+    a_portion = 0.22
+    phi_0_arr = [0, 180]
+    # plot_show_phase_shift(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr)
 
     theta_obs = 60
     beta_mu = 20
@@ -1439,6 +1527,13 @@ if __name__ == '__main__':
     phi_0 = 0
     # plot_ksi_to_beta(mu, theta_obs, beta_mu_arr, mc2, a_portion, phi_0)
 
+    theta_obs = 60
+    beta_mu = 20
+    mc2_arr = [30, 100]
+    a_portion_arr = [0.22, 0.66]
+    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+
     # -------------------
     theta_obs = 40
     beta_mu = 20
@@ -1490,7 +1585,6 @@ if __name__ == '__main__':
     # plot_table_R_disk(mu, theta_obs, beta_mu_arr, a_portion, mc2_arr, phi_0)
 
     # plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
-    # plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
 
     theta_obs = 20
     beta_mu = 40
@@ -1561,11 +1655,17 @@ if __name__ == '__main__':
     # phi_0 = 0
     # # plot_L_iso_to_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
     #
-    # theta_obs = 40
-    # beta_mu = 60
-    # mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
-    # a_portion = 0.66
-    # phi_0 = 0
-    # # plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
-    # a_portion_arr = [0.22, 0.44, 0.66, 1]
-    # # plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
+    theta_obs = 40
+    beta_mu = 20
+    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+    mc2 = 60
+    a_portion = 0.66
+    phi_0 = 0
+    # plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+    a_portion_arr = [0.22, 0.44, 0.66, 1]
+    mc2 = 60
+    mc2_arr = [60, 120]
+    # plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
+    # plot_Teff_to_ksi_diff_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
+
+    plot_coeff_gamma()
