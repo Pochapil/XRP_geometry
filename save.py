@@ -156,3 +156,18 @@ def load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, file_name):
     data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     file_name = file_name + '.npy'
     return np.load(data_folder / file_name)
+
+
+def load_T_eff(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
+    data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    file_name = 'surfaces_T_eff.txt'
+    T_eff = load_arr_from_txt(data_folder, file_name)
+    return T_eff
+
+
+def load_theta_range(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
+    data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    file_name = 'save_theta_range.txt'
+    theta_range = load_arr_from_txt(data_folder, file_name)
+    return theta_range
+
