@@ -144,7 +144,7 @@ class AccretionColumn:
 
         M_accretion_rate = mc2 * config.L_edd / config.c ** 2
         # вызов БС чтобы расчитать все распределения. МБ стоит поднять выше так как расчет только 1 раз нужен
-        self.T_eff, self.ksi_shock, self.L_x, self.beta = get_T_eff.get_Teff_distribution(
+        self.T_eff, self.ksi_shock, self.L_x, self.beta, self.gamma = get_T_eff.get_Teff_distribution(
             newService.get_delta_distance_at_surface_NS(self.R_e_for_delta, dRe_div_Re),
             newService.get_A_normal_at_surface_NS(self.R_e_for_delta, self.a_portion, dRe_div_Re),
             mu, M_accretion_rate
@@ -355,4 +355,33 @@ if __name__ == '__main__':
     a_portion = 0.22
     phi_0 = 0
 
+    theta_obs = 40
+    beta_mu = 20
+
+    mc2 = 60
+    a_portion = 0.22
+    phi_0 = 0
+
     curr_configuration = AccretingPulsarConfiguration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    print(curr_configuration.top_column_for_calc.beta)
+    print(curr_configuration.top_column_for_calc.gamma)
+    gamma = curr_configuration.top_column_for_calc.gamma
+    beta = curr_configuration.top_column_for_calc.beta
+    print(-3/8 + gamma/4 - 1/(4*beta))
+
+    # lr: -0.6859954115034551        calc: -0.669044745986284
+    import scipy.special as special
+
+    print()
+    a_portion_arr = [0.22, 0.44, 0.66, 1]
+    mc2 = 60
+    mc2_arr = [60, 120]
+    for mc2 in mc2_arr:
+        for a_portion in a_portion_arr:
+            curr_configuration = AccretingPulsarConfiguration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+            gamma = curr_configuration.top_column_for_calc.gamma
+            beta = curr_configuration.top_column_for_calc.beta
+            print(f'{gamma=:.3f}', f'{beta=:.3f}',
+                  -3 / 8 + gamma / 4 - 1 / (4 * beta),
+                  -3 / 8 + gamma / 4 - 1 / (4 * beta) - (gamma -1)/ (4 * beta) * special.expn(1, gamma)
+                  )

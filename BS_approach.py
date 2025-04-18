@@ -172,7 +172,7 @@ def get_Teff_distribution(delta_ns, A_normal, mu, M_accretion_rate):
     # получаем эффективную температуру из закона Стефана-Больцмана
     Teffbs = (get_f_theta_bs(ksi_arr, e, u0, s, gamma, beta) / config.sigm_Stf_Bolc) ** (1 / 4)
 
-    # формула 37, 1 - полная светимость
+    # формула 37, 1 - полная светимость; 4 формула
     L_x = (1 - beta) * M_accretion_rate * config.G * config.M_ns / config.R_ns
 
     plot_flag = False
@@ -205,11 +205,11 @@ def get_Teff_distribution(delta_ns, A_normal, mu, M_accretion_rate):
         ax.legend()
         plt.show()
 
-    return Teffbs, ksi_shock, L_x, beta
+    return Teffbs, ksi_shock, L_x, beta, gamma
 
 
 if __name__ == '__main__':
     delta_ns = 20434.12420796042
     A_normal = 4571886568.042245
-    T_eff, ksi_shock, L_x, beta = get_Teff_distribution(delta_ns, A_normal, 0.1e31, 10 ** 18)
+    T_eff, ksi_shock, L_x, beta, gamma = get_Teff_distribution(delta_ns, A_normal, 0.1e31, 10 ** 18)
     print(T_eff)
