@@ -10,13 +10,18 @@ import save
 plt.style.use(['science', 'notebook', 'grid'])
 mpl.rcParams['mathtext.fontset'] = 'cm'
 mpl.rcParams['font.family'] = 'STIXGeneral'
-mpl.use('Agg')  # вроде ускоряет ??
+
+
+# mpl.use('Agg')  # вроде ускоряет ??
 
 
 def plot_total_luminosity_of_surfaces(L_surfs, save_dir=None):
     '''рисует вклады от поверхностей + сумму. без учета рассеяния'''
 
     legend_labels_arr = [r'$top_{pol}$', r'$top_{eq}$', r'$bottom_{pol}$', r'$bottom_{eq}$', 'sum']
+    legend_labels_arr = [r'$\rm north polar$', r'$\rm north equatorial$', r'$\rm south polar$',
+                         r'$\rm south equatorial$', r'$\sum$']
+    legend_labels_arr = ['north polar', 'north equatorial', 'south polar', 'south equatorial', 'sum']
 
     colors_arr = ['red', 'red', 'green', 'green']
     marker_arr = ['.', '*', '+', '^']
@@ -30,7 +35,7 @@ def plot_total_luminosity_of_surfaces(L_surfs, save_dir=None):
     ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(np.sum(L_surfs, axis=0)),
                  label=legend_labels_arr[-1], color='black')
 
-    x_axis_label = r'$\Phi$'
+    x_axis_label = config.symbol_phase
     y_axis_label = r'$L_{\rm{iso}}$' + ' [erg/s]'
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
@@ -65,7 +70,7 @@ def plot_observer_angles(observer_phi, observer_theta, save_dir=None):
     ax['a'].plot(config.phase_for_plot, np.rad2deg(observer_phi), label=r'$\phi_{observer}$')
     ax['a'].legend()
 
-    x_axis_label = r'$\Phi$'
+    x_axis_label = config.symbol_phase
     y_axis_label = r'$angle ~ [deg]$'
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
@@ -161,7 +166,7 @@ def plot_L_nu_all_in_one(L_nu_surfs, save_dir=None):
         L_nu_to_plot = newService.extend_arr_for_plot(np.sum(L_nu_surfs[:, i, :], axis=0))
         ax['a'].plot(config.phase_for_plot, L_nu_to_plot, label=f'{energy:.2f} keV')
 
-        x_axis_label = r'$\Phi$'
+        x_axis_label = config.symbol_phase
         y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
         ax['a'].set_xlabel(x_axis_label, fontsize=24)
         ax['a'].set_ylabel(y_axis_label, fontsize=24)
@@ -252,7 +257,9 @@ def plot_L_nu_with_bb(L_nu_surfs, T_eff, save_dir=None):
 
 def plot_scatter_L(L_surfs, L_scatter, save_dir=None):
     '''рисует полный вклад каждой поверхности + рассеяния '''
+
     legend_labels_arr = [r'$top_{pol}$', r'$top_{eq}$', r'$bottom_{pol}$', r'$bottom_{eq}$', 'sum']
+    legend_labels_arr = ['north polar', 'north equatorial', 'south polar', 'south equatorial', 'sum']
 
     colors_arr = ['red', 'red', 'green', 'green']
     marker_arr = ['.', '*', '+', '^']
@@ -263,16 +270,16 @@ def plot_scatter_L(L_surfs, L_scatter, save_dir=None):
         ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(L_surf), label=legend_labels_arr[i],
                      color=colors_arr[i], marker=marker_arr[i], linestyle=line_style_arr[i % 2], markersize=12)
 
+    ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(L_scatter[0]), label='north scatter',
+                 color='purple', marker="1", markersize=12)
+    ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(L_scatter[1]), label='south scatter',
+                 color='blue', marker="2", markersize=12)
+
     ax['a'].plot(config.phase_for_plot,
                  newService.extend_arr_for_plot(np.sum(L_surfs, axis=0) + np.sum(L_scatter, axis=0)),
                  label=legend_labels_arr[-1], color='black')
 
-    ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(L_scatter[0]), label='top_scatter',
-                 color='purple', marker='*', markersize=12)
-    ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(L_scatter[1]), label='bot_scatter', color='blue',
-                 marker='^', markersize=12)
-
-    x_axis_label = r'$\Phi$'
+    x_axis_label = config.symbol_phase
     y_axis_label = r'$L_{\rm{iso}}$' + ' [erg/s]'
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
@@ -326,7 +333,7 @@ def plot_scatter_L_nu(L_nu_surfs, L_nu_scatter, save_dir=None):
                      label='without scatter', color='green')
         ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(L_nu_total[i]), label='sum', color='black')
 
-        x_axis_label = r'$\Phi$'
+        x_axis_label = config.symbol_phase
         y_axis_label = r'$L_{\nu} \: [erg \cdot s^{-1} \cdot hz^{-1}]$'
         ax['a'].set_xlabel(x_axis_label, fontsize=24)
         ax['a'].set_ylabel(y_axis_label, fontsize=24)

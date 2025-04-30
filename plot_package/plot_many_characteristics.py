@@ -69,8 +69,8 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
     ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='black', marker='*', s=100)
     ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='black', marker='*', s=100)
 
-    x_axis_label = r'$\Phi$'
-    y_axis_label = r'$\theta_{\rm obs} \, [^{\circ}]$'
+    x_axis_label = config.symbol_phase
+    y_axis_label = config.symbol_theta_obs_y
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
     ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
@@ -92,8 +92,8 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
     ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='black', marker='*', s=100)
     ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='black', marker='*', s=100)
 
-    x_axis_label = r'$\Phi$'
-    y_axis_label = r'$\theta_{\rm obs} \, [^{\circ}]$'
+    x_axis_label = config.symbol_phase
+    y_axis_label = config.symbol_theta_obs_y
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
     ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
@@ -103,6 +103,61 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
     clb.ax.tick_params(labelsize=ticks_labelsize)
 
     prefix_folder = 'sky_map/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion, phi_0=phi_0,
+                                   prefix_folder=prefix_folder)
+    file_name = 'try_map_contour'
+    save.save_figure(fig, save_dir, file_name)
+
+
+def plot_rvm(mu, beta_mu, mc2, a_portion, phi_0):
+    '''рисует карты неба (излучательный коэффициент в зависимости от положения наблюдателя)
+    по другому - куча профилей. для разных наблюдателей. характеризует как источник излучает в пространство
+    '''
+    ticks_labelsize = 16
+    # try_sky_map(obs_i_angle_arr)
+    # obs_i_angle = np.linspace(0, 180, 19)
+    # L_x = save.load_L_x(mu, 10, beta_mu, mc2, a_portion, phi_0)
+
+    theta_obs_arr = np.linspace(0, 90, 10).astype(int)
+    data_array = np.empty((len(theta_obs_arr) * 2 - 1, config.N_phase))
+
+    theta_obs_arr_to_plot = np.linspace(0, 180, 19).astype(int)
+
+    first_pole = (beta_mu, 0)
+    second_pole = (180 - beta_mu, np.pi)
+    third_pole = (beta_mu, 2 * np.pi)
+
+    def get_r(i, j, pole):
+        return np.sqrt(2 * np.abs((np.deg2rad(theta_obs_arr_to_plot[i] - pole[0]))) ** 2 + (1 / 2 * np.abs(
+            (config.phase_for_plot[j] * 2 * np.pi - pole[1]))) ** 2)
+
+    for i in range(data_array.shape[0]):
+        for j in range(data_array.shape[1]):
+            r1 = get_r(i, j, first_pole)
+            r2 = get_r(i, j, second_pole)
+            r3 = get_r(i, j, third_pole)
+            data_array[i, j] = np.min([r1, r2, r3]) #-
+
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_array)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
+    im = ax['a'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot, levels=30)
+    ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='white', marker='*', s=300)
+    ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='white', marker='*', s=300)
+    ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='black', marker='*', s=100)
+    ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='black', marker='*', s=100)
+
+    x_axis_label = config.symbol_phase
+    y_axis_label = config.symbol_theta_obs_y
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+    ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
+
+    clb = plt.colorbar(im)
+    clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
+    clb.ax.tick_params(labelsize=ticks_labelsize)
+
+    prefix_folder = 'sky_map_rvm/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion, phi_0=phi_0,
                                    prefix_folder=prefix_folder)
     file_name = 'try_map_contour'
@@ -135,9 +190,9 @@ def plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
     im = ax['a'].pcolormesh(config.phase_for_plot, np.linspace(0, 1, len(mc2_arr)), data_to_plot)
     ax['a'].set_yticks(np.linspace(0, 1, len(mc2_arr)), mc2_arr)
 
-    x_axis_label = r'$\Phi$'
+    x_axis_label = config.symbol_phase
     # y_axis_label = r'$mean L_{iso} [erg/s]$'
-    y_axis_label = r'$\dot{m}$'
+    y_axis_label = config.symbol_m
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
 
@@ -174,7 +229,7 @@ def plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
                             )
     ax['a'].set_yticks(np.linspace(0, 1, len(a_portion_arr)), np.round(a_portion_arr, 2))
 
-    x_axis_label = r'$\Phi$'
+    x_axis_label = config.symbol_phase
     y_axis_label = r'$a$'
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
@@ -267,7 +322,9 @@ def plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_ar
     bounds = phi_0_arr.copy()
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', pad=0.01)
-    cb.set_label(label=r'$\varphi_0 ~ [^\circ]$', fontsize=24)
+    cb.set_label(label=config.symbol_phi_0_y, fontsize=24)
+
+    # config.symbol_phi_0 + ' ' + config.symbol_grad
 
     prefix_folder = 'PF_to_L_nu/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
@@ -323,7 +380,7 @@ def plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr):
     bounds = phi_0_arr.copy()
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', pad=0.01)
-    cb.set_label(label=r'$\varphi_0 ~ [^\circ]$', fontsize=24)
+    cb.set_label(label=config.symbol_phi_0_y, fontsize=24)
 
     prefix_folder = 'PF_to_L/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
@@ -340,7 +397,7 @@ def plot_masses_PF_L_on_off(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_
     marker_dict = {0: '.', 1: '*', 2: '+', 3: '^'}
 
     # cmap = mpl.cm.viridis
-    global cmap
+    # global cmap
 
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
     for a_index, a_portion in enumerate(a_portion_arr):
@@ -379,7 +436,7 @@ def plot_masses_PF_L_on_off(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_
     bounds = phi_0_arr.copy()
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', pad=0.01)
-    cb.set_label(label=r'$\varphi_0 ~ [^\circ]$', fontsize=24)
+    cb.set_label(label=config.symbol_phi_0_y, fontsize=24)
 
     limits_x = ax['a'].get_xlim()
     limits_y = ax['a'].get_ylim()
@@ -436,7 +493,7 @@ def plot_masses_PF_L_on_off(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_
     bounds = phi_0_arr.copy()
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax1['a'], orientation='vertical', pad=0.01)
-    cb.set_label(label=r'$\varphi_0 ~ [^\circ]$', fontsize=24)
+    cb.set_label(label=config.symbol_phi_0_y, fontsize=24)
 
     prefix_folder = 'PF_to_L/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
@@ -494,7 +551,7 @@ def plot_PF_to_L_const_a_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0
     bounds = phi_0_arr.copy()
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', pad=0.01)
-    cb.set_label(label=r'$\varphi_0 ~ [^\circ]$', fontsize=24)
+    cb.set_label(label=config.symbol_phi_0_y, fontsize=24)
 
     prefix_folder = 'PF_to_L_const_a/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=a_portion,
@@ -545,7 +602,7 @@ def plot_PF_to_L_const_a_const_phi0_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_por
     bounds = mc2_arr.copy()
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', pad=0.01)
-    cb.set_label(label=r'$\dot{m}$', fontsize=24)
+    cb.set_label(label=config.symbol_m, fontsize=24)
 
     prefix_folder = 'PF_to_L_const_a_diff_m/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
@@ -576,8 +633,8 @@ def plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, flag_same
     clb = plt.colorbar(im, pad=0.01)
     clb.set_label(r'$L_{\rm iso}$' + r'$\rm [erg/s]$', fontsize=26)
 
-    x_axis_label = r'$\Phi$'
-    y_axis_label = r'$\varphi_0 ~ [^\circ]$'
+    x_axis_label = config.symbol_phase
+    y_axis_label = config.symbol_phi_0_y
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
 
@@ -641,7 +698,7 @@ def plot_PF_contour(mu, mc2, a_portion, phi_0):
     cbar.ax.set_ylabel('PF')
 
     x_axis_label = r'$\chi [^\circ]$'
-    y_axis_label = r'$\theta_{\rm obs} [^\circ]$'
+    y_axis_label = config.symbol_theta_obs_y
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
 
@@ -698,7 +755,7 @@ def plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0):
         arr = [plus] * len(dict_chi_plus_theta[plus])
         ax['a'].scatter(arr, dict_chi_plus_theta[plus], color='black')
 
-    x_axis_label = r'$\chi + \theta_{\rm obs} [^\circ]$'
+    x_axis_label = config.symbol_mu_ang + ' + ' + config.symbol_theta_obs_y  # r'$\chi + \theta_{\rm obs} [^\circ]$'
     y_axis_label = r'$PF$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
@@ -714,7 +771,7 @@ def plot_PF_to_chi_theta(mu, mc2, a_portion, phi_0):
         arr = [minus] * len(dict_chi_minus_theta[minus])
         ax['a'].scatter(arr, dict_chi_minus_theta[minus], color='black')
 
-    x_axis_label = r'$\chi - \theta_{\rm obs} [^\circ]$'
+    x_axis_label = config.symbol_mu_ang + ' - ' + config.symbol_theta_obs_y  # r'$\chi - \theta_{\rm obs} [^\circ]$'
     y_axis_label = r'$PF$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
@@ -736,7 +793,7 @@ def plot_L_iso_to_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
     ax['a'].scatter(mc2_arr, L_iso_arr, s=30, facecolors='none', edgecolors='black')
     ax['a'].plot(mc2_arr, L_iso_arr, color='black', alpha=0.2, linestyle='-')
 
-    x_axis_label = r'$\dot{m}$'
+    x_axis_label = config.symbol_m
     y_axis_label = r'$L_{\rm iso}$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
@@ -771,7 +828,7 @@ def plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
     ax['a'].scatter(mc2_arr, L_x_arr, s=30, facecolors='none', edgecolors='green', label=r'$\frac{L_{\rm x}}{10^{38}}$')
     ax['a'].plot(mc2_arr, L_x_arr, color='black', alpha=0.2, linestyle='-')
 
-    x_axis_label = r'$\dot{m}$'
+    x_axis_label = config.symbol_m
     y_axis_label = r'$R/R_{*}$'  # \xi
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
@@ -822,7 +879,7 @@ def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
 
     ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
 
-    x_axis_label = r'$\dot{m}$'
+    x_axis_label = config.symbol_m
     y_axis_label = r'$R/R_{*}$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
@@ -834,7 +891,7 @@ def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
     file_name = f'together_a'
     save.save_figure(fig, save_dir, file_name)
 
-    x_axis_label = r'$\dot{m}$'
+    x_axis_label = config.symbol_m
     y_axis_label = r'$L_{\rm x} \rm [erg ~ s^{-1}]$'
     ax1['a'].set_xlabel(x_axis_label, fontsize=26)
     ax1['a'].set_ylabel(y_axis_label, fontsize=26)
@@ -868,7 +925,7 @@ def plot_table_R_disk(mu, theta_obs, beta_mu_arr, a_portion, mc2_arr, phi_0):
     ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
     ax['a'].set_yscale('log')
 
-    x_axis_label = r'$\dot{m}$'
+    x_axis_label = config.symbol_m
     y_axis_label = r'$R/R_{*}$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
@@ -948,7 +1005,7 @@ def plot_L_max_phase_to_m_to_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, p
     clb = plt.colorbar(im, pad=0.01)
     clb.set_label(r'$\Phi_{max}$', fontsize=26)
 
-    x_axis_label = r'$\dot{m}$'
+    x_axis_label = config.symbol_m
     y_axis_label = r'$a$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
@@ -968,7 +1025,7 @@ def plot_L_max_phase_to_m_to_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, p
     clb = plt.colorbar(im, pad=0.01)
     clb.set_label(r'$\Phi_{max}$', fontsize=26)
 
-    x_axis_label = r'$\dot{m}$'
+    x_axis_label = config.symbol_m
     y_axis_label = r'$a$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
@@ -994,7 +1051,7 @@ def plot_L_max_phase_to_m_to_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, p
     clb = plt.colorbar(im, pad=0.01)
     clb.set_label(r'$\Phi_{max}$', fontsize=26)
 
-    x_axis_label = r'$\dot{m}$'
+    x_axis_label = config.symbol_m
     y_axis_label = r'$a$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
@@ -1174,8 +1231,8 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
         ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='black', marker='*', s=100)
         ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='black', marker='*', s=100)
 
-        x_axis_label = r'$\Phi$'
-        y_axis_label = r'$\theta_{\rm obs} \, [^{\circ}]$'
+        x_axis_label = config.symbol_phase
+        y_axis_label = config.symbol_theta_obs_y
         ax['a'].set_xlabel(x_axis_label, fontsize=24)
         ax['a'].set_ylabel(y_axis_label, fontsize=24)
         ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
@@ -1199,14 +1256,41 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
 
         save.save_figure(fig, save_dir, file_name)
 
+    def plot_PF(data_to_plot_arr, prefix_folder, file_name_arr):
+        theta_obs_arr_to_plot = np.linspace(0, 180, 19).astype(int)
+        fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
+
+        for data_to_plot, label_name in zip(data_to_plot_arr, file_name_arr):
+            PF = []
+            for i in range(10):
+                PF.append(newService.get_PF(data_to_plot[i]))
+
+            ax['a'].plot(theta_obs_arr_to_plot[:10], PF, label=label_name)
+
+        x_axis_label = config.symbol_theta_obs_y
+        y_axis_label = 'PF'
+        ax['a'].set_xlabel(x_axis_label, fontsize=24)
+        ax['a'].set_ylabel(y_axis_label, fontsize=24)
+        ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
+        ax['a'].legend()
+        save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion,
+                                       phi_0=phi_0,
+                                       prefix_folder=prefix_folder)
+
+        save.save_figure(fig, save_dir, 'PFs')
+
     vmin = np.min(np.hstack((data_all_on, data_scatter_off_tau_off, data_scatter_off, data_NS_off)) / L_x)
     vmax = np.max(np.hstack((data_all_on, data_scatter_off_tau_off, data_scatter_off, data_NS_off)) / L_x)
 
+    PF_data_to_plot = []
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_all_on / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'all_on', vmin=vmin, vmax=vmax)
+    PF_data_to_plot.append(data_to_plot)
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_NS_off / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'NS_off', vmin=vmin, vmax=vmax)
+    PF_data_to_plot.append(data_to_plot)
+    # plot_PF(data_to_plot, 'sky_map_difference/', 'NS_off')
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1,
                                        arr=np.abs(data_all_on - data_NS_off) / data_all_on)
@@ -1214,6 +1298,8 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_scatter_off / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off', vmin=vmin, vmax=vmax)
+    PF_data_to_plot.append(data_to_plot)
+    # plot_PF(data_to_plot, 'sky_map_difference/', 'scatter_off')
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1,
                                        arr=np.abs(data_all_on - data_scatter_off) / L_x)
@@ -1221,6 +1307,8 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_tau_off / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'tau_off')
+    PF_data_to_plot.append(data_to_plot)
+    # plot_PF(data_to_plot, 'sky_map_difference/', 'tau_off')
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1,
                                        arr=np.abs(data_all_on - data_tau_off) / L_x)
@@ -1228,10 +1316,15 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_scatter_off_tau_off / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off_tau_off', vmin=vmin, vmax=vmax)
+    PF_data_to_plot.append(data_to_plot)
+    # plot_PF(data_to_plot, 'sky_map_difference/', 'scatter_off_tau_off')
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1,
                                        arr=np.abs(data_all_on - data_scatter_off_tau_off) / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off_tau_off_diff')
+
+    plot_PF(PF_data_to_plot, 'sky_map_difference/',
+            ['all_on', 'NS_off', 'scatter_off', 'tau_off', 'scatter_off_tau_off'])
 
 
 def plot_PF_obs(mu, beta_mu, mc2_arr, a_portion_arr, phi_0):
@@ -1282,7 +1375,7 @@ def plot_PF_obs(mu, beta_mu, mc2_arr, a_portion_arr, phi_0):
     bounds = theta_obs_arr.copy()
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', pad=0.01)
-    cb.set_label(label=r'$\theta_{\rm obs} ~ [^\circ]$', fontsize=24)
+    cb.set_label(label=config.symbol_theta_obs_y, fontsize=24)
 
     prefix_folder = 'PF_to_obs/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=None, a_portion=None,
@@ -1327,8 +1420,8 @@ def plot_romanova(mu, theta_obs, beta_mu, mc2_arr, a_portion):
     clb = plt.colorbar(im, pad=0.01)
     clb.set_label(r'$\langle L_{\rm iso} \rangle$', fontsize=26)
 
-    x_axis_label = r'$\Phi$'
-    y_axis_label = r'$\dot{m}$'
+    x_axis_label = config.symbol_phase
+    y_axis_label = config.symbol_m
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
 
@@ -1349,8 +1442,8 @@ def plot_romanova(mu, theta_obs, beta_mu, mc2_arr, a_portion):
     clb = plt.colorbar(im, pad=0.01)
     clb.set_label(r'$\langle L_{\rm iso} \rangle$', fontsize=26)
 
-    x_axis_label = r'$\Phi$'
-    y_axis_label = r'$\dot{m}$'
+    x_axis_label = config.symbol_phase
+    y_axis_label = config.symbol_m
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
 
@@ -1398,7 +1491,7 @@ def plot_Teff_to_ksi_diff_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_
 
             # ax['a'].scatter(ksi, T_eff, s=30, facecolors='none', edgecolors=color_arr[i], label=f'a={a_portion}')
             ax['a'].plot(ksi, T_eff, color=color_arr[i], alpha=0.8, linestyle=line_style[j],
-                         label=f'a={a_portion}' + r'$\dot{m}$' + f'={mc2}')
+                         label=f'a={a_portion}' + config.symbol_m + f'={mc2}')
 
             y1 = np.log(T_eff)
             x1 = np.log(ksi)
@@ -1433,12 +1526,22 @@ def plot_Teff_to_ksi_diff_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_
 def plot_coeff_gamma():
     import scipy.special as special
     gamma = np.linspace(0, 1, 100)
-    ksi_shock_arr = [1,2,3,5,10,20,100]
+    ksi_shock_arr = [2, 3, 5, 8, 10]
     fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
     for ksi_shock in ksi_shock_arr:
         beta = 1 - gamma * np.exp(gamma) * (special.expn(1, gamma) - special.expn(1, gamma * ksi_shock))
         coef = -3 / 8 + gamma / 4 - 1 / (4 * beta)
-        ax['a'].plot(gamma, coef, label=r'$\xi_s=$' + f'{ksi_shock}')
+        ax['a'].plot(gamma, coef, label=r'$\xi_s=$' + f'{ksi_shock}', linestyle='-')
+        coef = -3 / 8 + gamma / 4
+        # ax['a'].plot(gamma, coef, label=r'$\xi_s=$' + f'{ksi_shock}', linestyle='--')
+        coef = -3 / 8 - 1 / (4 * beta)
+        # ax['a'].plot(gamma, coef, label=r'$\xi_s=$' + f'{ksi_shock}', linestyle='-.')
+
+    x_axis_label = r'$\gamma$'
+    y_axis_label = r'$p$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+
     ax['a'].legend()
     plt.show()
 
@@ -1545,7 +1648,7 @@ if __name__ == '__main__':
 
     beta_mu = 20
     mc2 = 60
-    a_portion = 0.22
+    a_portion = 0.66
     phi_0 = 0
     # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
 
@@ -1561,7 +1664,7 @@ if __name__ == '__main__':
     mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
     a_portion = 0.66
     phi_0 = 20
-    # plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+    # (mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
     theta_obs = 20
     beta_mu = 20
@@ -1668,4 +1771,5 @@ if __name__ == '__main__':
     # plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
     # plot_Teff_to_ksi_diff_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
 
-    plot_coeff_gamma()
+    # plot_coeff_gamma()
+    plot_rvm(mu, 20, 60, a_portion, phi_0)

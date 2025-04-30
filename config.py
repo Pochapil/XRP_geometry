@@ -117,5 +117,28 @@ energy_indexes_luminosity = [0, 12, 14, 16, 18]
 # print(val)
 # print(H/10**11)
 
+
+# ---------------------- symbols
+
+symbol_grad = r'$[^{\circ}]$'
+symbol_phase = r'$\Phi$'
+
+symbol_theta_obs = r'$\Theta_{\rm obs}$'
+symbol_m = r'$\dot{m}$'
+symbol_phi_0 = r'$\phi_0$'  # r'$\varphi_0 ~ [^\circ]$'
+symbol_mu_ang = r'$\chi$'
+
+
+symbol_theta_obs_y = symbol_theta_obs + ' ' + symbol_grad
+symbol_phi_0_y = symbol_phi_0 + ' ' + symbol_grad
+
+# r'$L_{\rm iso} / L_{x}$'
+# r'$\widetilde{L}_{\rm iso}$'
+# r'$\nu L_{\nu}$' + r'$\rm [erg/s]$'
+
+
 if __name__ == '__main__':
     print(L_edd)
+    mc2 = 20
+    print(mc2 * L_edd / c ** 2)
+    print(mc2 * L_edd / c ** 2 / 1e18)
