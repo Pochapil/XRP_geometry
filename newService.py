@@ -57,6 +57,10 @@ def get_theta_accretion_begin(R_e):
     return np.arcsin((config.R_ns / R_e) ** (1 / 2))
 
 
+def get_theta_for_R(R, R_e):
+    return np.arcsin((R / R_e) ** (1 / 2))
+
+
 # @jit
 def get_free_fall_velocity(theta, R_e):
     r = R_e * np.sin(theta) ** 2
@@ -93,14 +97,14 @@ def get_PF(L):
 # @jit
 def plank_energy_on_wavelength(wavelength, T):
     return 2 * config.h_plank_ergs * config.c ** 2 / wavelength ** 5 \
-           * 1 / (np.e ** (config.h_plank_ergs * config.c / (wavelength * config.k_bolc * T)) - 1)
+        * 1 / (np.e ** (config.h_plank_ergs * config.c / (wavelength * config.k_bolc * T)) - 1)
 
 
 # @jit
 def plank_energy_on_frequency(frequency, T):
     # erg / s / sr / cm**2 / hz
     return 2 * config.h_plank_ergs * frequency ** 3 / config.c ** 2 \
-           * 1 / (np.e ** (config.h_plank_ergs * frequency / (config.k_bolc * T)) - 1)
+        * 1 / (np.e ** (config.h_plank_ergs * frequency / (config.k_bolc * T)) - 1)
 
 
 # @jit
