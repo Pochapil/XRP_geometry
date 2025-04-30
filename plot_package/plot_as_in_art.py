@@ -7,7 +7,7 @@ def plot_sky_map_as_in_art():
 
     beta_mu = 20
     mc2 = 60
-    a_portion_arr = [0.22, 0.66]
+    a_portion_arr = [0.22, 0.44, 0.66]
     phi_0_arr = [0, 20, 40, 60]
     for a_portion in a_portion_arr:
         for phi_0 in phi_0_arr:
@@ -202,8 +202,8 @@ def plot_table_as_in_art():
 
 if __name__ == "__main__":
     ...
-    # plot_sky_map_as_in_art()
-    plot_L_to_phi_0_as_in_art()
+    plot_sky_map_as_in_art()
+    # plot_L_to_phi_0_as_in_art()
     # plot_L_to_mc2_as_in_art()
     # plot_L_to_a_portion_as_in_art()
     # plot_masses_PF_L_nu_as_in_art()
