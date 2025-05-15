@@ -46,6 +46,11 @@ def calc_L(surface, T_eff, cos_tensor):
     '''расчитать L от фазы от поверхности, зная распределение Т'''
     tilda_s = create_ds_for_integral(surface)
     # (пи входит в сигма) sigm_Stf_Bolc = integral pi B_nu
+
+    # чтобы проверять площадь
+    # L = np.abs(4 * scipy.integrate.simps(
+    #     scipy.integrate.simps(1 * cos_tensor * tilda_s, surface.theta_range), surface.phi_range))
+
     L = np.abs(4 * config.sigm_Stf_Bolc * scipy.integrate.simps(
         scipy.integrate.simps(T_eff ** 4 * cos_tensor * tilda_s, surface.theta_range), surface.phi_range))
     return L
