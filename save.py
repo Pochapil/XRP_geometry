@@ -51,6 +51,76 @@ def save_figure(fig, file_path, file_name):
     plt.close(fig)
 
 
+# Функция для сохранения с фиксированными границами
+def save_fixed_size(fig, ax, file_path, file_name, has_cbar=False):
+    create_file_path(file_path)
+    full_file_name = file_path / (file_name + '.png')
+
+    dpi = 300
+    # ax.set_aspect('equal')
+    plt.tight_layout()
+
+    # Жестко фиксируем границы
+    if has_cbar:
+        # Для графиков с colorbar
+        fig.savefig(full_file_name, dpi=dpi, bbox_inches='tight', pad_inches=0.1)
+    else:
+        # Для графиков без colorbar добавляем искусственные отступы
+        # Добавляем прозрачный прямоугольник справа для выравнивания
+        from PIL import Image
+
+
+        fig.savefig(full_file_name, dpi=dpi, bbox_inches='tight',
+                    pad_inches=0.1, bbox_extra_artists=[plt.Rectangle((0, 0), 1, 1, fill=False)])
+
+        content_width = 8  # Ширина контента в дюймах
+        content_height = 6  # Высота контента в дюймах
+        cbar_width = 0.5
+
+        img = Image.open(full_file_name)
+        new_img = Image.new('RGBA', (int((content_width + cbar_width) * dpi) - 20, int(content_height * dpi)), (0, 0, 0, 0))
+        new_img.paste(img, (0, 0))
+        new_img.save(full_file_name)
+
+    plt.close(fig)
+
+
+def save_figs_same_w(fig, ax, file_path, file_name, has_cbar=False):
+    # Общие параметры
+    content_width = 8  # Ширина контента в дюймах
+    content_height = 6 # Высота контента в дюймах
+    cbar_width = 0.5  # Ширина colorbar в дюймах
+    dpi = 300
+
+    def save_plot(ax, filename, has_cbar=False):
+        # Жестко фиксируем размеры контента
+        ax.set_position([0.1, 0.1, 0.8, 0.8])
+
+        if has_cbar:
+            # Для графиков с colorbar
+            fig = ax.figure
+            fig.set_size_inches(content_width + cbar_width, content_height)
+            cbar = fig.colorbar(im, ax=ax, fraction=0.05, pad=0.05)
+            fig.savefig(filename, dpi=dpi, bbox_inches=Bbox([[0, 0], [content_width + cbar_width, content_height]]))
+        else:
+            # Для графиков без colorbar
+            fig = ax.figure
+            fig.set_size_inches(content_width, content_height)
+            fig.savefig(filename, dpi=dpi, bbox_inches=Bbox([[0, 0], [content_width, content_height]]))
+            # Добавляем прозрачный прямоугольник справа для выравнивания
+            from PIL import Image
+            img = Image.open(filename)
+            new_img = Image.new('RGBA', (int((content_width + cbar_width) * dpi), int(content_height * dpi)),
+                                (0, 0, 0, 0))
+            new_img.paste(img, (0, 0))
+            new_img.save(filename)
+
+
+
+
+
+
+
 def save_figure_txt(fig, file_path, file_name):
     create_file_path(file_path)
     full_file_name = file_path + file_name
@@ -170,4 +240,3 @@ def load_theta_range(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     file_name = 'save_theta_range.txt'
     theta_range = load_arr_from_txt(data_folder, file_name)
     return theta_range
-
