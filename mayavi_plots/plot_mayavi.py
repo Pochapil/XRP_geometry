@@ -13,6 +13,7 @@ from mayavi.core.ui.mayavi_scene import MayaviScene
 
 import config
 import newService
+import pathService
 from geometry import matrix
 from mayavi_plots import mayavi_geometry
 import accretingNS
@@ -342,7 +343,7 @@ class Visualization(HasTraits):
         # r_min = ksi
         # self.curr_configuration.top_column.inner_surface.theta_range
 
-        R_disc = self.curr_configuration.R_disk / config.R_ns * (1 - self.curr_configuration.dRe_div_Re/2)
+        R_disc = self.curr_configuration.R_disk / config.R_ns * (1 - self.curr_configuration.dRe_div_Re / 2)
 
         # r_min = self.curr_configuration.top_column.R_e / config.R_ns * np.sin(
         #     np.pi / 2 - np.deg2rad(self.curr_configuration.beta_mu)) ** 2
@@ -350,7 +351,7 @@ class Visualization(HasTraits):
         # * np.cos(np.deg2rad(self.curr_configuration.beta_mu))
         phi = np.linspace(0, 2 * np.pi, 100)
         # - так как проекция на плоскость то х надо уменьшить
-        x = R_disc * np.cos(phi) #  * np.cos(np.deg2rad(self.curr_configuration.beta_mu))
+        x = R_disc * np.cos(phi)  # * np.cos(np.deg2rad(self.curr_configuration.beta_mu))
         y = R_disc * np.sin(phi)
         z = np.zeros_like(phi)
 
@@ -367,7 +368,7 @@ class Visualization(HasTraits):
 
             R_column = self.curr_configuration.top_column_for_plot.inner_surface.surf_R_e / config.R_ns
             theta = self.curr_configuration.top_column_for_plot.inner_surface.theta_range[-1]
-            r = R_column * np.sin(theta) ** 3 # * 0.9 # * np.cos(theta)
+            r = R_column * np.sin(theta) ** 3  # * 0.9 # * np.cos(theta)
             x = r * np.cos(phi)  # * np.cos(np.deg2rad(self.curr_configuration.beta_mu))
             y = r * np.sin(phi)
             z = np.zeros_like(phi)
@@ -381,9 +382,10 @@ class Visualization(HasTraits):
             z = 0
             scale = 1
             opacity = 1
-            self.scene.mlab.quiver3d(scale * x, scale * y, scale * z, mode='2ddash', scale_factor=1, color=(0, 0, 0), opacity=opacity)
-            self.scene.mlab.quiver3d(-scale * x, -scale * y, -scale * z, mode='2ddash', scale_factor=1, color=(0, 0, 0), opacity=opacity)
-
+            self.scene.mlab.quiver3d(scale * x, scale * y, scale * z, mode='2ddash', scale_factor=1, color=(0, 0, 0),
+                                     opacity=opacity)
+            self.scene.mlab.quiver3d(-scale * x, -scale * y, -scale * z, mode='2ddash', scale_factor=1, color=(0, 0, 0),
+                                     opacity=opacity)
 
             x = r * np.cos(phi[0])
             y = r * np.sin(phi[0])
@@ -542,7 +544,7 @@ class Visualization(HasTraits):
 
         # r_min = ksi
         # self.curr_configuration.top_column.inner_surface.theta_range
-        r_min = self.curr_configuration.R_disk / config.R_ns * (1 - self.curr_configuration.dRe_div_Re/2)
+        r_min = self.curr_configuration.R_disk / config.R_ns * (1 - self.curr_configuration.dRe_div_Re / 2)
 
         # r_min = self.curr_configuration.top_column.R_e / config.R_ns * np.sin(
         #     np.pi / 2 - np.deg2rad(self.curr_configuration.beta_mu)) ** 2
@@ -685,6 +687,7 @@ class Visualization(HasTraits):
             self.accretion_column_bot_outer = self.scene.mlab.mesh(-x, -y, -z,
                                                                    color=self.color_accretion_column_bot_outer,
                                                                    mask=mask)
+
         # middle
         # x, y, z, mask = self.get_data_for_accretion_columns_with_mask_for_calc(
         #     self.curr_configuration.top_column_for_calc.outer_surface)
@@ -911,10 +914,24 @@ class Visualization(HasTraits):
     def anim(self):
         self.scene.reset_zoom()
         N = 100
+        N = 9
+        slider_phase = np.linspace(0, 1, N)
+        sufffix = 'phase/'
+        curr_params = f''
+        save_dir = pathService.get_dir(mu=None, theta_obs=self.curr_configuration.theta_obs,
+                                       beta_mu=self.curr_configuration.beta_mu, mc2=self.curr_configuration.mc2,
+                                       a_portion=self.curr_configuration.a_portion, phi_0=self.curr_configuration.phi_0,
+                                       prefix_folder=None)
         for i in range(N):
-            self.slider_distance = 3.89764  # wtf???
-            self.slider_phase = 1 * i / (N - 1)
-            self.scene.save_png('mayavi_figs/' + f'anim{i:02d}.png')
+            # self.slider_distance = 135  # 3.89764  # wtf???
+            self.slider_phase = slider_phase[i]  # 1 * i / (N - 1)
+            self.scene.scene.set_size((1200, 800))
+            if sufffix == 'phase/':
+                self.scene.save_png('mayavi_figs/' + sufffix + f'phase = {slider_phase[i]:.2f}.png')
+                # fig = mlab.figure(size=(1024, 1024))
+                # mlab.savefig('example.png', figure=fig)
+            else:
+                self.scene.save_png('mayavi_figs/' + sufffix + f'anim{i:02d}.png')
             # mlab.figure(size = (1024,768), bgcolor = (1,1,1), fgcolor = (0.5, 0.5, 0.5))
             # mlab.save('pure_beauty.png')
 
@@ -989,10 +1006,10 @@ if __name__ == "__main__":
     a_portion = 0.2
     phi_0 = 60
 
-    # theta_obs = 80
-    # beta_mu = 20
-    # mc2 = 100
-    # a_portion = 0.82
-    # phi_0 = 80
+    theta_obs = 60
+    beta_mu = 40
+    mc2 = 100
+    a_portion = 0.2
+    phi_0 = 40
 
     plot_main(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
