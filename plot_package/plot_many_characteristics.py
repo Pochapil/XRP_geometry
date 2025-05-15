@@ -14,6 +14,7 @@ import pathService
 import config
 import newService
 import save
+from geometry import matrix
 
 plt.style.use(['science', 'notebook', 'grid'])
 # чтобы стиль был похож на теховский
@@ -128,15 +129,31 @@ def plot_rvm(mu, beta_mu, mc2, a_portion, phi_0):
     third_pole = (beta_mu, 2 * np.pi)
 
     def get_r(i, j, pole):
-        return np.sqrt(2 * np.abs((np.deg2rad(theta_obs_arr_to_plot[i] - pole[0]))) ** 2 + (1 / 2 * np.abs(
-            (config.phase_for_plot[j] * 2 * np.pi - pole[1]))) ** 2)
+        # return np.sqrt(2 * np.abs((np.deg2rad(theta_obs_arr_to_plot[i] - pole[0]))) ** 2 + (1 / 2 * np.abs(
+        #     (config.phase_for_plot[j] * 2 * np.pi - pole[1]))) ** 2)
+        x = matrix.get_cartesian_from_spherical(1, np.deg2rad(theta_obs_arr_to_plot[i]),
+                                                config.phase_for_plot[j] * 2 * np.pi)
+        x = np.array(x)
+
+        y = matrix.get_cartesian_from_spherical(1, np.deg2rad(beta_mu), 0)
+        y = np.array(y)
+
+        y1 = matrix.get_cartesian_from_spherical(1, np.pi - np.deg2rad(beta_mu), np.pi)
+        y1 = np.array(y1)
+
+        z = np.arccos(x.dot(y) / np.linalg.norm(x) * np.linalg.norm(y))
+        z1 = np.arccos(x.dot(y1) / np.linalg.norm(x) * np.linalg.norm(y))
+
+        # print(x.dot(y))
+        # print(np.arccos(x @ y / np.linalg.norm(x) * np.linalg.norm(y)))
+        return np.min([z, z1])
 
     for i in range(data_array.shape[0]):
         for j in range(data_array.shape[1]):
             r1 = get_r(i, j, first_pole)
             r2 = get_r(i, j, second_pole)
             r3 = get_r(i, j, third_pole)
-            data_array[i, j] = np.min([r1, r2, r3]) #-
+            data_array[i, j] = -np.min([r1, r2, r3])  # -
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_array)
 
@@ -214,8 +231,10 @@ def plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
 
     # нормировка на L_max
     buf = L_total_a_portion / np.max(L_total_a_portion, axis=-1).ravel()[:, np.newaxis]
+    data_to_plot_norm = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=buf)
+    # buf = L_total_a_portion
     # buf = L_total_a_portion / np.max(np.max(L_total_a_portion, axis=-1))
-    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=buf)
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=np.log10(L_total_a_portion))
 
     fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
     # чтобы сделать хороший масштаб и чтобы каждый профиль имел равную толщину сначала рисуем от 0 до 1 а потом
@@ -225,7 +244,7 @@ def plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
     # малых значений, которые появляются после добавления а=1
     im = ax['a'].pcolormesh(config.phase_for_plot, np.linspace(0, 1, len(a_portion_arr)), data_to_plot,
                             # norm=colors.LogNorm(vmin=data_to_plot.min(), vmax=data_to_plot.max())
-                            norm=colors.TwoSlopeNorm(0.9, vmin=data_to_plot.min(), vmax=data_to_plot.max())
+                            # norm=colors.TwoSlopeNorm(0.9, vmin=data_to_plot.min(), vmax=data_to_plot.max())
                             )
     ax['a'].set_yticks(np.linspace(0, 1, len(a_portion_arr)), np.round(a_portion_arr, 2))
 
@@ -235,12 +254,53 @@ def plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
 
     clb = plt.colorbar(im, pad=0.01)
-    clb.set_label(r'$\widetilde{L}_{\rm iso}$', fontsize=24)
+    # clb.set_label(r'$\widetilde{L}_{\rm iso}$', fontsize=24)
+    clb.set_label(r'$\log {L}_{\rm iso}$', fontsize=24)
 
     prefix_folder = 'L_to_a/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=mc2, a_portion=None,
                                    phi_0=phi_0, prefix_folder=prefix_folder)
     file_name = 'map_contour'
+    save.save_figure(fig, save_dir, file_name)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+    # чтобы сделать хороший масштаб и чтобы каждый профиль имел равную толщину сначала рисуем от 0 до 1 а потом
+    # заменяем надписи на значения а
+    # norm - нужно сместить растянуть колорбар потому что в районе 0.9 есть перепады, но мы их не увидим из-за
+    # малых значений, которые появляются после добавления а=1
+    ax['a'].pcolormesh(config.phase_for_plot, np.linspace(0, 1, len(a_portion_arr)), data_to_plot_norm,
+                       # norm=colors.LogNorm(vmin=data_to_plot.min(), vmax=data_to_plot.max())
+                       norm=colors.TwoSlopeNorm(0.9, vmin=data_to_plot_norm.min(), vmax=data_to_plot_norm.max())
+                       )
+    ax['a'].set_yticks(np.linspace(0, 1, len(a_portion_arr)), np.round(a_portion_arr, 2))
+
+    x_axis_label = config.symbol_phase
+    y_axis_label = r'$a$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+
+    clb = plt.colorbar(im, pad=0.01)
+    clb.set_label(r'$\widetilde{L}_{\rm iso}$', fontsize=24)
+    # clb.set_label(r'${L}_{\rm iso}$', fontsize=24)
+
+    prefix_folder = 'L_to_a/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=mc2, a_portion=None,
+                                   phi_0=phi_0, prefix_folder=prefix_folder)
+    file_name = 'map_contour_norm'
+    save.save_figure(fig, save_dir, file_name)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
+    ax['a'].plot(a_portion_arr, L_total_a_portion.mean(axis=1), color='black')
+
+    x_axis_label = r'$a$'
+    y_axis_label = r'${L}_{\rm iso}$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+
+    prefix_folder = 'L_to_a/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=mc2, a_portion=None,
+                                   phi_0=phi_0, prefix_folder=prefix_folder)
+    file_name = 'L_to_a'
     save.save_figure(fig, save_dir, file_name)
 
 
@@ -845,8 +905,8 @@ def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
     '''R_e/R_ns от m + ksi_shock от m + L_x от m'''
     ticks_labelsize = 18
     fig, ax = plt.subplot_mosaic('a', figsize=(9, 6))
-
     fig1, ax1 = plt.subplot_mosaic('a', figsize=(9, 6))
+    fig2, ax2 = plt.subplot_mosaic('a', figsize=(9, 6))
 
     color_arr = ['red', 'green', 'blue', 'purple']
 
@@ -856,20 +916,27 @@ def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
 
     for i, a_portion in enumerate(a_portion_arr):
         R_e_arr = np.empty(len(mc2_arr))
+        delta_arr = np.empty(len(mc2_arr))
         ksi_shock_arr = np.empty(len(mc2_arr))
         L_x_arr = np.empty(len(mc2_arr))
         for j, mc2 in enumerate(mc2_arr):
             R_e_arr[j] = save.load_R_e(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+            delta_arr[j] = newService.get_delta_distance_at_surface_NS(R_e_arr[j] * config.R_ns,
+                                                                       config.dRdisk_div_Rdisk) / config.R_ns
             ksi_shock_arr[j] = save.load_ksi_shock(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
             L_x_arr[j] = save.load_L_x(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
 
         ax['a'].scatter(mc2_arr, ksi_shock_arr, s=30, facecolors='none', edgecolors=color_arr[i],
-                        label=r'$\xi_{s}$' + ' for ' + f'a={a_portion}')
+                        label=r'$\xi_{s}$' + ' for ' + f'a={a_portion}')  # r'$\xi_{s}$' + ' for ' +
         ax['a'].plot(mc2_arr, ksi_shock_arr, color='black', alpha=0.2, linestyle='-')
 
         ax1['a'].scatter(mc2_arr, L_x_arr, s=30, facecolors='none', edgecolors=color_arr[i],
-                         label=r'$L_{\rm x}$' + ' for ' + f'a={a_portion}')
+                         label=f'a={a_portion}')
         ax1['a'].plot(mc2_arr, L_x_arr, color='black', alpha=0.2, linestyle='-')
+
+        ax2['a'].scatter(mc2_arr, delta_arr, s=30, facecolors='none', edgecolors=color_arr[i],
+                         label=f'a={a_portion}')
+        ax2['a'].plot(mc2_arr, delta_arr, color='black', alpha=0.2, linestyle='-')
 
     # ax['a'].scatter(mc2_arr, R_e_arr, s=30, facecolors='none', edgecolors='black', label=r'$\xi_{\rm e}$')
     # ax['a'].plot(mc2_arr, R_e_arr, color='black', alpha=0.2, linestyle='-')
@@ -880,7 +947,7 @@ def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
     ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
 
     x_axis_label = config.symbol_m
-    y_axis_label = r'$R/R_{*}$'
+    y_axis_label = r'$\xi$'
     ax['a'].set_xlabel(x_axis_label, fontsize=26)
     ax['a'].set_ylabel(y_axis_label, fontsize=26)
     ax['a'].legend()
@@ -904,6 +971,20 @@ def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
                                    phi_0=None, prefix_folder=prefix_folder)
     file_name = f'together_a_L_x'
     save.save_figure(fig1, save_dir, file_name)
+
+    x_axis_label = config.symbol_m
+    y_axis_label = r'$\delta$'
+    ax2['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax2['a'].set_ylabel(y_axis_label, fontsize=26)
+    ax2['a'].legend()
+
+    ax2['a'].tick_params(axis='both', labelsize=ticks_labelsize)
+
+    prefix_folder = 'table/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'together_delta'
+    save.save_figure(fig2, save_dir, file_name)
 
 
 def plot_table_R_disk(mu, theta_obs, beta_mu_arr, a_portion, mc2_arr, phi_0):
@@ -1219,6 +1300,59 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
     config.flag_scatter = True
     config.flag_attenuation_above_shock = True
 
+    def plot_maps_same_fig(data_to_plot_arr, prefix_folder, file_name_arr):
+        theta_obs_arr_to_plot = np.linspace(0, 180, 19).astype(int)
+        ['all_on', 'NS_off', 'scatter_off', 'tau_off', 'scatter_off_tau_off']
+        ['all_on', 'tau_off', 'scatter_off_tau_off']
+
+        fig, ax = plt.subplot_mosaic('abc', figsize=(8 * 3, 6))
+
+        ax['a'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot_arr[4], levels=30, vmin=vmin,
+                         vmax=vmax)
+        ax['b'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot_arr[2], levels=30, vmin=vmin,
+                         vmax=vmax)
+
+        from mpl_toolkits.axes_grid1 import make_axes_locatable
+        # Для графика c создаем место для colorbar заранее
+        divider = make_axes_locatable(ax['c'])
+        cax = divider.append_axes("right", size="5%", pad=0.1)
+
+        # Рисуем график на c
+        im = ax['c'].contourf(config.phase_for_plot, theta_obs_arr_to_plot,
+                              data_to_plot_arr[0], levels=30, vmin=vmin, vmax=vmax)
+
+        # Добавляем colorbar
+
+        clb = plt.colorbar(im, cax=cax)
+        clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
+        clb.ax.tick_params(labelsize=ticks_labelsize)
+
+        # im = ax['c'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot_arr[0], levels=30, vmin=vmin,
+        #                       vmax=vmax)
+        #
+        # clb = plt.colorbar(im, )
+        # clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
+        # clb.ax.tick_params(labelsize=ticks_labelsize)
+
+        for ax in [ax['a'], ax['b'], ax['c']]:
+            ax.scatter([0, 1, 2], [beta_mu] * 3, c='white', marker='*', s=300)
+            ax.scatter([0.5, 1.5], [180 - beta_mu] * 2, c='white', marker='*', s=300)
+            ax.scatter([0, 1, 2], [beta_mu] * 3, c='black', marker='*', s=100)
+            ax.scatter([0.5, 1.5], [180 - beta_mu] * 2, c='black', marker='*', s=100)
+
+            x_axis_label = config.symbol_phase
+            y_axis_label = config.symbol_theta_obs_y
+            ax.set_xlabel(x_axis_label, fontsize=24)
+            ax.set_ylabel(y_axis_label, fontsize=24)
+            ax.tick_params(axis='both', labelsize=ticks_labelsize)
+
+        save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion,
+                                       phi_0=phi_0,
+                                       prefix_folder=prefix_folder)
+        # plt.tight_layout(rect=[0, 0, 0.85, 1])
+        plt.tight_layout()
+        save.save_figure(fig, save_dir, 'all_maps')
+
     def plot_maps(data_to_plot, prefix_folder, file_name, vmin=None, vmax=None, flag_remove_cbar=False):
 
         theta_obs_arr_to_plot = np.linspace(0, 180, 19).astype(int)
@@ -1237,11 +1371,17 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
         ax['a'].set_ylabel(y_axis_label, fontsize=24)
         ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
 
-        clb = plt.colorbar(im)
+        # from mpl_toolkits.axes_grid1 import make_axes_locatable
+        # divider = make_axes_locatable(ax['a'])
+        # cax = divider.append_axes("right", size="5%", pad=0.1)
+        # cax.set_visible(False)  # Делаем ось невидимой
+
+        clb = plt.colorbar(im, )
         clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
         clb.ax.tick_params(labelsize=ticks_labelsize)
         if flag_remove_cbar:
-            clb.remove()
+            # clb.remove()
+            ...
             # fig.subplots_adjust(right=0.85, top=0.85)
             # cax = ax['a'].inset_axes([1.03, 0, 0.1, 1])
             # cax.clear()
@@ -1255,6 +1395,8 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
                                        prefix_folder=prefix_folder)
 
         save.save_figure(fig, save_dir, file_name)
+        # plt.tight_layout(rect=[0, 0, 0.85, 1])
+        # save.save_fixed_size(fig, ax['a'], save_dir, file_name, has_cbar=False)
 
     def plot_PF(data_to_plot_arr, prefix_folder, file_name_arr):
         theta_obs_arr_to_plot = np.linspace(0, 180, 19).astype(int)
@@ -1322,6 +1464,9 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1,
                                        arr=np.abs(data_all_on - data_scatter_off_tau_off) / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off_tau_off_diff')
+
+    plot_maps_same_fig(PF_data_to_plot, 'sky_map_difference/',
+                       ['all_on', 'NS_off', 'scatter_off', 'tau_off', 'scatter_off_tau_off'])
 
     plot_PF(PF_data_to_plot, 'sky_map_difference/',
             ['all_on', 'NS_off', 'scatter_off', 'tau_off', 'scatter_off_tau_off'])
@@ -1546,6 +1691,37 @@ def plot_coeff_gamma():
     plt.show()
 
 
+def plot_PF_to_theta(mu, beta_mu_arr, mc2_arr, a_portion, phi_0):
+    theta_obs_arr = np.linspace(0, 90, 10).astype(int)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
+    for beta_mu in beta_mu_arr:
+        for mc2 in mc2_arr:
+            data = np.zeros((len(theta_obs_arr)))
+            for i, theta_obs in enumerate(theta_obs_arr):
+                L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+                data[i] = newService.get_PF(L_total)
+            label_name = config.symbol_mu_ang + f'={beta_mu}' + ' ' + config.symbol_m + f'={mc2}'
+            ax['a'].plot(theta_obs_arr, data, label=label_name)
+
+    x_axis_label = config.symbol_theta_obs_y
+    y_axis_label = 'PF'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+    ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
+    ax['a'].legend()
+
+    ax['a'].set_ylim(0, 1)
+
+    prefix_folder = 'PF_to_theta'
+
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=a_portion,
+                                   phi_0=phi_0,
+                                   prefix_folder=prefix_folder)
+
+    save.save_figure(fig, save_dir, 'PFs')
+
+
 if __name__ == '__main__':
 
     # plot_a_restrictions()
@@ -1565,9 +1741,9 @@ if __name__ == '__main__':
 
     beta_mu = 20
     mc2 = 60
-    a_portion = 0.66
+    a_portion = 0.75
     phi_0 = 0
-    # plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0)
+    plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0)
 
     theta_obs = 20
     beta_mu = 20
@@ -1646,9 +1822,9 @@ if __name__ == '__main__':
     # plot_L_max_phase_to_m_to_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
     theta_obs = 40
 
-    beta_mu = 20
-    mc2 = 60
-    a_portion = 0.66
+    beta_mu = 60
+    mc2 = 100
+    a_portion = 1
     phi_0 = 0
     # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
 
@@ -1666,12 +1842,13 @@ if __name__ == '__main__':
     phi_0 = 20
     # (mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
-    theta_obs = 20
+    theta_obs = 60
     beta_mu = 20
-    mc2 = 100
-    a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
-    phi_0 = 20
-    # plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+    mc2 = 60
+    # a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
+    a_portion_arr = np.linspace(0.1, 1, 19)
+    phi_0 = 90
+    plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
 
     theta_obs = 60
     beta_mu = 20
@@ -1758,18 +1935,24 @@ if __name__ == '__main__':
     # phi_0 = 0
     # # plot_L_iso_to_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
     #
-    theta_obs = 40
-    beta_mu = 20
+
+    theta_obs = 20
+    beta_mu = 0
     mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
-    mc2 = 60
     a_portion = 0.66
     phi_0 = 0
     # plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
-    a_portion_arr = [0.22, 0.44, 0.66, 1]
-    mc2 = 60
-    mc2_arr = [60, 120]
+
+    a_portion_arr = [0.25, 0.5, 0.75, 1]
+    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
     # plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
     # plot_Teff_to_ksi_diff_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
 
     # plot_coeff_gamma()
-    plot_rvm(mu, 20, 60, a_portion, phi_0)
+    # plot_rvm(mu, 60, 60, a_portion, phi_0)
+
+    beta_mu_arr = [40, 80]
+    a_portion = 1
+    mc2_arr = [30, 60, 100]
+    phi_0 = 0
+    # plot_PF_to_theta(mu, beta_mu_arr, mc2_arr, a_portion, phi_0)
