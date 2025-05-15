@@ -255,7 +255,7 @@ def plot_L_nu_with_bb(L_nu_surfs, T_eff, save_dir=None):
         save.save_figure(fig, save_dir / folder, file_name)
 
 
-def plot_scatter_L(L_surfs, L_scatter, save_dir=None):
+def plot_scatter_L(L_surfs, L_scatter, save_dir=None, log=False):
     '''рисует полный вклад каждой поверхности + рассеяния '''
 
     legend_labels_arr = [r'$top_{pol}$', r'$top_{eq}$', r'$bottom_{pol}$', r'$bottom_{eq}$', 'sum']
@@ -267,8 +267,10 @@ def plot_scatter_L(L_surfs, L_scatter, save_dir=None):
 
     fig, ax = plt.subplot_mosaic('a', figsize=(21, 10))
     for i, L_surf in enumerate(L_surfs):
+        fillstyle = 'none'
         ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(L_surf), label=legend_labels_arr[i],
-                     color=colors_arr[i], marker=marker_arr[i], linestyle=line_style_arr[i % 2], markersize=12)
+                     color=colors_arr[i], marker=marker_arr[i], linestyle=line_style_arr[i % 2], markersize=12,
+                     fillstyle=fillstyle)
 
     ax['a'].plot(config.phase_for_plot, newService.extend_arr_for_plot(L_scatter[0]), label='north scatter',
                  color='purple', marker="1", markersize=12)
@@ -285,9 +287,16 @@ def plot_scatter_L(L_surfs, L_scatter, save_dir=None):
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
     ax['a'].legend()
 
+    if log:
+        ax['a'].set_yscale('log')
+        # ax['a'].set_ylim(1e12, 1e16)
+        # ax['a'].set_ylim(1e35, 5e39)
+
     if save_dir is not None:
         folder = 'scattered_on_magnet_lines/'
         file_name = 'total_luminosity_of_surfaces_with_scatter'
+        if log:
+            file_name+='_log'
         save.save_figure(fig, save_dir / folder, file_name)
 
 
@@ -350,4 +359,22 @@ def plot_scatter_L_nu(L_nu_surfs, L_nu_scatter, save_dir=None):
 
 
 if __name__ == '__main__':
-    ...
+    import pathService
+    import save
+
+    mu = 0.1e31
+    theta_obs = 60
+    beta_mu = 40
+    mc2 = 100
+    a_portion = 0.22
+    phi_0 = 40
+
+    L_surfs = save.load_L_surfs(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    L_scatter = save.load_L_scatter(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+
+    cur_dir_saved = pathService.PathSaver(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    folder = 'txt/'
+    # cur_path = path to save txt !!!
+    cur_path = cur_dir_saved.get_path()
+
+    plot_scatter_L(L_surfs, L_scatter, save_dir=cur_path / 'logs', log=True)
