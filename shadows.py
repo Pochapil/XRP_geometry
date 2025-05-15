@@ -113,8 +113,9 @@ def get_intersection_phi_with_column(surface, intersect_phi):
     column_phi_range_begin, column_phi_range_end = surface.phi_range[0], surface.phi_range[-1]
     return (column_phi_range_begin <= intersect_phi <= column_phi_range_end) \
         or (column_phi_range_begin <= intersect_phi + 2 * np.pi <= column_phi_range_end) \
-        or (column_phi_range_begin <= intersect_phi - 2 * np.pi <= column_phi_range_end)
-
+        or (column_phi_range_begin <= intersect_phi - 2 * np.pi <= column_phi_range_end) \
+        or (column_phi_range_begin <= intersect_phi + 4 * np.pi <= column_phi_range_end) \
+        or (column_phi_range_begin <= intersect_phi - 4 * np.pi <= column_phi_range_end)
 
 def check_shadow_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, top_column, bot_column):
     # checks for 1 element area!
