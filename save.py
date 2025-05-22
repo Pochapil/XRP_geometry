@@ -240,3 +240,11 @@ def load_theta_range(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     file_name = 'save_theta_range.txt'
     theta_range = load_arr_from_txt(data_folder, file_name)
     return theta_range
+
+
+def check_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
+    data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    if data_folder.exists():
+        return True
+    else:
+        return False
