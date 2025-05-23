@@ -80,12 +80,91 @@ if __name__ == '__main__':
     # phi_0_arr = [20, 40, 60, 80, 100, 120, 140, 160, 180]
     #
     #
+
     theta_obs_arr = [20, 40, 60]
     beta_mu_arr = [20]
-    mc2_arr = [30, 60, 100]
+    mc2_arr = [30, 100]
     a_portion_arr = [0.22, 0.66]
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    phi_0_arr = [20, 40, 60, 80, 100, 120, 140, 160, 180]
+
+    theta_obs_arr = [10 * i for i in range(0, 10)]
+    beta_mu_arr = [40, 60, 80]  # 20
+    mc2_arr = [30, 100]
+    a_portion_arr = [0.22, 0.66]
+    phi_0_arr = [0]
+
+    theta_obs_arr = [40]
+    beta_mu_arr = [20]
+    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+    a_portion_arr = [0.22, 0.44, 0.66, 1]
+    phi_0_arr = [0]
+
+    # theta_obs_arr = [60]
+    # beta_mu_arr = [40]
+    # mc2_arr = [100]
+    # a_portion_arr = [0.22]
+    # phi_0_arr = [40]
+
+    # theta_obs_arr = [60]
+    # beta_mu_arr = [60]
+    # mc2_arr = [60]
+    # a_portion_arr = [0.44]
+    # phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # phi_0_arr = [20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # phi_0_arr = [90, 0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+
+    theta_obs_arr = [10 * i for i in range(0, 10)]
+    beta_mu_arr = [10 * i for i in range(1, 9)]
+    mc2_arr = [30, 60, 100]
+    a_portion_arr = [0.2, 0.25, 0.4, 0.5, 0.6, 0.75]
+    phi_0_arr = [0]
+
+    theta_obs_arr = [10 * i for i in range(0, 10)]
+    beta_mu_arr = [20]
+    mc2_arr = [60]
+    a_portion_arr = [0.75]
+    phi_0_arr = [0]
+
+    theta_obs_arr = [40]
+    beta_mu_arr = [10, 30, 40]
+    mc2_arr = [60]
+    a_portion_arr = np.linspace(0.1, 1, 19)
+    phi_0_arr = [0]
+
+    theta_obs_arr = [20, 40]
+    beta_mu_arr = [20]
+    mc2_arr = [30, 60, 100]
+    a_portion_arr = [0.25, 0.75]
+    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # phi_0_arr = [20, 40, 60, 80, 100, 120, 140, 160, 180]
+
+
+    theta_obs_arr = [60]
+    beta_mu_arr = [20]
+    mc2_arr = [30, 100]
+    a_portion_arr = [0.25, 0.75]
+    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # phi_0_arr = [20, 40, 60, 80, 100, 120, 140, 160, 180]
+
+    theta_obs_arr = [60]
+    beta_mu_arr = [20, 30]
+    mc2_arr = [60]
+    a_portion_arr = [0.8]
+    phi_0_arr = [0]
+
+
+    theta_obs_arr = [20, 40, 60]
+    beta_mu_arr = [60]
+    mc2_arr = [60]
+    a_portion_arr = np.linspace(0.1, 1, 19)
+    phi_0_arr = [0]
+
+    theta_obs_arr = [10 * i for i in range(0, 10)]
+    beta_mu_arr = [10, 20]
+    mc2_arr = [30, 60, 100]
+    a_portion_arr = np.linspace(0.1, 1, 19)
+    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    phi_0_arr = [0]
 
     plot_flag = True
     # ------------------------------------------------- start -------------------------------------------------------
