@@ -61,80 +61,109 @@ def plot_L_to_a_portion_as_in_art():
     theta_obs_arr = [20, 40, 60]
     beta_mu_arr = [20, 60]
     mc2 = 60
-    phi_0_arr = [0, 40]
+    phi_0_arr = [0]  # [0, 40]
     a_portion_arr = np.linspace(0.1, 1, 19)
     for theta_obs in theta_obs_arr:
         for beta_mu in beta_mu_arr:
             for phi_0 in phi_0_arr:
                 plot_many_characteristics.plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
 
+    # theta_obs_arr = [40]
+    # beta_mu_arr = [10, 30, 40]
+    # mc2 = 60
+    # phi_0_arr = [0]
+    # a_portion_arr = np.linspace(0.1, 1, 19)
+    # for theta_obs in theta_obs_arr:
+    #     for beta_mu in beta_mu_arr:
+    #         for phi_0 in phi_0_arr:
+    #             plot_many_characteristics.plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+
 
 def plot_L_to_phi_0_as_in_art():
-    theta_obs = 40
-    beta_mu = 20
+    theta_obs_arr = [20, 40]
+    beta_mu_arr = [20]
+    a_portion_arr = [0.25, 0.75]
     mc2 = 60
-    a_portion = 0.22
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    plot_many_characteristics.plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
+    for theta_obs in theta_obs_arr:
+        for beta_mu in beta_mu_arr:
+            for a_portion in a_portion_arr:
+                plot_many_characteristics.plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
 
-    # plt.clf()
-    # plt.cla()
-    # plt.close()
-
-    theta_obs = 40
-    beta_mu = 20
-    mc2 = 60
-    a_portion = 0.66
-    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    plot_many_characteristics.plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
-
-    theta_obs = 20
-    beta_mu = 20
-    mc2 = 30
-    a_portion = 0.22
-    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    plot_many_characteristics.plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
-
-    theta_obs = 20
-    beta_mu = 20
-    mc2 = 30
-    a_portion = 0.66
-    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    plot_many_characteristics.plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
+    # theta_obs = 40
+    # beta_mu = 20
+    # mc2 = 60
+    # a_portion = 0.22
+    # phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # plot_many_characteristics.plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
+    #
+    # # plt.clf()
+    # # plt.cla()
+    # # plt.close()
+    #
+    # theta_obs = 40
+    # beta_mu = 20
+    # mc2 = 60
+    # a_portion = 0.66
+    # phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # plot_many_characteristics.plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
+    #
+    # theta_obs = 20
+    # beta_mu = 20
+    # mc2 = 30
+    # a_portion = 0.22
+    # phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # plot_many_characteristics.plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
+    #
+    # theta_obs = 20
+    # beta_mu = 20
+    # mc2 = 30
+    # a_portion = 0.66
+    # phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # plot_many_characteristics.plot_L_to_phi_0(mu, theta_obs, beta_mu, mc2, a_portion, phi_0_arr, True)
 
 
 def plot_masses_PF_L_nu_as_in_art():
-    theta_obs = 20
-    beta_mu = 40
+    theta_obs_arr = [60]
+    beta_mu_arr = [20]
     mc2_arr = [30, 100]
-    a_portion_arr = [0.22, 0.66]
+    a_portion_arr = [0.25, 0.75]
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    plot_many_characteristics.plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
-    plot_many_characteristics.plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    for theta_obs in theta_obs_arr:
+        for beta_mu in beta_mu_arr:
+            plot_many_characteristics.plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
 
-    theta_obs = 20
-    beta_mu = 60
-    mc2_arr = [30, 100]
-    a_portion_arr = [0.22, 0.66]
-    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    plot_many_characteristics.plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
-    plot_many_characteristics.plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
-
-    theta_obs = 40
-    beta_mu = 40
-    mc2_arr = [30, 100]
-    a_portion_arr = [0.22, 0.66]
-    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    plot_many_characteristics.plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
-    plot_many_characteristics.plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
-
-    theta_obs = 40
-    beta_mu = 60
-    mc2_arr = [30, 100]
-    a_portion_arr = [0.22, 0.66]
-    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    plot_many_characteristics.plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
-    plot_many_characteristics.plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    # theta_obs = 20
+    # beta_mu = 40
+    # mc2_arr = [30, 100]
+    # a_portion_arr = [0.22, 0.66]
+    # phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # plot_many_characteristics.plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    # plot_many_characteristics.plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    #
+    # theta_obs = 20
+    # beta_mu = 60
+    # mc2_arr = [30, 100]
+    # a_portion_arr = [0.22, 0.66]
+    # phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # plot_many_characteristics.plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    # plot_many_characteristics.plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    #
+    # theta_obs = 40
+    # beta_mu = 40
+    # mc2_arr = [30, 100]
+    # a_portion_arr = [0.22, 0.66]
+    # phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # plot_many_characteristics.plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    # plot_many_characteristics.plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    #
+    # theta_obs = 40
+    # beta_mu = 60
+    # mc2_arr = [30, 100]
+    # a_portion_arr = [0.22, 0.66]
+    # phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # plot_many_characteristics.plot_masses_PF_L_nu(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+    # plot_many_characteristics.plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
 
 
 def plot_PF_contour_as_in_art():
