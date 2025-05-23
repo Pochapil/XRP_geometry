@@ -261,7 +261,7 @@ def plot_scatter_L(L_surfs, L_scatter, save_dir=None, log=False):
     legend_labels_arr = [r'$top_{pol}$', r'$top_{eq}$', r'$bottom_{pol}$', r'$bottom_{eq}$', 'sum']
     legend_labels_arr = ['north polar', 'north equatorial', 'south polar', 'south equatorial', 'sum']
 
-    colors_arr = ['red', 'red', 'green', 'green']
+    colors_arr = ['y', 'red', 'c', 'green']
     marker_arr = ['.', '*', '+', '^']
     line_style_arr = [':', '-']
 
@@ -285,12 +285,15 @@ def plot_scatter_L(L_surfs, L_scatter, save_dir=None, log=False):
     y_axis_label = r'$L_{\rm{iso}}$' + ' [erg/s]'
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
-    ax['a'].legend()
+
 
     if log:
         ax['a'].set_yscale('log')
         # ax['a'].set_ylim(1e12, 1e16)
-        # ax['a'].set_ylim(1e35, 5e39)
+        ax['a'].set_ylim(1e36, 1e39)
+        ax['a'].legend(loc='lower right')
+    else:
+        ax['a'].legend()
 
     if save_dir is not None:
         folder = 'scattered_on_magnet_lines/'
@@ -363,10 +366,10 @@ if __name__ == '__main__':
     import save
 
     mu = 0.1e31
-    theta_obs = 60
+    theta_obs = 80
     beta_mu = 40
     mc2 = 100
-    a_portion = 0.22
+    a_portion = 0.20
     phi_0 = 40
 
     L_surfs = save.load_L_surfs(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
