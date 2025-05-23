@@ -276,6 +276,12 @@ class Visualization(HasTraits):
         self.slider_a_portion = curr_configuration.a_portion
         self.slider_phi_0 = curr_configuration.phi_0
 
+        self.flag_accretion_disc_hide = False
+        self.flag_draw_magnet_lines = True
+        self.flag_cut_magnet_lines = False
+        self.flag_accretion_disc_hide = False
+        self.flag_middle_accr_column = True
+
         self.R_e_val = curr_configuration.top_column_for_plot.R_e / config.R_ns
         self.ksi_val = curr_configuration.top_column_for_plot.ksi_shock
         self.R_disk_val = curr_configuration.R_disk / config.R_ns
@@ -314,7 +320,7 @@ class Visualization(HasTraits):
         self.draw_accretion_disc()
 
         # -----
-        self.plot_proj_on_plane()
+        # self.plot_proj_on_plane()
 
         # self.plot_plane()
 
@@ -485,6 +491,8 @@ class Visualization(HasTraits):
         '''смог реализовать только с помощью маски'''
 
         radi = self.R_e_val
+        if self.flag_middle_accr_column:
+            radi = self.curr_configuration.top_column_for_calc.R_e / config.R_ns
         r, p = np.meshgrid(radi * np.sin(magnet_surface.theta_range) ** 2, magnet_surface.phi_range)
         r1 = r * np.sin(magnet_surface.theta_range)
         x = r1 * np.cos(p)
@@ -624,8 +632,14 @@ class Visualization(HasTraits):
         #                                                     self.curr_configuration.top_magnet_lines.theta_range,
         #                                                     self.curr_configuration.top_magnet_lines.mask_array)
         # self.get_data_for_magnet_lines_with_mask_for_calc(self.curr_configuration.top_magnet_lines_for_calc)
-        x, y, z, mask = self.get_data_for_magnet_lines_with_mask(
-            self.curr_configuration.top_magnet_lines_for_plot)  # top_magnet_lines_for_plot
+
+        if self.flag_middle_accr_column:
+            x, y, z, mask = self.get_data_for_magnet_lines_with_mask(
+                self.curr_configuration.top_magnet_lines_for_calc)  #
+        else:
+            x, y, z, mask = self.get_data_for_magnet_lines_with_mask(
+                self.curr_configuration.top_magnet_lines_for_plot)  # top_magnet_lines_for_plot
+
         # если маска для магнитных линий вся из True почему то программа падает, для этого проверяем
         if not (mask == True).all():
             # flag_do_not_draw = True
@@ -641,10 +655,16 @@ class Visualization(HasTraits):
 
         # self.mlab_source.trait_set(x=-x, y=-y, z=-z, color=self.color_accretion_column_bot_outer)
 
-        # new
-        x, y, z, mask = self.get_data_for_magnet_lines_outer_with_mask(
-            self.curr_configuration.top_magnet_lines_for_plot_outer)
-        # curr_configuration.top_magnet_lines_for_plot_outer
+
+        if self.flag_middle_accr_column:
+            x, y, z, mask = self.get_data_for_magnet_lines_with_mask(
+                self.curr_configuration.top_magnet_lines_for_calc)  #
+        else:
+            # new
+            x, y, z, mask = self.get_data_for_magnet_lines_outer_with_mask(
+                self.curr_configuration.top_magnet_lines_for_plot_outer)
+            # curr_configuration.top_magnet_lines_for_plot_outer
+
 
         if not (mask == True).all():
             self.magnet_lines_top_outer = self.scene.mlab.mesh(x, y, z,
@@ -669,36 +689,68 @@ class Visualization(HasTraits):
         self.draw_magnet_lines()
 
     def draw_accretion_columns(self):
-        # внутренние
-        x, y, z, mask = self.get_data_for_accretion_columns_with_mask(
-            self.curr_configuration.top_column_for_plot.inner_surface)
-        if not (mask == True).all():
-            self.accretion_column_top = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top, mask=mask)
-            self.accretion_column_bot = self.scene.mlab.mesh(-x, -y, -z, color=self.color_accretion_column_bot,
-                                                             mask=mask)
-        # внешние
-        x, y, z, mask = self.get_data_for_accretion_columns_with_mask(
-            self.curr_configuration.top_column_for_plot.outer_surface)
-        if not (mask == True).all():
-            # ---------верх
-            self.accretion_column_top_outer = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top_outer,
-                                                                   mask=mask)
-            # ---------низ
-            self.accretion_column_bot_outer = self.scene.mlab.mesh(-x, -y, -z,
-                                                                   color=self.color_accretion_column_bot_outer,
-                                                                   mask=mask)
 
-        # middle
+        if not self.flag_middle_accr_column:
+            # внутренние
+            x, y, z, mask = self.get_data_for_accretion_columns_with_mask(
+                self.curr_configuration.top_column_for_plot.inner_surface)
+            if not (mask == True).all():
+                self.accretion_column_top = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_top,
+                                                                 mask=mask)
+                self.accretion_column_bot = self.scene.mlab.mesh(-x, -y, -z, color=self.color_accretion_column_bot,
+                                                                 mask=mask)
+
+            # внешние
+            x, y, z, mask = self.get_data_for_accretion_columns_with_mask(
+                self.curr_configuration.top_column_for_plot.outer_surface)
+            if not (mask == True).all():
+                # ---------верх
+                self.accretion_column_top_outer = self.scene.mlab.mesh(x, y, z,
+                                                                       color=self.color_accretion_column_top_outer,
+                                                                       mask=mask)
+                # ---------низ
+                self.accretion_column_bot_outer = self.scene.mlab.mesh(-x, -y, -z,
+                                                                       color=self.color_accretion_column_bot_outer,
+                                                                       mask=mask)
+
+        # # middle
         # x, y, z, mask = self.get_data_for_accretion_columns_with_mask_for_calc(
         #     self.curr_configuration.top_column_for_calc.outer_surface)
         # if not (mask == True).all():
         #     # ---------верх
         #     self.accretion_column_top_center = self.scene.mlab.mesh(x, y, z, color=self.color_accretion_column_for_calc,
         #                                                             mask=mask)
+        #
+        #
         #     # ---------низ
         #     self.accretion_column_bot_center = self.scene.mlab.mesh(-x, -y, -z,
         #                                                             color=self.color_accretion_column_for_calc,
         #                                                             mask=mask)
+        else:
+            # middle
+            eps = 1e-2
+            x, y, z, mask = self.get_data_for_accretion_columns_with_mask_for_calc(
+                self.curr_configuration.top_column_for_calc.outer_surface)
+            if not (mask == True).all():
+                # ---------верх
+
+                # accretion_column_top_center
+                self.accretion_column_top_outer = self.scene.mlab.mesh(x, y, z,
+                                                                             color=self.color_accretion_column_top_outer,
+                                                                             mask=mask)
+                self.accretion_column_top = self.scene.mlab.mesh(x, y, z - eps,
+                                                                 color=self.color_accretion_column_top,
+                                                                 mask=mask)
+
+                # ---------низ
+
+                # accretion_column_bot_center
+                self.accretion_column_bot = self.scene.mlab.mesh(-x, -y, -z,
+                                                                       color=self.color_accretion_column_bot,
+                                                                       mask=mask)
+                self.accretion_column_bot_outer = self.scene.mlab.mesh(-x, -y, -z - eps,
+                                                                             color=self.color_accretion_column_bot_outer,
+                                                                             mask=mask)
 
     def update_accretion_columns(self):
         # рисуем колонки
@@ -1007,9 +1059,9 @@ if __name__ == "__main__":
     phi_0 = 60
 
     theta_obs = 60
-    beta_mu = 40
-    mc2 = 100
-    a_portion = 0.2
-    phi_0 = 40
+    beta_mu = 30
+    mc2 = 60
+    a_portion = 0.8
+    phi_0 = 0
 
     plot_main(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
