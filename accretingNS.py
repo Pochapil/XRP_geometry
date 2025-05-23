@@ -135,7 +135,7 @@ class AccretionColumn:
         self.R_e_for_delta = R_e_for_delta
 
         # попробую что
-        # for plot
+        # for plot - для старых колонок
         self.R_e_outer_surface = (1 + dRe_div_Re / 2) * self.R_e / (1 - dRe_div_Re / 2)
         self.R_e_inner_surface = self.R_e
         if flag_R_e_same:
@@ -322,7 +322,7 @@ class MagnetLine:
                 # else:
                 #     dRe_div_Re = 0.25  # свое значение потому что можем менять условие на магнитные линии.
                 # R_e_for_check ? instead surf_R_e
-                # if self.surf_R_e * np.sin(theta_end) ** 2 > (1 + dRe_div_Re) * R_disk:
+                # if self.surf_R_e * np.sin(theta_end) ** 2 > (1 + dRe_div_Re) * R_disk: # сферическое обрезание
                 #     flag_cut_r = True
                 #     self.mask_array[i][j] = True
                 # wdwa
