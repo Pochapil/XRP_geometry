@@ -110,7 +110,7 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
     save.save_figure(fig, save_dir, file_name)
 
 
-def plot_rvm(mu, beta_mu, mc2, a_portion, phi_0):
+def plot_rvm(mu, beta_mu, mc2):
     '''рисует карты неба (излучательный коэффициент в зависимости от положения наблюдателя)
     по другому - куча профилей. для разных наблюдателей. характеризует как источник излучает в пространство
     '''
@@ -175,7 +175,7 @@ def plot_rvm(mu, beta_mu, mc2, a_portion, phi_0):
     clb.ax.tick_params(labelsize=ticks_labelsize)
 
     prefix_folder = 'sky_map_rvm/'
-    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion, phi_0=phi_0,
+    save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=mc2, a_portion=None, phi_0=None,
                                    prefix_folder=prefix_folder)
     file_name = 'try_map_contour'
     save.save_figure(fig, save_dir, file_name)
@@ -268,10 +268,10 @@ def plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0):
     # заменяем надписи на значения а
     # norm - нужно сместить растянуть колорбар потому что в районе 0.9 есть перепады, но мы их не увидим из-за
     # малых значений, которые появляются после добавления а=1
-    ax['a'].pcolormesh(config.phase_for_plot, np.linspace(0, 1, len(a_portion_arr)), data_to_plot_norm,
-                       # norm=colors.LogNorm(vmin=data_to_plot.min(), vmax=data_to_plot.max())
-                       norm=colors.TwoSlopeNorm(0.9, vmin=data_to_plot_norm.min(), vmax=data_to_plot_norm.max())
-                       )
+    im = ax['a'].pcolormesh(config.phase_for_plot, np.linspace(0, 1, len(a_portion_arr)), data_to_plot_norm,
+                            # norm=colors.LogNorm(vmin=data_to_plot.min(), vmax=data_to_plot.max())
+                            norm=colors.TwoSlopeNorm(0.9, vmin=data_to_plot_norm.min(), vmax=data_to_plot_norm.max())
+                            )
     ax['a'].set_yticks(np.linspace(0, 1, len(a_portion_arr)), np.round(a_portion_arr, 2))
 
     x_axis_label = config.symbol_phase
@@ -1213,9 +1213,19 @@ def plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     buf = tensor_tau_cols.reshape(1, -1)
     buf = buf[buf > 0]
 
-    fig, ax = plt.subplot_mosaic('ab', figsize=(18, 6))
-    ax['a'].hist(buf, 30, histtype='bar', rwidth=0.8)  # barstacked
-    ax['a'].set_title(r'$\tau$', fontsize=26)
+    fig, ax = plt.subplot_mosaic('abc', figsize=(18, 6))
+    # ax['a'].hist(buf, 30, histtype='bar', rwidth=0.8)  # barstacked
+    # ax['a'].set_title(r'$\tau$', fontsize=26)
+
+    from scipy import stats
+    import seaborn as sns
+
+    sns.histplot(buf, kde=True, bins=100, stat='density', alpha=0.5, ax=ax['a'])
+
+    sns.ecdfplot(buf, label='Эмпирическая CDF', ax=ax['c'])
+    # kde = stats.gaussian_kde(tensor_tau_cols.reshape(1, -1))
+    # x_kde = np.linspace(tensor_tau_cols.min(), tensor_tau_cols.max(), 1000)
+    # ax['a'].plot(x_kde, kde(x_kde), 'r-', linewidth=2, label='KDE')
 
     tensor_alpha_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_alpha_cols')
 
@@ -1228,6 +1238,9 @@ def plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     fig.suptitle('cols', fontsize=22)
 
     plt.show()
+
+
+
 
     tensor_tau_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_tau_scatter')
 
@@ -1305,27 +1318,44 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
         ['all_on', 'NS_off', 'scatter_off', 'tau_off', 'scatter_off_tau_off']
         ['all_on', 'tau_off', 'scatter_off_tau_off']
 
-        fig, ax = plt.subplot_mosaic('abc', figsize=(8 * 3, 6))
+        fig, ax = plt.subplot_mosaic('abc', figsize=(8 * 3, 6), gridspec_kw={'width_ratios': [1, 1, 1]})
 
         ax['a'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot_arr[4], levels=30, vmin=vmin,
                          vmax=vmax)
         ax['b'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot_arr[2], levels=30, vmin=vmin,
                          vmax=vmax)
 
-        from mpl_toolkits.axes_grid1 import make_axes_locatable
-        # Для графика c создаем место для colorbar заранее
-        divider = make_axes_locatable(ax['c'])
-        cax = divider.append_axes("right", size="5%", pad=0.1)
+        # from mpl_toolkits.axes_grid1 import make_axes_locatable
+        # # Для графика c создаем место для colorbar заранее
+        # divider = make_axes_locatable(ax['c'])
+        # cax = divider.append_axes("right", size="5%", pad=0.1)
 
         # Рисуем график на c
         im = ax['c'].contourf(config.phase_for_plot, theta_obs_arr_to_plot,
                               data_to_plot_arr[0], levels=30, vmin=vmin, vmax=vmax)
 
-        # Добавляем colorbar
+        # Получаем позицию последнего графика (ax['c'])
+        pos = ax['c'].get_position()
 
-        clb = plt.colorbar(im, cax=cax)
+        # Создаем ось для colorbar с такой же высотой как у графиков
+        # [left, bottom, width, height] в долях от figure
+        clb_width = 0.01
+        cbar_ax = fig.add_axes([pos.x1 + clb_width,  # правее последнего графика
+                                pos.y0,  # нижний край как у графиков
+                                clb_width,  # ширина colorbar
+                                pos.height])  # высота = высоте графиков
+
+        # Добавляем colorbar
+        clb = fig.colorbar(im, cax=cbar_ax)
+
+        # cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])
+        # clb = fig.colorbar(im, cax=cbar_ax)
         clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
         clb.ax.tick_params(labelsize=ticks_labelsize)
+
+        # clb = plt.colorbar(im, cax=cax)
+        # clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
+        # clb.ax.tick_params(labelsize=ticks_labelsize)
 
         # im = ax['c'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot_arr[0], levels=30, vmin=vmin,
         #                       vmax=vmax)
@@ -1350,7 +1380,7 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
                                        phi_0=phi_0,
                                        prefix_folder=prefix_folder)
         # plt.tight_layout(rect=[0, 0, 0.85, 1])
-        plt.tight_layout()
+        # plt.tight_layout()
         save.save_figure(fig, save_dir, 'all_maps')
 
     def plot_maps(data_to_plot, prefix_folder, file_name, vmin=None, vmax=None, flag_remove_cbar=False):
@@ -1358,6 +1388,9 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
         theta_obs_arr_to_plot = np.linspace(0, 180, 19).astype(int)
 
         fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
+        if 'diff' in file_name:
+            data_to_plot *= 100
+
         im = ax['a'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot, levels=30, vmin=vmin,
                               vmax=vmax)
         ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='white', marker='*', s=300)
@@ -1377,7 +1410,11 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
         # cax.set_visible(False)  # Делаем ось невидимой
 
         clb = plt.colorbar(im, )
-        clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
+
+        if 'diff' in file_name:
+            clb.set_label(r'$\%$', fontsize=24)
+        else:
+            clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
         clb.ax.tick_params(labelsize=ticks_labelsize)
         if flag_remove_cbar:
             # clb.remove()
@@ -1402,12 +1439,19 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
         theta_obs_arr_to_plot = np.linspace(0, 180, 19).astype(int)
         fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
 
+        line_style = ['-', '--']
+        marker_dict = {0: '.', 1: '*', 2: '+', 3: '^'}
+
         for data_to_plot, label_name in zip(data_to_plot_arr, file_name_arr):
             PF = []
-            for i in range(10):
-                PF.append(newService.get_PF(data_to_plot[i]))
+            if label_name != 'None':
+                for i in range(10):
+                    PF.append(newService.get_PF(data_to_plot[i]))
 
-            ax['a'].plot(theta_obs_arr_to_plot[:10], PF, label=label_name)
+                if label_name == 'No NS eclipse':
+                    ax['a'].plot(theta_obs_arr_to_plot[:10], PF, label=label_name, linestyle='--')
+                else:
+                    ax['a'].plot(theta_obs_arr_to_plot[:10], PF, label=label_name)
 
         x_axis_label = config.symbol_theta_obs_y
         y_axis_label = 'PF'
@@ -1425,12 +1469,20 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
     vmax = np.max(np.hstack((data_all_on, data_scatter_off_tau_off, data_scatter_off, data_NS_off)) / L_x)
 
     PF_data_to_plot = []
+    eps = 1e-8
+
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_all_on / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'all_on', vmin=vmin, vmax=vmax)
+    # plot_maps(np.log10(data_to_plot + eps), 'sky_map_difference/', 'all_on_log', vmin=np.log10(vmin + eps),
+    #           vmax=np.log10(vmax))
+    plot_maps(np.log10(data_to_plot + eps), 'sky_map_difference/', 'all_on_log', vmin=np.log10(vmin + eps),
+              vmax=np.log10(vmax))
     PF_data_to_plot.append(data_to_plot)
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_NS_off / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'NS_off', vmin=vmin, vmax=vmax)
+    plot_maps(np.log10(data_to_plot + eps), 'sky_map_difference/', 'NS_off_log', vmin=np.log10(vmin + eps),
+              vmax=np.log10(vmax))
     PF_data_to_plot.append(data_to_plot)
     # plot_PF(data_to_plot, 'sky_map_difference/', 'NS_off')
 
@@ -1440,6 +1492,8 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_scatter_off / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off', vmin=vmin, vmax=vmax)
+    plot_maps(np.log10(data_to_plot + eps), 'sky_map_difference/', 'scatter_off_log', vmin=np.log10(vmin + eps),
+              vmax=np.log10(vmax))
     PF_data_to_plot.append(data_to_plot)
     # plot_PF(data_to_plot, 'sky_map_difference/', 'scatter_off')
 
@@ -1448,7 +1502,9 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
     plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off_diff')
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_tau_off / L_x)
-    plot_maps(data_to_plot, 'sky_map_difference/', 'tau_off')
+    plot_maps(data_to_plot, 'sky_map_difference/', 'tau_off', vmin=vmin, vmax=vmax)
+    plot_maps(np.log10(data_to_plot + eps), 'sky_map_difference/', 'tau_off_log', vmin=np.log10(vmin + eps),
+              vmax=np.log10(vmax))
     PF_data_to_plot.append(data_to_plot)
     # plot_PF(data_to_plot, 'sky_map_difference/', 'tau_off')
 
@@ -1458,6 +1514,8 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
 
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_scatter_off_tau_off / L_x)
     plot_maps(data_to_plot, 'sky_map_difference/', 'scatter_off_tau_off', vmin=vmin, vmax=vmax)
+    plot_maps(np.log10(data_to_plot + eps), 'sky_map_difference/', 'scatter_off_tau_off_log', vmin=np.log10(vmin + eps),
+              vmax=np.log10(vmax))
     PF_data_to_plot.append(data_to_plot)
     # plot_PF(data_to_plot, 'sky_map_difference/', 'scatter_off_tau_off')
 
@@ -1469,7 +1527,9 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
                        ['all_on', 'NS_off', 'scatter_off', 'tau_off', 'scatter_off_tau_off'])
 
     plot_PF(PF_data_to_plot, 'sky_map_difference/',
-            ['all_on', 'NS_off', 'scatter_off', 'tau_off', 'scatter_off_tau_off'])
+            ['Total', 'No NS eclipse', 'No FF reflection', 'None', 'No FF effect'])
+    # ['all_on', 'NS_off', 'scatter_off', 'tau_off', 'scatter_off_tau_off']
+    # ['all_on', 'No NS eclipse', 'scatter_off', 'tau_off', 'scatter_off_tau_off']
 
 
 def plot_PF_obs(mu, beta_mu, mc2_arr, a_portion_arr, phi_0):
@@ -1734,16 +1794,16 @@ if __name__ == '__main__':
 
     theta_obs = 60
     beta_mu = 20
-    mc2 = 30
-    a_portion = 0.22
-    phi_0 = 20
+    mc2 = 60
+    a_portion = 0.8
+    phi_0 = 0
     # plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
 
     beta_mu = 20
     mc2 = 60
     a_portion = 0.75
     phi_0 = 0
-    plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0)
+    # plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0)
 
     theta_obs = 20
     beta_mu = 20
@@ -1762,10 +1822,10 @@ if __name__ == '__main__':
 
     # plot_romanova(mu, theta_obs, beta_mu, None, a_portion)
 
-    theta_obs = 40
+    theta_obs = 60
     beta_mu = 20
     mc2_arr = [30, 100]
-    a_portion_arr = [0.22, 0.66]
+    a_portion_arr = [0.25, 0.75]
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
     # plot_masses_PF_L_on_off(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
 
@@ -1823,7 +1883,7 @@ if __name__ == '__main__':
     theta_obs = 40
 
     beta_mu = 60
-    mc2 = 100
+    mc2 = 60
     a_portion = 1
     phi_0 = 0
     # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
@@ -1847,8 +1907,8 @@ if __name__ == '__main__':
     mc2 = 60
     # a_portion_arr = [0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.5, 0.55, 0.605, 0.66, 0.715, 0.77, 0.825, 1]
     a_portion_arr = np.linspace(0.1, 1, 19)
-    phi_0 = 90
-    plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
+    phi_0 = 0
+    # plot_L_to_a_portion(mu, theta_obs, beta_mu, mc2, a_portion_arr, phi_0)
 
     theta_obs = 60
     beta_mu = 20
@@ -1949,7 +2009,7 @@ if __name__ == '__main__':
     # plot_Teff_to_ksi_diff_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
 
     # plot_coeff_gamma()
-    # plot_rvm(mu, 60, 60, a_portion, phi_0)
+    # plot_rvm(mu, 20, 60)
 
     beta_mu_arr = [40, 80]
     a_portion = 1
