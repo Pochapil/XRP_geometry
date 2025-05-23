@@ -89,7 +89,7 @@ def get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector, solu
     # ищем положительные корни и при этом вещественные
     # if solution.real > 0 and solution.imag == 0:
     # return -pi/2, pi/2 angles
-    if solution.real > 0 and np.abs(solution.imag) < 1e-8:
+    if solution.real > 0 and np.abs(solution.imag) < 1e-10:
         # direction - направление на наблюдателя
         direction_x, direction_y, direction_z = matrix.vec_to_coord(obs_vector)
         # origin - откуда бьет луч. площадка на поверхности
@@ -234,6 +234,7 @@ def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions,
             # учет маски!!
             spherical_R_condition = curr_configuration.top_magnet_lines_for_calc.surf_R_e * np.sin(
                 intersect_theta) ** 2 < (1 + dRe_div_Re) * curr_configuration.R_disk
+            spherical_R_condition = True # мы же убрали сферическое обрезание!
 
             # условия пересечений тета
             top_column_intersect_theta_correct = intersect_theta < theta_end
