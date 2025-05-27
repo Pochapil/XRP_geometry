@@ -71,8 +71,6 @@ def f(a):
 f(a)
 print(a)
 
-# TODO last rows columns
-
 #
 # def calc_shadows_and_tau_new(curr_configuration: accretingNS.AccretingPulsarConfiguration, surface, obs_matrix,
 #                              mask_flag=False):
