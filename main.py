@@ -168,7 +168,7 @@ def save_new_way(L_surfs, L_scatter, L_nu_surfs, L_nu_scatter, cur_path_data):
 def calc_shadows_and_tau(curr_configuration: accretingNS.AccretingPulsarConfiguration, surface, obs_matrix,
                          mask_flag=False):
     '''
-    использую в расчетах!!!!
+    использую в расчетах!!!! по сути самая главная функция
 
     функция расчитывает матрицу косинусов на каждой фазе для направлений наблюдателя
 
@@ -575,12 +575,14 @@ if __name__ == '__main__':
     mu = 0.1e31
 
     theta_obs = 60
-    beta_mu = 30
+    beta_mu = 20
 
     mc2 = 60
     a_portion = 0.8
     phi_0 = 0
 
     # calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, True, True)
-
+    t1 = time.perf_counter()
     calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, True, False)
+    t2 = time.perf_counter()
+    print(t2 - t1)
