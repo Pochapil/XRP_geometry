@@ -76,6 +76,7 @@ def make_save_values_file(curr_configuration: accretingNS.AccretingPulsarConfigu
         f.write(f'avg L with scatter = {number:.6f} * 10**{power}\n')
         number = (avg_L_on_phase + np.mean(np.sum(L_scatter, axis=0))) / curr_configuration.top_column_for_calc.L_x
         f.write(f'avg L with scatter / L_x = {number:.6f}\n')
+        f.write(f'gamma = {curr_configuration.top_column_for_calc.gamma:.6f}\n')
 
 
 def save_some_files(curr_configuration: accretingNS.AccretingPulsarConfiguration, obs_matrix, L_surfs, L_scatter,
@@ -189,8 +190,11 @@ def calc_shadows_and_tau(curr_configuration: accretingNS.AccretingPulsarConfigur
     tensor_tau = np.ones_like(cos_psi_rotation_matrix)
     new_cos_psi_range = cos_psi_rotation_matrix.copy()
 
-    tensor_tau_save = np.empty_like(cos_psi_rotation_matrix)
-    tensor_alpha_save = np.empty_like(cos_psi_rotation_matrix)
+    # tensor_tau_save = np.empty_like(cos_psi_rotation_matrix)
+    # tensor_alpha_save = np.empty_like(cos_psi_rotation_matrix)
+
+    tensor_tau_save = np.full_like(cos_psi_rotation_matrix, fill_value=-2)
+    tensor_alpha_save = np.full_like(cos_psi_rotation_matrix, fill_value=-2)
 
     if mask_flag:
         mask = np.zeros_like(new_cos_psi_range).astype(bool)
@@ -200,8 +204,15 @@ def calc_shadows_and_tau(curr_configuration: accretingNS.AccretingPulsarConfigur
     # for phase_index in range(config.N_phase):
     # для возможности распараллелить еще больше чем на 4 поверхности (разрезая наблюдателя на чанки)
     for phase_index in range(obs_matrix.shape[0]):
+        prev_solutions = np.zeros((config.N_phi_accretion, config.N_theta_accretion), dtype=object)
         for phi_index in range(config.N_phi_accretion):
             for theta_index in range(config.N_theta_accretion):
+                prev_solution = None
+                if theta_index > 1 and prev_solutions[phi_index, theta_index - 1] != 0:
+                    prev_solution = prev_solutions[phi_index, theta_index - 1]
+                elif phi_index > 1 and prev_solutions[phi_index - 1, theta_index] != 0:
+                    prev_solution = prev_solutions[phi_index - 1, theta_index]
+
                 if new_cos_psi_range[phase_index, phi_index, theta_index] > 0:
                     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
                     # сначала проверяем на затмение НЗ
@@ -211,10 +222,36 @@ def calc_shadows_and_tau(curr_configuration: accretingNS.AccretingPulsarConfigur
                     # иначе тяжелые вычисления
                     else:
                         # расчет для полинома - находим корни для пересечения с внутр поверхностью на магн линии!
+                        t_sol = time.perf_counter()
+                        print('------start solut------')
                         solutions = shadows.get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta,
                                                                                   obs_matrix[phase_index])
                         # сортируем по действительной части, чтобы
                         solutions = sorted(list(solutions), key=lambda x: x.real)  # [::-1]
+                        print(solutions)
+                        print(time.perf_counter() - t_sol)
+                        print('------end solut------')
+
+                        prev_solutions[phi_index, theta_index] = solutions
+
+                        t_sol = time.perf_counter()
+                        print('------start solut new------')
+                        # сортируем по действительной части, чтобы
+                        print(shadows.get_solutions_for_dipole_magnet_lines_prev_sol(origin_phi, origin_theta,
+                                                                                  obs_matrix[phase_index], prev_solution))
+                        print(time.perf_counter() - t_sol)
+                        print('------end solut new------')
+
+
+
+                        # t_sol = time.perf_counter()
+                        # print('------start solut new------')
+                        # # сортируем по действительной части, чтобы
+                        # print(shadows.real_roots_numba(origin_phi, origin_theta, obs_matrix[phase_index]))
+                        # print(time.perf_counter() - t_sol)
+                        # print('------end solut new------')
+
+
                         # расчитываем затмение колонкой
                         tensor_shadows_columns[phase_index, phi_index, theta_index] = \
                             shadows.check_shadow_with_dipole(surface, phi_index, theta_index,
@@ -455,8 +492,8 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
     PF_L_nu_surfs = newService.get_PF(np.sum(L_nu_surfs, axis=0))
 
     if config.flag_save_tensors:
-        np.save(cur_path_data / 'tensor_tau_cols', tensor_tau_save)
-        np.save(cur_path_data / 'tensor_alpha_cols', tensor_alpha_save)
+        np.save(cur_path_data / 'tensor_tau_cols', tensor_tau_save[tensor_tau_save > 0])
+        np.save(cur_path_data / 'tensor_alpha_cols', tensor_alpha_save[tensor_alpha_save > 0])
 
     if config.print_time_flag:
         print('finish calc surfs')
@@ -512,8 +549,8 @@ def calc_and_save_for_configuration(mu, theta_obs, beta_mu, mc2, a_portion, phi_
     PF_L_nu_scatter = newService.get_PF(np.sum(L_nu_scatter, axis=0))
 
     if config.flag_save_tensors:
-        np.save(cur_path_data / 'tensor_tau_scatter', tensor_tau_save)
-        np.save(cur_path_data / 'tensor_alpha_scatter', tensor_alpha_save)
+        np.save(cur_path_data / 'tensor_tau_scatter', tensor_tau_save[tensor_tau_save > 0])
+        np.save(cur_path_data / 'tensor_alpha_scatter', tensor_alpha_save[tensor_alpha_save > 0])
 
     if config.print_time_flag:
         print('finish calc scatter')
