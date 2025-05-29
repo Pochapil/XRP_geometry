@@ -204,15 +204,8 @@ def calc_shadows_and_tau(curr_configuration: accretingNS.AccretingPulsarConfigur
     # for phase_index in range(config.N_phase):
     # для возможности распараллелить еще больше чем на 4 поверхности (разрезая наблюдателя на чанки)
     for phase_index in range(obs_matrix.shape[0]):
-        prev_solutions = np.zeros((config.N_phi_accretion, config.N_theta_accretion), dtype=object)
         for phi_index in range(config.N_phi_accretion):
             for theta_index in range(config.N_theta_accretion):
-                prev_solution = None
-                if theta_index > 1 and prev_solutions[phi_index, theta_index - 1] != 0:
-                    prev_solution = prev_solutions[phi_index, theta_index - 1]
-                elif phi_index > 1 and prev_solutions[phi_index - 1, theta_index] != 0:
-                    prev_solution = prev_solutions[phi_index - 1, theta_index]
-
                 if new_cos_psi_range[phase_index, phi_index, theta_index] > 0:
                     origin_phi, origin_theta = surface.phi_range[phi_index], surface.theta_range[theta_index]
                     # сначала проверяем на затмение НЗ
@@ -222,35 +215,10 @@ def calc_shadows_and_tau(curr_configuration: accretingNS.AccretingPulsarConfigur
                     # иначе тяжелые вычисления
                     else:
                         # расчет для полинома - находим корни для пересечения с внутр поверхностью на магн линии!
-                        t_sol = time.perf_counter()
-                        print('------start solut------')
                         solutions = shadows.get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta,
                                                                                   obs_matrix[phase_index])
                         # сортируем по действительной части, чтобы
                         solutions = sorted(list(solutions), key=lambda x: x.real)  # [::-1]
-                        print(solutions)
-                        print(time.perf_counter() - t_sol)
-                        print('------end solut------')
-
-                        prev_solutions[phi_index, theta_index] = solutions
-
-                        t_sol = time.perf_counter()
-                        print('------start solut new------')
-                        # сортируем по действительной части, чтобы
-                        print(shadows.get_solutions_for_dipole_magnet_lines_prev_sol(origin_phi, origin_theta,
-                                                                                  obs_matrix[phase_index], prev_solution))
-                        print(time.perf_counter() - t_sol)
-                        print('------end solut new------')
-
-
-
-                        # t_sol = time.perf_counter()
-                        # print('------start solut new------')
-                        # # сортируем по действительной части, чтобы
-                        # print(shadows.real_roots_numba(origin_phi, origin_theta, obs_matrix[phase_index]))
-                        # print(time.perf_counter() - t_sol)
-                        # print('------end solut new------')
-
 
                         # расчитываем затмение колонкой
                         tensor_shadows_columns[phase_index, phi_index, theta_index] = \
