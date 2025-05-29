@@ -49,7 +49,7 @@ old_path_flag = False
 L_nu_flag = False  # флаг для сохранения массивов графиков на каждой энергии. довольно долго (порядка 20 секунд). пока отключил
 print_time_flag = False  # в main пишет сколько времени заняли промежутки
 
-flag_save_tensors = False  # охраняет данные tensor_tau_cols для того чтобы отразить в диаграмме потом
+flag_save_tensors = True  # охраняет данные tensor_tau_cols для того чтобы отразить в диаграмме потом
 
 tau_cutoff = 0
 opacity_above_shock = 0  # непрозрачность вещества над ударной волной: 0 - полностью прозрачное, 1 - непрозрачное
@@ -71,7 +71,18 @@ N_cpus = 10  # сколько ядер буде использовано
 N_phase = 45  # цикл для поворотов, сколько точек для фазы от 0 до 1 (полного поворота)
 omega_ns_deg = 360 / 45  # скорость вращения НЗ - будет меняться только угол phi_mu!
 omega_ns_rad = np.deg2rad(omega_ns_deg)
+
+new_N_phase = 50
+phase_rot = np.linspace(0, 1, new_N_phase, endpoint=False)
+new_omega = phase_rot[1]
+
+omega_ns_rad = new_omega * 2 * np.pi
+N_phase = new_N_phase
+
 N_phase_for_plot = 2 * N_phase  # сколько точек на графике интегралов - для фазы от 0 до 2 - с перекрытием чтобы форму макс
+
+
+
 
 # количество шагов
 N_phi_accretion = 100
@@ -128,7 +139,6 @@ symbol_m = r'$\dot{m}$'
 symbol_phi_0 = r'$\phi_0$'  # r'$\varphi_0 ~ [^\circ]$'
 symbol_mu_ang = r'$\chi$'
 
-
 symbol_theta_obs_y = symbol_theta_obs + ' ' + symbol_grad
 symbol_phi_0_y = symbol_phi_0 + ' ' + symbol_grad
 
@@ -142,3 +152,10 @@ if __name__ == '__main__':
     mc2 = 20
     print(mc2 * L_edd / c ** 2)
     print(mc2 * L_edd / c ** 2 / 1e18)
+
+    print(new_omega * 2 * np.pi)
+    print(new_omega * new_N_phase * 2 * np.pi)
+
+    print(omega_ns_rad * N_phase)
+    print(2 * np.pi)
+    print(phase_rot)
