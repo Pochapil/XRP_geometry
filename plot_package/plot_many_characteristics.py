@@ -1,14 +1,16 @@
 from typing import Iterable
 
-import matplotlib.pyplot as plt
 import numpy as np
-import scienceplots
-import matplotlib as mpl
-import matplotlib.cm as cm
-import matplotlib.colors as colors
-import matplotlib.lines as mlines
 import scipy.interpolate
 from scipy import stats
+
+import matplotlib.pyplot as plt
+import scienceplots
+import matplotlib.colors as colors
+import matplotlib.lines as mlines
+import matplotlib as mpl
+import matplotlib.cm as cm
+import seaborn as sns
 
 import pathService
 import config
@@ -40,7 +42,7 @@ mpl.rcParams['image.cmap'] = 'magma'
 # ticks_labelsize = 18
 
 
-def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
+def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0, flag_contour=True):
     '''рисует карты неба (излучательный коэффициент в зависимости от положения наблюдателя)
     по другому - куча профилей. для разных наблюдателей. характеризует как источник излучает в пространство
     '''
@@ -77,7 +79,7 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
     ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
 
     clb = plt.colorbar(im)
-    clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)  # r'$L_{\rm iso} \cdot L_{x}^{-1}$'
+    clb.set_label(r'$L_{\rm iso} / L_{\rm x}$', fontsize=24)  # r'$L_{\rm iso} \cdot L_{\rm x}^{-1}$'
     clb.ax.tick_params(labelsize=ticks_labelsize)
 
     prefix_folder = 'sky_map/'
@@ -100,7 +102,7 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
     ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
 
     clb = plt.colorbar(im)
-    clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
+    clb.set_label(r'$L_{\rm iso} / L_{\rm x}$', fontsize=24)
     clb.ax.tick_params(labelsize=ticks_labelsize)
 
     prefix_folder = 'sky_map/'
@@ -108,6 +110,62 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0):
                                    prefix_folder=prefix_folder)
     file_name = 'try_map_contour'
     save.save_figure(fig, save_dir, file_name)
+
+    if flag_contour:
+        def get_r(i, j):
+
+            x = matrix.get_cartesian_from_spherical(1, np.deg2rad(theta_obs_arr_to_plot[i]),
+                                                    config.phase_for_plot[j] * 2 * np.pi)
+            x = np.array(x)
+
+            y = matrix.get_cartesian_from_spherical(1, np.deg2rad(beta_mu), 0)
+            y = np.array(y)
+
+            y1 = matrix.get_cartesian_from_spherical(1, np.pi - np.deg2rad(beta_mu), np.pi)
+            y1 = np.array(y1)
+
+            z = np.arccos(x.dot(y) / np.linalg.norm(x) * np.linalg.norm(y))
+            z1 = np.arccos(x.dot(y1) / np.linalg.norm(x) * np.linalg.norm(y))
+
+            # print(x.dot(y))
+            # print(np.arccos(x @ y / np.linalg.norm(x) * np.linalg.norm(y)))
+            return np.min([z, z1])
+
+        fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
+        im = ax['a'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot, levels=30)
+        ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='white', marker='*', s=300)
+        ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='white', marker='*', s=300)
+        ax['a'].scatter([0, 1, 2], [beta_mu] * 3, c='black', marker='*', s=100)
+        ax['a'].scatter([0.5, 1.5], [180 - beta_mu] * 2, c='black', marker='*', s=100)
+
+        x_axis_label = config.symbol_phase
+        y_axis_label = config.symbol_theta_obs_y
+        ax['a'].set_xlabel(x_axis_label, fontsize=24)
+        ax['a'].set_ylabel(y_axis_label, fontsize=24)
+        ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
+
+        clb = plt.colorbar(im)
+        clb.set_label(r'$L_{\rm iso} / L_{\rm x}$', fontsize=24)
+        clb.ax.tick_params(labelsize=ticks_labelsize)
+
+        x = config.phase_for_plot
+        y = theta_obs_arr_to_plot
+        X, Y = np.meshgrid(x, y)
+        for i in range(data_array.shape[0]):
+            for j in range(data_array.shape[1]):
+                data_array[i, j] = np.rad2deg(get_r(i, j))
+
+        Z = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_array)
+
+        CS = ax['a'].contour(X, Y, Z, levels=10, colors='c')
+        ax['a'].clabel(CS, fontsize=16)
+
+        prefix_folder = 'sky_map/'
+        save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=beta_mu, mc2=mc2, a_portion=a_portion,
+                                       phi_0=phi_0,
+                                       prefix_folder=prefix_folder)
+        file_name = 'try_map_contour_with'
+        save.save_figure(fig, save_dir, file_name)
 
 
 def plot_rvm(mu, beta_mu, mc2):
@@ -126,6 +184,7 @@ def plot_rvm(mu, beta_mu, mc2):
 
     first_pole = (beta_mu, 0)
     second_pole = (180 - beta_mu, np.pi)
+    # second_pole = (180 - beta_mu + np.deg2rad(10), np.pi - np.deg2rad(140))
     third_pole = (beta_mu, 2 * np.pi)
 
     def get_r(i, j, pole):
@@ -171,7 +230,7 @@ def plot_rvm(mu, beta_mu, mc2):
     ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
 
     clb = plt.colorbar(im)
-    clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
+    clb.set_label(r'$L_{\rm iso} / L_{\rm x}$', fontsize=24)
     clb.ax.tick_params(labelsize=ticks_labelsize)
 
     prefix_folder = 'sky_map_rvm/'
@@ -1209,60 +1268,87 @@ def plot_a_restrictions():
 
 def plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     tensor_tau_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_tau_cols')
+    buf_tau = tensor_tau_cols.reshape(1, -1)
+    buf_tau = buf_tau[buf_tau > 0]
 
-    buf = tensor_tau_cols.reshape(1, -1)
-    buf = buf[buf > 0]
+    tensor_alpha_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_alpha_cols')
+    buf_cos = tensor_alpha_cols.reshape(1, -1)
+    buf_cos = buf_cos[buf_cos > 0]
 
-    fig, ax = plt.subplot_mosaic('abc', figsize=(18, 6))
+    fig1, ax1 = plt.subplot_mosaic('ab', figsize=(18, 6))
+    sns.ecdfplot(np.log10(buf_tau / buf_cos), ax=ax1['a'])
+    ax1['a'].set_title(r'$\log \tau/\cos \alpha_0$', fontsize=26)
+
     # ax['a'].hist(buf, 30, histtype='bar', rwidth=0.8)  # barstacked
     # ax['a'].set_title(r'$\tau$', fontsize=26)
 
-    from scipy import stats
-    import seaborn as sns
+    # sns.ecdfplot(buf, label='Эмпирическая CDF', ax=ax['c'])
 
-    sns.histplot(buf, kde=True, bins=100, stat='density', alpha=0.5, ax=ax['a'])
-
-    sns.ecdfplot(buf, label='Эмпирическая CDF', ax=ax['c'])
     # kde = stats.gaussian_kde(tensor_tau_cols.reshape(1, -1))
     # x_kde = np.linspace(tensor_tau_cols.min(), tensor_tau_cols.max(), 1000)
     # ax['a'].plot(x_kde, kde(x_kde), 'r-', linewidth=2, label='KDE')
 
-    tensor_alpha_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_alpha_cols')
+    fig, ax = plt.subplot_mosaic('abc', figsize=(18, 6))
+    sns.histplot(buf_tau, kde=True, bins=100, alpha=0.5, ax=ax['a']) # stat='density',
+    sns.histplot(buf_cos, kde=True, bins=100, alpha=0.5, ax=ax['b'])
+    sns.histplot(np.log10(buf_tau / buf_cos), kde=True, bins=100, alpha=0.5, ax=ax['c'])
 
-    buf = tensor_alpha_cols.reshape(1, -1)
-    buf = buf[buf > 0]
+    # ax['b'].hist(buf_cos, 30, histtype='bar', rwidth=0.8)
 
-    ax['b'].hist(buf, 30, histtype='bar', rwidth=0.8)
-    ax['b'].set_title(r'$\cos \alpha$', fontsize=26)
+    ax['a'].set_title(r'$\tau$', fontsize=26)
+    ax['b'].set_title(r'$\cos \alpha_0$', fontsize=26)
+    ax['c'].set_title(r'$\log \tau/\cos \alpha_0$', fontsize=26)
 
-    fig.suptitle('cols', fontsize=22)
+    # fig.suptitle('cols', fontsize=22)
 
-    plt.show()
-
-
+    prefix_folder = 'tau_hist/'
+    file_name = f'{theta_obs} {beta_mu} {mc2} {a_portion} {phi_0} cols'
+    # file_name = str(pathService.get_args_dir(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)) + 'cols'
+    save_dir = pathService.get_dir(mu=None, theta_obs=None, beta_mu=None, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    # file_name = f'contour_max_interpolate'
+    save.save_figure(fig, save_dir, file_name)
 
 
     tensor_tau_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_tau_scatter')
-
-    buf = tensor_tau_cols.reshape(1, -1)
-    buf = buf[buf > 0]
-
-    fig, ax = plt.subplot_mosaic('ab', figsize=(18, 6))
-    ax['a'].hist(buf, 30, histtype='bar', rwidth=0.8)  # barstacked
-    ax['a'].set_title(r'$\tau$', fontsize=26)
+    buf_tau = tensor_tau_cols.reshape(1, -1)
+    buf_tau = buf_tau[buf_tau > 0]
 
     tensor_alpha_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_alpha_scatter')
+    buf_cos = tensor_alpha_cols.reshape(1, -1)
+    buf_cos = buf_cos[buf_cos > 0]
 
-    buf = tensor_alpha_cols.reshape(1, -1)
-    buf = buf[buf > 0]
+    sns.ecdfplot(np.log10(buf_tau / buf_cos), ax=ax1['b'])
+    ax1['b'].set_title(r'$\log \tau/\cos \alpha_1$', fontsize=26)
 
-    ax['b'].hist(buf, 30, histtype='bar', rwidth=0.8)
-    ax['b'].set_title(r'$\cos \alpha$', fontsize=26)
+    fig, ax = plt.subplot_mosaic('abc', figsize=(18, 6))
+    sns.histplot(buf_tau, kde=True, bins=100, alpha=0.5, ax=ax['a'])
+    sns.histplot(buf_cos, kde=True, bins=100, alpha=0.5, ax=ax['b'])
+    sns.histplot(np.log10(buf_tau / buf_cos), kde=True, bins=100, alpha=0.5, ax=ax['c'])
 
-    fig.suptitle('scatter', fontsize=22)
+    # ax['b'].hist(buf_cos, 30, histtype='bar', rwidth=0.8)
 
-    plt.show()
+    ax['a'].set_title(r'$\tau$', fontsize=26)
+    ax['b'].set_title(r'$\cos \alpha_1$', fontsize=26)
+    ax['c'].set_title(r'$\log \tau/\cos \alpha_1$', fontsize=26)
 
+    # fig, ax = plt.subplot_mosaic('ab', figsize=(18, 6))
+    # ax['a'].hist(buf_tau, 30, histtype='bar', rwidth=0.8)  # barstacked
+    # ax['a'].set_title(r'$\tau$', fontsize=26)
+    #
+    # ax['b'].hist(buf_cos, 30, histtype='bar', rwidth=0.8)
+    # ax['b'].set_title(r'$\cos \alpha$', fontsize=26)
+
+    # fig.suptitle('scatter', fontsize=22)
+
+    prefix_folder = 'tau_hist/'
+    file_name = f'{theta_obs} {beta_mu} {mc2} {a_portion} {phi_0} scatter'
+    save_dir = pathService.get_dir(mu=None, theta_obs=None, beta_mu=None, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+    save.save_figure(fig, save_dir, file_name)
+
+    file_name = f'{theta_obs} {beta_mu} {mc2} {a_portion} {phi_0} final'
+    save.save_figure(fig1, save_dir, file_name)
     # counts, bin_edges = np.histogram(buf, 20)
     # bin_centres = (bin_edges[:-1] + bin_edges[1:]) / 2.
     # err = np.random.rand(bin_centres.size) * 100
@@ -1350,18 +1436,18 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
 
         # cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])
         # clb = fig.colorbar(im, cax=cbar_ax)
-        clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
+        clb.set_label(r'$L_{\rm iso} / L_{\rm x}$', fontsize=24)
         clb.ax.tick_params(labelsize=ticks_labelsize)
 
         # clb = plt.colorbar(im, cax=cax)
-        # clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
+        # clb.set_label(r'$L_{\rm iso} / L_{\rm x}$', fontsize=24)
         # clb.ax.tick_params(labelsize=ticks_labelsize)
 
         # im = ax['c'].contourf(config.phase_for_plot, theta_obs_arr_to_plot, data_to_plot_arr[0], levels=30, vmin=vmin,
         #                       vmax=vmax)
         #
         # clb = plt.colorbar(im, )
-        # clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
+        # clb.set_label(r'$L_{\rm iso} / L_{\rm x}$', fontsize=24)
         # clb.ax.tick_params(labelsize=ticks_labelsize)
 
         for ax in [ax['a'], ax['b'], ax['c']]:
@@ -1414,7 +1500,7 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
         if 'diff' in file_name:
             clb.set_label(r'$\%$', fontsize=24)
         else:
-            clb.set_label(r'$L_{\rm iso} / L_{x}$', fontsize=24)
+            clb.set_label(r'$L_{\rm iso} / L_{\rm x}$', fontsize=24)
         clb.ax.tick_params(labelsize=ticks_labelsize)
         if flag_remove_cbar:
             # clb.remove()
@@ -1439,19 +1525,21 @@ def plot_sky_map_NS_scatter_on_off(mu, beta_mu, mc2, a_portion, phi_0):
         theta_obs_arr_to_plot = np.linspace(0, 180, 19).astype(int)
         fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
 
-        line_style = ['-', '--']
+        line_style = ['-', ':', '--', '-.']
         marker_dict = {0: '.', 1: '*', 2: '+', 3: '^'}
 
+        j = 0
         for data_to_plot, label_name in zip(data_to_plot_arr, file_name_arr):
             PF = []
             if label_name != 'None':
                 for i in range(10):
                     PF.append(newService.get_PF(data_to_plot[i]))
 
-                if label_name == 'No NS eclipse':
-                    ax['a'].plot(theta_obs_arr_to_plot[:10], PF, label=label_name, linestyle='--')
-                else:
-                    ax['a'].plot(theta_obs_arr_to_plot[:10], PF, label=label_name)
+                # if label_name == 'No NS eclipse':
+                ax['a'].plot(theta_obs_arr_to_plot[:10], PF, label=label_name, linestyle=line_style[j])
+                j += 1
+                # else:
+                #     ax['a'].plot(theta_obs_arr_to_plot[:10], PF, label=label_name)
 
         x_axis_label = config.symbol_theta_obs_y
         y_axis_label = 'PF'
@@ -1797,7 +1885,7 @@ if __name__ == '__main__':
     mc2 = 60
     a_portion = 0.8
     phi_0 = 0
-    # plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    # plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)  # active
 
     beta_mu = 20
     mc2 = 60
@@ -1882,11 +1970,11 @@ if __name__ == '__main__':
     # plot_L_max_phase_to_m_to_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
     theta_obs = 40
 
-    beta_mu = 60
-    mc2 = 60
+    beta_mu = 20
+    mc2 = 100
     a_portion = 1
     phi_0 = 0
-    # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
+    # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0, True)
 
     theta_obs = 20
     beta_mu = 40
@@ -2009,7 +2097,7 @@ if __name__ == '__main__':
     # plot_Teff_to_ksi_diff_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
 
     # plot_coeff_gamma()
-    # plot_rvm(mu, 20, 60)
+    plot_rvm(mu, 20, 60)
 
     beta_mu_arr = [40, 80]
     a_portion = 1
