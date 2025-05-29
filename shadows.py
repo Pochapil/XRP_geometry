@@ -1,6 +1,7 @@
 import numpy as np
 import time
 from numba import njit
+from scipy.optimize import newton
 
 import accretingNS
 import config
@@ -63,16 +64,18 @@ def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_ve
     # вывод формулы был для 0 угла наблюдателя по фи (его смещали в выводе). поэтому находим phi_delta
     phi_delta = origin_phi - direction_phi
     eta = np.sin(direction_theta) / np.sin(origin_theta)
-    cos_alpha = np.sin(origin_theta) * np.cos(phi_delta) * np.sin(direction_theta) + np.cos(origin_theta) * np.cos(
+
+    cos_phi = np.cos(phi_delta)
+    cos_alpha = np.sin(origin_theta) * cos_phi * np.sin(direction_theta) + np.cos(origin_theta) * np.cos(
         direction_theta)
 
     # коэффициенты в полиноме
     c_x_5 = 1
     c_x_4 = 6 * cos_alpha
     c_x_3 = 3 + 12 * cos_alpha ** 2 - eta ** 4
-    c_x_2 = 12 * cos_alpha + 8 * cos_alpha ** 3 - 4 * np.cos(phi_delta) * eta ** 3
-    c_x_1 = 3 + 12 * cos_alpha ** 2 - 2 * eta ** 2 - 4 * np.cos(phi_delta) ** 2 * eta ** 2
-    c_x_0 = 6 * cos_alpha - 4 * np.cos(phi_delta) * eta
+    c_x_2 = 12 * cos_alpha + 8 * cos_alpha ** 3 - 4 * cos_phi * eta ** 3
+    c_x_1 = 3 + 12 * cos_alpha ** 2 - 2 * eta ** 2 - 4 * cos_phi ** 2 * eta ** 2
+    c_x_0 = 6 * cos_alpha - 4 * cos_phi * eta
 
     # теперь коэффициенты надо укзывать в порядке с 0 до 5 степени
     # coefficients = np.array([c_x_0, c_x_1, c_x_2, c_x_3, c_x_4, c_x_5])
@@ -80,16 +83,113 @@ def get_solutions_for_dipole_magnet_lines(origin_phi, origin_theta, direction_ve
 
     # для numba
     # coefficients = np.array([c_x_5, c_x_4, c_x_3, c_x_2, c_x_1, c_x_0])
-    coefficients = np.array([c_x_5, c_x_4, c_x_3, c_x_2, c_x_1, c_x_0], dtype=np.complex128)
+    coefficients = np.array([c_x_5, c_x_4, c_x_3, c_x_2, c_x_1, c_x_0], dtype=np.complex64)
     solutions = np.roots(coefficients)
     return solutions
+
+
+# def get_solutions_for_dipole_magnet_lines_prev_sol(origin_phi, origin_theta, direction_vector, prev_solution=None):
+#     '''
+#         попытка в оптимизацию, но стало хуже
+#     '''
+#     direction_phi, direction_theta = matrix.vec_to_angles(direction_vector)
+#     # вспомогательные переменные, были введены для упрощения аналитического вывода
+#     # вывод формулы был для 0 угла наблюдателя по фи (его смещали в выводе). поэтому находим phi_delta
+#     phi_delta = origin_phi - direction_phi
+#     eta = np.sin(direction_theta) / np.sin(origin_theta)
+#
+#     cos_phi = np.cos(phi_delta)
+#     cos_alpha = np.sin(origin_theta) * cos_phi * np.sin(direction_theta) + np.cos(origin_theta) * np.cos(
+#         direction_theta)
+#
+#     # коэффициенты в полиноме
+#     c_x_5 = 1
+#     c_x_4 = 6 * cos_alpha
+#     c_x_3 = 3 + 12 * cos_alpha ** 2 - eta ** 4
+#     c_x_2 = 12 * cos_alpha + 8 * cos_alpha ** 3 - 4 * cos_phi * eta ** 3
+#     c_x_1 = 3 + 12 * cos_alpha ** 2 - 2 * eta ** 2 - 4 * cos_phi ** 2 * eta ** 2
+#     c_x_0 = 6 * cos_alpha - 4 * cos_phi * eta
+#
+#     # теперь коэффициенты надо укзывать в порядке с 0 до 5 степени
+#     # coefficients = np.array([c_x_0, c_x_1, c_x_2, c_x_3, c_x_4, c_x_5])
+#     # solutions = np.polynomial.polynomial.polyroots(coefficients)
+#
+#     # для numba
+#     # coefficients = np.array([c_x_5, c_x_4, c_x_3, c_x_2, c_x_1, c_x_0])
+#     coefficients = np.array([c_x_5, c_x_4, c_x_3, c_x_2, c_x_1, c_x_0], dtype=np.complex64)
+#     if prev_solution is None:
+#         return np.roots(coefficients)
+#     else:
+#         # Уточнение предыдущих корней
+#         roots_refined = [newton(lambda x: np.polyval(coefficients[::-1], x), x0=r) for r in prev_solution]
+#         return np.array(roots_refined)
+
+
+# @njit(cache=True, fastmath=True)
+# @njit
+def real_roots_numba(origin_phi, origin_theta, direction_vector):
+    # попытка deepseek
+    '''работает с такой же скоростью'''
+    direction_phi, direction_theta = matrix.vec_to_angles(direction_vector)
+    # вспомогательные переменные, были введены для упрощения аналитического вывода
+    # вывод формулы был для 0 угла наблюдателя по фи (его смещали в выводе). поэтому находим phi_delta
+    phi_delta = origin_phi - direction_phi
+    eta = np.sin(direction_theta) / np.sin(origin_theta)
+
+    cos_phi = np.cos(phi_delta)
+    cos_alpha = np.sin(origin_theta) * cos_phi * np.sin(direction_theta) + np.cos(origin_theta) * np.cos(
+        direction_theta)
+
+    # коэффициенты в полиноме
+    c_x_5 = 1
+    c_x_4 = 6 * cos_alpha
+    c_x_3 = 3 + 12 * cos_alpha ** 2 - eta ** 4
+    c_x_2 = 12 * cos_alpha + 8 * cos_alpha ** 3 - 4 * cos_phi * eta ** 3
+    c_x_1 = 3 + 12 * cos_alpha ** 2 - 2 * eta ** 2 - 4 * cos_phi ** 2 * eta ** 2
+    c_x_0 = 6 * cos_alpha - 4 * cos_phi * eta
+
+    coeffs = [c_x_5, c_x_4, c_x_3, c_x_2, c_x_1, c_x_0]  # [::-1]
+
+    # Приводим коэффициенты к вещественному типу
+    coeffs = np.array(coeffs, dtype=np.float64)
+
+    # # Создаем companion matrix
+    # n = len(coeffs) - 1
+    # mat = np.zeros((n, n), dtype=np.float64)
+    # mat[0, :] = -coeffs[1:] / coeffs[0]
+    # mat[1:, :-1] = np.eye(n - 1)
+    #
+    # # Находим собственные значения (корни)
+    # roots = np.linalg.eigvals(mat)
+
+    n = len(coeffs) - 1
+
+    # Создаем companion matrix (правильная форма)
+    mat = np.zeros((n, n), dtype=np.float64)
+    mat[0, :] = -coeffs[1:] / coeffs[0]  # Первая строка
+
+    # https://ru.stackoverflow.com/questions/419456/%D0%A1-%D0%BF%D0%BE%D0%BC%D0%BE%D1%89%D1%8C%D1%8E-numpy-%D0%B7%D0%B0%D0%BF%D0%BE%D0%BB%D0%BD%D0%B8%D1%82%D1%8C-%D1%81%D0%BE%D1%81%D0%B5%D0%B4%D0%BD%D0%B8%D0%B5-%D1%81-%D0%B3%D0%BB%D0%B0%D0%B2%D0%BD%D0%BE%D0%B9-%D0%B4%D0%B8%D0%B0%D0%B3%D0%BE%D0%BD%D0%B0%D0%BB%D0%B8
+    k = -1
+    rows, cols = np.indices(mat.shape)
+    row_values = np.diag(rows, k=k)
+    col_values = np.diag(cols, k=k)
+    mat[row_values, col_values] = 1
+
+    # for i in range(1, n):
+    #     mat[i, i - 1] = 1.0  # Единицы на поддиагонали
+
+    # Вычисляем собственные значения (корни)
+    roots = np.linalg.eigvals(mat)
+
+    # Фильтруем вещественные корни
+    return roots[np.abs(roots.imag) < 1e-7].real
 
 
 def get_intersection_from_solution(r, origin_phi, origin_theta, obs_vector, solution):
     # ищем положительные корни и при этом вещественные
     # if solution.real > 0 and solution.imag == 0:
     # return -pi/2, pi/2 angles
-    if solution.real > 0 and np.abs(solution.imag) < 1e-10:
+    if solution.real > 0 and np.abs(solution.imag) < 1e-6:
         # direction - направление на наблюдателя
         direction_x, direction_y, direction_z = matrix.vec_to_coord(obs_vector)
         # origin - откуда бьет луч. площадка на поверхности
@@ -116,6 +216,7 @@ def get_intersection_phi_with_column(surface, intersect_phi):
         or (column_phi_range_begin <= intersect_phi - 2 * np.pi <= column_phi_range_end) \
         or (column_phi_range_begin <= intersect_phi + 4 * np.pi <= column_phi_range_end) \
         or (column_phi_range_begin <= intersect_phi - 4 * np.pi <= column_phi_range_end)
+
 
 def check_shadow_with_dipole(surface, phi_index, theta_index, obs_vector, solutions, top_column, bot_column):
     # checks for 1 element area!
@@ -234,7 +335,7 @@ def get_tau_with_dipole(surface, phi_index, theta_index, obs_vector, solutions,
             # учет маски!!
             spherical_R_condition = curr_configuration.top_magnet_lines_for_calc.surf_R_e * np.sin(
                 intersect_theta) ** 2 < (1 + dRe_div_Re) * curr_configuration.R_disk
-            spherical_R_condition = True # мы же убрали сферическое обрезание!
+            spherical_R_condition = True  # мы же убрали сферическое обрезание!
 
             # условия пересечений тета
             top_column_intersect_theta_correct = intersect_theta < theta_end
