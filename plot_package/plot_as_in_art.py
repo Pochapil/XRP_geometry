@@ -8,6 +8,7 @@ def plot_sky_map_as_in_art():
     beta_mu = 20
     mc2 = 60
     a_portion_arr = [0.2, 0.4, 0.6, 0.25, 0.5, 0.75]
+    a_portion_arr = [0.2, 0.5, 0.7]
     phi_0_arr = [0, 20, 40, 60]
     for a_portion in a_portion_arr:
         for phi_0 in phi_0_arr:
@@ -21,33 +22,45 @@ def plot_sky_map_as_in_art():
 
 
 def plot_L_to_mc2_as_in_art():
-    theta_obs = 20
-    beta_mu = 60
-    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
-    a_portion = 0.44
-    phi_0 = 0
-    plot_many_characteristics.plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
-    theta_obs = 40
-    beta_mu = 60
+    theta_obs_arr = [20, 40, 60]
+    beta_mu_arr = [10, 20]
+    a_portion_arr = [0.2, 0.5, 0.7]
     mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
-    a_portion = 0.44
     phi_0 = 0
-    plot_many_characteristics.plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+    for theta_obs in theta_obs_arr:
+        for beta_mu in beta_mu_arr:
+            for a_portion in a_portion_arr:
+                plot_many_characteristics.plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
-    theta_obs = 20
-    beta_mu = 60
-    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
-    a_portion = 0.66
-    phi_0 = 0
-    plot_many_characteristics.plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
-    theta_obs = 40
-    beta_mu = 60
-    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
-    a_portion = 0.66
-    phi_0 = 0
-    plot_many_characteristics.plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+    # theta_obs = 20
+    # beta_mu = 60
+    # mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+    # a_portion = 0.44
+    # phi_0 = 0
+    # plot_many_characteristics.plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+    #
+    # theta_obs = 40
+    # beta_mu = 60
+    # mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+    # a_portion = 0.44
+    # phi_0 = 0
+    # plot_many_characteristics.plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+    #
+    # theta_obs = 20
+    # beta_mu = 60
+    # mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+    # a_portion = 0.66
+    # phi_0 = 0
+    # plot_many_characteristics.plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+    #
+    # theta_obs = 40
+    # beta_mu = 60
+    # mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+    # a_portion = 0.66
+    # phi_0 = 0
+    # plot_many_characteristics.plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
 
 def plot_L_to_a_portion_as_in_art():
@@ -80,9 +93,9 @@ def plot_L_to_a_portion_as_in_art():
 
 
 def plot_L_to_phi_0_as_in_art():
-    theta_obs_arr = [20, 40]
+    theta_obs_arr = [20, 40, 60]
     beta_mu_arr = [20]
-    a_portion_arr = [0.25, 0.75]
+    a_portion_arr = [0.2, 0.5, 0.7]
     mc2 = 60
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
     for theta_obs in theta_obs_arr:
@@ -207,8 +220,8 @@ if __name__ == "__main__":
     ...
     # plot_sky_map_as_in_art()
     # plot_L_to_phi_0_as_in_art()
-    # plot_L_to_mc2_as_in_art()
-    plot_L_to_a_portion_as_in_art()
+    plot_L_to_mc2_as_in_art()
+    # plot_L_to_a_portion_as_in_art()
     # plot_masses_PF_L_nu_as_in_art()
     # plot_PF_contour_as_in_art()
     # plot_table_as_in_art()
