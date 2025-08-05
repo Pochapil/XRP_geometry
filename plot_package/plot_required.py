@@ -49,11 +49,24 @@ def func(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, R='rs'):
     k = config.k_bolc
     nu = 3e3 / h
 
+    # wtf ????
     k_ff = 3.7e8 * (rho / config.mass_P) ** 2 / (rho * np.sqrt(T_e) * nu ** 3) * (1 - np.exp(-h * nu / (k * T_e)))
 
     res = np.sqrt(3 * k_ff * (k_ff + config.k))
 
-    tau_t = 5 * mc2 * np.sqrt(R / R_e) / (a_portion * R / config.R_ns)
+    # tau_t = 1.4 * 1e-18 * M * np.sqrt(R_e / config.R_ns) / (a_portion * R / config.R_ns)
+
+    # tau_t = 5 * mc2 * np.sqrt(R / R_e) / (a_portion * R / config.R_ns)
+    # tau_t = 5 * mc2 * np.sqrt(R_e / config.R_ns) / (a_portion * R / config.R_ns)
+
+    # tau_t = 0.32 * mc2 * np.sqrt(R_e / config.R_ns) / (a_portion * R / config.R_ns)
+
+
+    # print(f'old tau_t {tau_t}')
+
+    tau_t = (config.k * M * np.sqrt(R_e))/ (4 * np.pi * a_portion * R * np.sqrt(2 * config.G * config.M_ns))
+
+    # print(f'new tau_t {tau_t}')
 
     # print(k_ff)
     # print(res)
@@ -66,13 +79,13 @@ def func(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, R='rs'):
 mu = 0.1e31
 
 theta_obs = 40
-beta_mu = 10
+beta_mu = 0
 
-n = 13
+n = 11
 mc2_arr = [10 * i for i in range(1, n)]
 a_portion = 0.22
 phi_0 = 0
-a_portion_arr = [0.22, 0.44, 0.66, 1]
+a_portion_arr = [0.25, 0.5, 0.6, 1]
 
 n = len(mc2_arr)
 res = [0] * n
@@ -93,25 +106,34 @@ for j, r in enumerate(R):
             suff = '; 0.9 Rm'
 
         ax['a'].plot(mc2_arr, tau_t, label=f'{a_portion}' + suff, linestyle=line_style[j])
-        x_axis_label = r'$\dot{M}$'
+        x_axis_label = r'$\dot{m}$'
         y_axis_label = r'$\tau_T$'
         ax['a'].set_xlabel(x_axis_label, fontsize=24)
         ax['a'].set_ylabel(y_axis_label, fontsize=24)
         ax['a'].set_yscale('log')
 
         ax['b'].plot(mc2_arr, res, label=f'{a_portion}' + suff, linestyle=line_style[j])
-        x_axis_label = r'$\dot{M}$'
+        x_axis_label = r'$\dot{m}$'
         y_axis_label = r'$\tau_{eff}$'
         ax['b'].set_xlabel(x_axis_label, fontsize=24)
         ax['b'].set_ylabel(y_axis_label, fontsize=24)
         ax['b'].set_yscale('log')
 
         ax['c'].plot(mc2_arr, rho, label=f'{a_portion}' + suff, linestyle=line_style[j])
-        x_axis_label = r'$\dot{M}$'
+        x_axis_label = r'$\dot{m}$'
         y_axis_label = r'$\rho$'
         ax['c'].set_xlabel(x_axis_label, fontsize=24)
         ax['c'].set_ylabel(y_axis_label, fontsize=24)
         ax['c'].set_yscale('log')
 
+
 plt.legend()
-plt.show()
+
+prefix_folder = 'free-free/'
+save_dir = pathService.get_dir(mu=None, theta_obs=None, beta_mu=None, mc2=None, a_portion=None, phi_0=None,
+                               prefix_folder=prefix_folder)
+file_name = 'tau_rho'
+save.save_figure(fig, save_dir, file_name)
+
+
+# plt.show()
