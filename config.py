@@ -149,9 +149,11 @@ symbol_phi_0_y = symbol_phi_0 + ' ' + symbol_grad
 
 if __name__ == '__main__':
     print(L_edd)
-    mc2 = 20
+    mc2 = 1
     print(mc2 * L_edd / c ** 2)
     print(mc2 * L_edd / c ** 2 / 1e18)
+
+    print(mc2 * L_edd / c ** 2 / 1.4 / 1e18)
 
     print(new_omega * 2 * np.pi)
     print(new_omega * new_N_phase * 2 * np.pi)
@@ -159,3 +161,8 @@ if __name__ == '__main__':
     print(omega_ns_rad * N_phase)
     print(2 * np.pi)
     print(phase_rot)
+
+
+    coef_for_tau = k  / (4 * np.pi * np.sqrt(2 * G * M_ns) * np.sqrt(R_ns))
+    print(coef_for_tau)
+    print(mc2 * L_edd / c ** 2 * coef_for_tau)
