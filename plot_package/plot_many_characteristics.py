@@ -46,7 +46,7 @@ def plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0, flag_contour=True):
     '''рисует карты неба (излучательный коэффициент в зависимости от положения наблюдателя)
     по другому - куча профилей. для разных наблюдателей. характеризует как источник излучает в пространство
     '''
-    ticks_labelsize = 16
+    ticks_labelsize = 20
     # try_sky_map(obs_i_angle_arr)
     # obs_i_angle = np.linspace(0, 180, 19)
     L_x = save.load_L_x(mu, 10, beta_mu, mc2, a_portion, phi_0)
@@ -487,14 +487,15 @@ def plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr):
 
             ax['a'].plot(x_sort_phi_0, y_sort_phi_0, color='black', alpha=0.2, linestyle=line_style[mc2_index])
 
-        marker_index = 3
+        marker_index += 3
 
-    x_axis_label = r'$L_{\rm iso}$' + r'$\rm [erg/s]$'
+    x_axis_label = r'$\bar{L}_{\rm iso}$' + r'$\rm [erg/s]$'
     y_axis_label = r'$PF$'
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
     ax['a'].set_xscale('log')
-    # ax['a'].set_ylim(0, 1.1)
+
+    ax['a'].set_ylim(0, 1)
 
     bounds = phi_0_arr.copy()
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
@@ -705,22 +706,34 @@ def plot_PF_to_L_const_a_const_phi0_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_por
 
         colors = (np.array(colors_sort_mc2)) / np.max(colors_sort_mc2)
 
-        ax['a'].scatter(x_sort_mc2, y_sort_mc2, s=100, marker=marker_dict[a_portion_index], color=cmap(colors))
+        discrete_cmap = mpl.colors.ListedColormap(cmap(np.linspace(0, 1, len(mc2_arr))))
+        color_indices = [i for i in range(len(mc2_arr))]
+
+        ax['a'].scatter(x_sort_mc2, y_sort_mc2, s=100, marker=marker_dict[a_portion_index],
+                        color=discrete_cmap(color_indices))
         ax['a'].plot(x_sort_mc2, y_sort_mc2, color='black', alpha=0.2, linestyle=line_style[0])
 
-        legend_arr[a_portion_index] = mlines.Line2D([], [], color=cmap(colors)[1], marker=marker_dict[a_portion_index],
+        legend_arr[a_portion_index] = mlines.Line2D([], [], color=discrete_cmap(color_indices)[0],
+                                                    marker=marker_dict[a_portion_index],
                                                     markersize=15, linestyle='--', label=f'a={a_portion}')
 
-    x_axis_label = r'$L_{\rm iso}$' + r'$\rm [erg/s]$'
+    x_axis_label = r'$\bar{L}_{\rm iso}$' + r'$\rm [erg/s]$'
     y_axis_label = r'$PF$'
     ax['a'].set_xlabel(x_axis_label, fontsize=24)
     ax['a'].set_ylabel(y_axis_label, fontsize=24)
     ax['a'].set_xscale('log')
 
     plt.legend(handles=legend_arr)
-    bounds = mc2_arr.copy()
-    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
-    cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', pad=0.01)
+
+    # bounds = mc2_arr.copy()
+    # bounds = np.linspace(min(mc2_arr), max(mc2_arr), len(mc2_arr) + 1)
+    # norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+    # cb = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax['a'], orientation='vertical', pad=0.01)
+    # cb.set_label(label=config.symbol_m, fontsize=24)
+
+    cb = fig.colorbar(mpl.cm.ScalarMappable(cmap=discrete_cmap), ax=ax['a'], orientation='vertical', pad=0.01)
+    cb.set_ticks(np.linspace(0.125, 0.875, len(mc2_arr)))  # Центры цветовых полос
+    cb.set_ticklabels(mc2_arr)
     cb.set_label(label=config.symbol_m, fontsize=24)
 
     prefix_folder = 'PF_to_L_const_a_diff_m/'
@@ -728,6 +741,68 @@ def plot_PF_to_L_const_a_const_phi0_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_por
                                    phi_0=None, prefix_folder=prefix_folder)
 
     file_name = f'theta={theta_obs} beta_mu={beta_mu} All_PF_to_L.png'
+    save.save_figure(fig, save_dir, file_name)
+
+
+def plot_PF_to_L_const_a_const_phi0_dif_m_together(mu, mc2_arr, a_portion_arr, phi_0):
+    '''то же самое что plot_masses_PF_L_nu только рисуем от L_iso'''
+
+    line_style = ['--', '-']
+    marker_dict = {0: '.', 1: '*', 2: '+', 3: '^', 4: "o", 5: "d", 6: "s", 7: "X"}
+
+    # cmap = mpl.cm.plasma
+    global cmap
+    legend_arr = [0] * len(a_portion_arr)
+
+    theta_obs_arr = [20, 40]
+    beta_mu = 20
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+
+    for theta_idx, theta_obs in enumerate(theta_obs_arr):
+        for a_portion_index, a_portion in enumerate(a_portion_arr):
+            full_dict = {}
+            for mc2_index, mc2 in enumerate(mc2_arr):
+                L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+                PF = newService.get_PF(L_total)
+                full_dict[np.mean(L_total)] = (PF, mc2)
+
+            # в словаере лежит среднее : (PF, mc2). сортируем его по значению mc2
+            list_tuples = sorted(full_dict.items(), key=lambda item: item[1][1])
+            x_sort_mc2, y_sort_mc2 = zip(*list_tuples)  # L, (PF, mc2)
+            y_sort_mc2, colors_sort_mc2 = zip(*y_sort_mc2)
+
+            colors = (np.array(colors_sort_mc2)) / np.max(colors_sort_mc2)
+
+            discrete_cmap = mpl.colors.ListedColormap(cmap(np.linspace(0, 1, len(mc2_arr))))
+            color_indices = [i for i in range(len(mc2_arr))]
+
+            ax['a'].scatter(x_sort_mc2, y_sort_mc2, s=100, marker=marker_dict[a_portion_index],
+                            color=discrete_cmap(color_indices))  # cmap(colors)
+            ax['a'].plot(x_sort_mc2, y_sort_mc2, color='black', alpha=0.2, linestyle=line_style[theta_idx])
+
+            legend_arr[a_portion_index] = mlines.Line2D([], [], color=discrete_cmap(color_indices)[0],
+                                                        marker=marker_dict[a_portion_index],
+                                                        markersize=15, linestyle='--', label=f'a={a_portion}')
+
+    x_axis_label = r'$\bar{L}_{\rm iso}$' + r'$\rm [erg/s]$'
+    y_axis_label = r'$PF$'
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+    ax['a'].set_xscale('log')
+
+    plt.legend(handles=legend_arr)
+
+    cb = fig.colorbar(mpl.cm.ScalarMappable(cmap=discrete_cmap), ax=ax['a'], orientation='vertical', pad=0.01)
+    cb.set_ticks(np.linspace(0.125, 0.875, len(mc2_arr)))  # Центры цветовых полос
+    cb.set_ticklabels(mc2_arr)
+    cb.set_label(label=config.symbol_m, fontsize=24)
+
+    prefix_folder = 'PF_to_L_const_a_diff_m/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=None,
+                                   phi_0=None, prefix_folder=prefix_folder)
+
+    file_name = f'theta={theta_obs} beta_mu={beta_mu} All_PF_to_L_together.png'
     save.save_figure(fig, save_dir, file_name)
 
 
@@ -1289,7 +1364,7 @@ def plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     # ax['a'].plot(x_kde, kde(x_kde), 'r-', linewidth=2, label='KDE')
 
     fig, ax = plt.subplot_mosaic('abc', figsize=(18, 6))
-    sns.histplot(buf_tau, kde=True, bins=100, alpha=0.5, ax=ax['a']) # stat='density',
+    sns.histplot(buf_tau, kde=True, bins=100, alpha=0.5, ax=ax['a'])  # stat='density',
     sns.histplot(buf_cos, kde=True, bins=100, alpha=0.5, ax=ax['b'])
     sns.histplot(np.log10(buf_tau / buf_cos), kde=True, bins=100, alpha=0.5, ax=ax['c'])
 
@@ -1308,7 +1383,6 @@ def plot_hist_tau(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
                                    phi_0=None, prefix_folder=prefix_folder)
     # file_name = f'contour_max_interpolate'
     save.save_figure(fig, save_dir, file_name)
-
 
     tensor_tau_cols = save.load_tensor(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, 'tensor_tau_scatter')
     buf_tau = tensor_tau_cols.reshape(1, -1)
@@ -1940,12 +2014,14 @@ if __name__ == '__main__':
         # plot_PF_to_L_const_a_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0_arr)
         ...
     #
-    theta_obs = 40
-    beta_mu = 20
-    mc2_arr = [20, 40, 60, 80, 100, 120]
-    a_portion_arr = [0.22, 0.44, 0.66]
-    phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
-    # plot_PF_to_L_const_a_const_phi0_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
+    theta_obs = 20
+    beta_mu = 10
+    # mc2_arr = [20, 40, 60, 80, 100, 120]
+    mc2_arr = [30, 60, 100, 130]
+    a_portion_arr = [0.2, 0.5, 0.7, 0.8, 1]
+    phi_0 = 0
+    plot_PF_to_L_const_a_const_phi0_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
+    plot_PF_to_L_const_a_const_phi0_dif_m_together(mu, mc2_arr, a_portion_arr, phi_0)
 
     theta_obs = 20
     beta_mu_arr = [10 * i for i in range(0, 9)]
@@ -1959,6 +2035,12 @@ if __name__ == '__main__':
     mc2_arr = [30, 100]
     a_portion_arr = [0.22, 0.66]
     phi_0_arr = [0, 20, 40, 60, 80, 100, 120, 140, 160, 180]
+    # plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
+
+    theta_obs = 20
+    beta_mu = 20
+    mc2_arr = [60, 100]
+    a_portion_arr = [0.2, 0.5]
     # plot_masses_PF_L(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0_arr)
 
     # -------------------
@@ -2097,7 +2179,7 @@ if __name__ == '__main__':
     # plot_Teff_to_ksi_diff_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
 
     # plot_coeff_gamma()
-    plot_rvm(mu, 20, 60)
+    # plot_rvm(mu, 20, 60)
 
     beta_mu_arr = [40, 80]
     a_portion = 1
