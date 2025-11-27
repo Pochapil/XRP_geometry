@@ -19,9 +19,10 @@ lin_cos = True
 theta_obs_arr = [10 * i for i in range(0, 10)]
 if lin_cos:
     theta_obs_arr = [0, 60, 90, 25.84, 36.87, 45.57, 53.13, 66.42, 72.54, 78.46, 84.26]
+theta_obs_arr.sort()
 beta_mu_arr = [10, 20]
 # mc2_arr = [10, 20, 40, 50, 70, 80, 90, 110, 120, 130] # 10 20 40 80 160
-mc2_arr = [60, 100] # [30, 60, 100, 130]
+mc2_arr = [30, 60, 100] # [30, 60, 100, 130]
 a_portion_arr = np.linspace(0.1, 1, 10) # 9, endpoint=False
 phi_0_arr = [20 * i for i in range(0, 10)]
 # phi_0_arr = [0, 40, 90, 180]  # 140, 180

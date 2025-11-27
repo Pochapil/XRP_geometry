@@ -283,7 +283,7 @@ def get_tau_for_opacity(phi, theta, R_e_of_atenuation_surf, R_e_for_delta, M_acc
     # phi, theta - в точке пересечения; R_e =
     normal = matrix.newE_n(phi, theta)
     cos_alpha = np.dot(normal, obs_vector) / (np.linalg.norm(normal) * np.linalg.norm(obs_vector))
-    # формула в статье есть
+    # формула 6 в статье есть
     tau = config.k * M_accretion_rate * newService.get_delta_distance(theta, R_e_for_delta, dRe_div_Re)
     tau /= (newService.get_A_normal(theta, R_e_for_delta, a_portion, dRe_div_Re)
             * newService.get_free_fall_velocity(theta, R_e_of_atenuation_surf))
