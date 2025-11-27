@@ -44,7 +44,11 @@ def func(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, R='rs'):
     M = mc2 * config.L_edd / config.c ** 2
     rho = M / (S * v)
 
-    T_e = 0.1e3 / config.k_bolc  # 0.1 / 3
+    # T_e = 0.1e3 / config.k_bolc  # 0.1 / 3
+
+    T_e = 3000 * 1.6e-12 # 3kev -> erg
+    T_e /= config.k_bolc # erg -> K
+
     h = config.h_plank_evs
     k = config.k_bolc
     nu = 3e3 / h
@@ -55,12 +59,10 @@ def func(mu, theta_obs, beta_mu, mc2, a_portion, phi_0, R='rs'):
     res = np.sqrt(3 * k_ff * (k_ff + config.k))
 
     # tau_t = 1.4 * 1e-18 * M * np.sqrt(R_e / config.R_ns) / (a_portion * R / config.R_ns)
-
     # tau_t = 5 * mc2 * np.sqrt(R / R_e) / (a_portion * R / config.R_ns)
+
     # tau_t = 5 * mc2 * np.sqrt(R_e / config.R_ns) / (a_portion * R / config.R_ns)
-
     # tau_t = 0.32 * mc2 * np.sqrt(R_e / config.R_ns) / (a_portion * R / config.R_ns)
-
 
     # print(f'old tau_t {tau_t}')
 
@@ -127,8 +129,8 @@ for j, r in enumerate(R):
         ax['c'].set_yscale('log')
 
 
-plt.legend()
-
+# plt.legend()
+ax['a'].legend()
 prefix_folder = 'free-free/'
 save_dir = pathService.get_dir(mu=None, theta_obs=None, beta_mu=None, mc2=None, a_portion=None, phi_0=None,
                                prefix_folder=prefix_folder)

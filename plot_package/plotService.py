@@ -128,7 +128,7 @@ def func(mu, beta_mu, mc2, a_portion, phi_0):
 
 def func2(mu, beta_mu, mc2, a_portion):
     '''plot profiles at theta = 60'''
-    theta_obs = 60
+    theta_obs = 80
 
     fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
     fig1, ax1 = plt.subplot_mosaic('a', figsize=(8, 6))
@@ -146,15 +146,19 @@ def func2(mu, beta_mu, mc2, a_portion):
         id = np.argmin(np.abs(config.phase_for_plot - phi_0 / 360))
         ax1['a'].plot(config.phase_for_plot, np.roll(data_to_plot, id), label=label)
 
+
+        # 22 - для 45!!! сейчас 50 теперь 25?
         id = -np.argmax(data_to_plot)
         ax2['a'].plot(config.phase_for_plot, np.roll(data_to_plot, id - 22), label=label)
 
         # id = -np.argmax(L_total)
         # data_to_plot = np.roll(data_to_plot, id-22) # -22 = pi/2
 
-    ax['a'].legend()
-    ax1['a'].legend()
-    ax2['a'].legend()
+    font_size = 18
+    # .legend(loc='lower right')
+    ax['a'].legend(fontsize=font_size, loc="upper right")
+    ax1['a'].legend(fontsize=font_size, loc="upper right")
+    ax2['a'].legend(fontsize=font_size, loc="upper right")
 
     x_axis_label = r'$\Phi$'
     y_axis_label = r'$L_{\rm iso}$'
@@ -178,7 +182,7 @@ def func2(mu, beta_mu, mc2, a_portion):
     prefix_folder = 'profiles_for_sky_map/'
     save_dir = pathService.get_dir(mu=mu, theta_obs=None, beta_mu=None, mc2=None, a_portion=None,
                                    phi_0=None, prefix_folder=prefix_folder)
-    file_name = f'{beta_mu=} {a_portion=}'
+    file_name = f'{beta_mu=} {a_portion=} {theta_obs=}'
 
     save.save_figure(fig, save_dir, file_name)
     save.save_figure(fig1, save_dir, file_name + ' rolled')
@@ -187,9 +191,9 @@ def func2(mu, beta_mu, mc2, a_portion):
 
 def func3(mu, beta_mu_arr, mc2, a_portion_arr):
     '''plot max phase to phi_0'''
-    theta_obs = 60
+    theta_obs = 20
 
-    phi_0_arr = [20 * i for i in range(19)]  # 9  # [0, 40, 60, 90, 120, 140, 180]
+    phi_0_arr =  [20 * i for i in range(10)]  # 9  # # [0, 40, 60, 90, 120, 140, 180]
     fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
     for beta_mu in beta_mu_arr:
         for a_portion in a_portion_arr:
@@ -223,7 +227,7 @@ def func3(mu, beta_mu_arr, mc2, a_portion_arr):
                                    phi_0=None, prefix_folder=prefix_folder)
 
 
-    file_name = f'max to phi_0' # f'{beta_mu=} {a_portion=} max to phi_0'
+    file_name = f'max to phi_0 {theta_obs=}' # f'{beta_mu=} {a_portion=} max to phi_0'
     save.save_figure(fig, save_dir, file_name)
 
 mu = 0.1e31
@@ -235,14 +239,16 @@ mc2 = 60
 a_portion = 0.22
 phi_0 = 0
 
-a_portion_arr = [0.22, 0.44, 0.66]
-# for a_portion in a_portion_arr:
-#      func2(mu, beta_mu, mc2, a_portion)
+a_portion_arr = [0.2, 0.5, 0.7]
+for a_portion in a_portion_arr:
+    func2(mu, beta_mu, mc2, a_portion)
+    pass
+# func2(mu, 60, mc2, 0.25)
 
-func2(mu, 60, mc2, 0.44)
+a_portion_arr = [0.25, 0.5, 0.75]
 
-a_portion_arr = [0.22, 0.44, 0.66]
-beta_mu_arr = [20, 60]
+a_portion_arr = [0.2, 0.5, 0.7]
+beta_mu_arr = [10, 20]
 func3(mu, beta_mu_arr, mc2, a_portion_arr)
 
 # func(mu, beta_mu, mc2, a_portion, phi_0)
