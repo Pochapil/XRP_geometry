@@ -32,10 +32,10 @@ cmap = mpl.cm.magma
 # plasma
 # magma
 # inferno
-# 'jet'
+# jet
 # viridis
 # twilight_shifted
-mpl.rcParams['image.cmap'] = 'magma'
+mpl.rcParams['image.cmap'] = 'jet'  #
 
 
 # plt.rcParams['axes.labelsize'] = 42
@@ -279,6 +279,31 @@ def plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0):
     save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=a_portion,
                                    phi_0=phi_0, prefix_folder=prefix_folder)
     file_name = 'map_contour'
+    save.save_figure(fig, save_dir, file_name)
+
+    # нормировка на L_max общий
+    buf = L_total_mc2 / np.max(L_total_mc2)
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=buf)
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(8, 6))
+    # чтобы сделать хороший масштаб и чтобы каждый профиль имел равную толщину сначала рисуем от 0 до 1 а потом
+    # заменяем надписи на значения м
+    im = ax['a'].pcolormesh(config.phase_for_plot, np.linspace(0, 1, len(mc2_arr)), data_to_plot)
+    ax['a'].set_yticks(np.linspace(0, 1, len(mc2_arr)), mc2_arr)
+
+    x_axis_label = config.symbol_phase
+    # y_axis_label = r'$mean L_{iso} [erg/s]$'
+    y_axis_label = config.symbol_m
+    ax['a'].set_xlabel(x_axis_label, fontsize=24)
+    ax['a'].set_ylabel(y_axis_label, fontsize=24)
+
+    clb = plt.colorbar(im, pad=0.03, format="{x:.2}")  # pad=0.15
+    clb.set_label(r'$\widetilde{L}_{\rm iso}$', fontsize=24)  # \cdot max(L_{\rm iso})^{-1}
+
+    prefix_folder = 'L_to_mass/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=a_portion,
+                                   phi_0=phi_0, prefix_folder=prefix_folder)
+    file_name = 'map_contour_common_max'
     save.save_figure(fig, save_dir, file_name)
 
 
@@ -757,7 +782,7 @@ def plot_PF_to_L_const_a_const_phi0_dif_m_together(mu, mc2_arr, a_portion_arr, p
     theta_obs_arr = [20, 40]
     beta_mu = 20
 
-    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 9))
 
     for theta_idx, theta_obs in enumerate(theta_obs_arr):
         for a_portion_index, a_portion in enumerate(a_portion_arr):
@@ -1053,18 +1078,20 @@ def plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0):
         delta_arr = np.empty(len(mc2_arr))
         ksi_shock_arr = np.empty(len(mc2_arr))
         L_x_arr = np.empty(len(mc2_arr))
+        L_x_calc_arr = np.empty(len(mc2_arr))
         for j, mc2 in enumerate(mc2_arr):
             R_e_arr[j] = save.load_R_e(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
             delta_arr[j] = newService.get_delta_distance_at_surface_NS(R_e_arr[j] * config.R_ns,
                                                                        config.dRdisk_div_Rdisk) / config.R_ns
             ksi_shock_arr[j] = save.load_ksi_shock(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
             L_x_arr[j] = save.load_L_x(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+            L_x_calc_arr[j] = save.load_L_x_calc(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
 
         ax['a'].scatter(mc2_arr, ksi_shock_arr, s=30, facecolors='none', edgecolors=color_arr[i],
                         label=r'$\xi_{s}$' + ' for ' + f'a={a_portion}')  # r'$\xi_{s}$' + ' for ' +
         ax['a'].plot(mc2_arr, ksi_shock_arr, color='black', alpha=0.2, linestyle='-')
 
-        ax1['a'].scatter(mc2_arr, L_x_arr, s=30, facecolors='none', edgecolors=color_arr[i],
+        ax1['a'].scatter(mc2_arr, L_x_calc_arr * 4, s=30, facecolors='none', edgecolors=color_arr[i],
                          label=f'a={a_portion}')
         ax1['a'].plot(mc2_arr, L_x_arr, color='black', alpha=0.2, linestyle='-')
 
@@ -1767,7 +1794,7 @@ def plot_romanova(mu, theta_obs, beta_mu, mc2_arr, a_portion):
     data_array = np.empty((len(phi_0_arr), config.N_phase))
 
     if not isinstance(a_portion, np.ndarray):
-        a_portion = np.full(10, a_portion)
+        a_portion = np.full(len(phi_0_arr), a_portion)
         suffix = ''
     else:
         suffix = f'a_range {a_portion[0]} - {a_portion[-1]}'
@@ -1778,7 +1805,7 @@ def plot_romanova(mu, theta_obs, beta_mu, mc2_arr, a_portion):
         L_total = save.load_L_total(mu, theta_obs, beta_mu, mc2, a_portion[i], phi_0)
         data_array[i] = L_total
 
-    avg = 1
+    avg = np.max(data_array)
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_array)
     data_to_plot = data_to_plot / avg
 
@@ -1800,7 +1827,56 @@ def plot_romanova(mu, theta_obs, beta_mu, mc2_arr, a_portion):
     file_name = f'P={romanova_phi_0.P} contour_L_iso' + suffix
     save.save_figure(fig, save_dir, file_name)
 
-    avg = np.mean(data_array, axis=1)[:, np.newaxis]
+    avg = np.max(data_array, axis=1)[:, np.newaxis]  # mean
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_array)
+    data_to_plot = data_to_plot / avg
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    im = ax['a'].contourf(config.phase_for_plot, mc2_arr, data_to_plot, levels=30)
+    clb = plt.colorbar(im, pad=0.01)
+    clb.set_label(r'$\langle L_{\rm iso} \rangle$', fontsize=26)
+
+    x_axis_label = config.symbol_phase
+    y_axis_label = config.symbol_m
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    # ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
+
+    prefix_folder = 'romanova/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=a_portion[0],
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'P={romanova_phi_0.P} contour_L_iso_avg' + suffix
+    save.save_figure(fig, save_dir, file_name)
+
+    suffix += 'phase_shifted'
+    for i in range(len(phi_0_arr)):
+        id = -np.argmax(data_array[i])
+        data_array[i] = np.roll(data_array[i], id - config.N_phase // 2)
+
+    avg = np.max(data_array)
+    data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_array)
+    data_to_plot = data_to_plot / avg
+
+    fig, ax = plt.subplot_mosaic('a', figsize=(12, 6))
+    im = ax['a'].contourf(config.phase_for_plot, mc2_arr, data_to_plot, levels=30)
+    clb = plt.colorbar(im, pad=0.01)
+    clb.set_label(r'$\langle L_{\rm iso} \rangle$', fontsize=26)
+
+    x_axis_label = config.symbol_phase
+    y_axis_label = config.symbol_m
+    ax['a'].set_xlabel(x_axis_label, fontsize=26)
+    ax['a'].set_ylabel(y_axis_label, fontsize=26)
+
+    # ax['a'].tick_params(axis='both', labelsize=ticks_labelsize)
+
+    prefix_folder = 'romanova/'
+    save_dir = pathService.get_dir(mu=mu, theta_obs=theta_obs, beta_mu=beta_mu, mc2=None, a_portion=a_portion[0],
+                                   phi_0=None, prefix_folder=prefix_folder)
+    file_name = f'P={romanova_phi_0.P} contour_L_iso' + suffix
+    save.save_figure(fig, save_dir, file_name)
+
+    avg = np.max(data_array, axis=1)[:, np.newaxis]  # mean
     data_to_plot = np.apply_along_axis(newService.extend_arr_for_plot, axis=-1, arr=data_array)
     data_to_plot = data_to_plot / avg
 
@@ -1976,13 +2052,13 @@ if __name__ == '__main__':
 
     theta_obs = 60
     beta_mu = 20
-    a_portion = 0.22
+    a_portion = 0.2
 
-    a_portion_start = 0.44
-    a_portion_stop = 0.66
-    a_portion_arr = np.linspace(a_portion_start, a_portion_stop, 10)
+    a_portion_start = 0.2
+    a_portion_stop = 0.5
+    a_portion = np.linspace(a_portion_start, a_portion_stop, 9)
 
-    # plot_romanova(mu, theta_obs, beta_mu, None, a_portion)
+    plot_romanova(mu, theta_obs, beta_mu, None, a_portion)
 
     theta_obs = 60
     beta_mu = 20
@@ -2020,8 +2096,8 @@ if __name__ == '__main__':
     mc2_arr = [30, 60, 100, 130]
     a_portion_arr = [0.2, 0.5, 0.7, 0.8, 1]
     phi_0 = 0
-    plot_PF_to_L_const_a_const_phi0_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
-    plot_PF_to_L_const_a_const_phi0_dif_m_together(mu, mc2_arr, a_portion_arr, phi_0)
+    # plot_PF_to_L_const_a_const_phi0_dif_m(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
+    # plot_PF_to_L_const_a_const_phi0_dif_m_together(mu, mc2_arr, a_portion_arr, phi_0)
 
     theta_obs = 20
     beta_mu_arr = [10 * i for i in range(0, 9)]
@@ -2118,12 +2194,13 @@ if __name__ == '__main__':
     # phi_0 = 0
     # # plot_sky_map(mu, beta_mu, mc2, a_portion, phi_0)
 
-    # theta_obs = 20
-    # beta_mu = 60
-    # mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
-    # a_portion = 0.44
-    # phi_0 = 0
-    # # plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
+    # mu = 0.1e32
+    theta_obs = 60
+    beta_mu = 20
+    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110]
+    a_portion = 0.2
+    phi_0 = 80
+    # plot_L_to_mc2(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
     # theta_obs = 20
     # beta_mu = 40
@@ -2173,8 +2250,10 @@ if __name__ == '__main__':
     phi_0 = 0
     # plot_table(mu, theta_obs, beta_mu, mc2_arr, a_portion, phi_0)
 
-    a_portion_arr = [0.25, 0.5, 0.75, 1]
-    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]
+    theta_obs = 20
+    beta_mu = 0
+    a_portion_arr = [0.2, 0.5, 0.7, 1]
+    mc2_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
     # plot_table_together(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
     # plot_Teff_to_ksi_diff_a(mu, theta_obs, beta_mu, mc2_arr, a_portion_arr, phi_0)
 

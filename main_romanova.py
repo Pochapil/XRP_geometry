@@ -43,15 +43,23 @@ if __name__ == '__main__':
     plot_flag = True
     theta_obs = 60
     beta_mu = 20
-    a_portion = 0.44
+    a_portion = 0.2
 
-    a_portion_start = 0.44
-    a_portion_stop = 0.66
+    # a_portion_start = 0.44
+    # a_portion_stop = 0.66
+    # a_portion_arr = np.linspace(a_portion_start, a_portion_stop, len(mc2_calc))
+    # print(a_portion_arr)
+
+    # a_portion_arr = [0.2]
+    a_portion_start = 0.2
+    a_portion_stop = 0.5
     a_portion_arr = np.linspace(a_portion_start, a_portion_stop, len(mc2_calc))
-    print(a_portion_arr)
 
     parameter_space = zip(repeat(mu), repeat(theta_obs), repeat(beta_mu), mc2_calc, a_portion_arr, phi_0_calc,
                           repeat(plot_flag), repeat(False))
+
+    # parameter_space = zip(repeat(mu), repeat(theta_obs), repeat(beta_mu), mc2_calc, repeat(a_portion), phi_0_calc,
+    #                       repeat(plot_flag), repeat(False))
 
     with mp.Pool(processes=config.N_cpus) as pool:
         pool.starmap(main.calc_and_save_for_configuration, parameter_space, chunksize=1)
