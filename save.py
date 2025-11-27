@@ -137,6 +137,13 @@ def load_L_x(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     return float(lines[3][12:20]) * 10 ** float(lines[3][27:29])
 
 
+def load_L_x_calc(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
+    data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
+    with open(data_folder / 'save_values.txt') as f:
+        lines = f.readlines()
+    return float(lines[5][41:49]) * 10 ** float(lines[5][56:58])
+
+
 def load_R_e(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
     with open(data_folder / 'save_values.txt') as f:
@@ -156,6 +163,7 @@ def load_beta(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     with open(data_folder / 'save_values.txt') as f:
         lines = f.readlines()
     return float(lines[2][7:-1])
+
 
 def load_gamma(mu, theta_obs, beta_mu, mc2, a_portion, phi_0):
     data_folder = get_data_folder(mu, theta_obs, beta_mu, mc2, a_portion, phi_0)
